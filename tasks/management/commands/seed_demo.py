@@ -9,7 +9,7 @@ class Command(BaseCommand):
             self.stdout.write('기존 업무가 있어 예시 생성을 건너뜁니다.')
             return
         today=timezone.localdate()
-        names=[('개발팀','김민준'),('영업팀','이서연'),('경영지원팀','박지훈'),('기술지원팀','정수빈')]
+        names=[('보안기술팀','김민준'),('영업팀','이서연'),('경영지원팀','박지훈'),('보안기술팀','정수빈')]
         people=[]
         for dept,name in names:
             d,_=Department.objects.get_or_create(name=dept)

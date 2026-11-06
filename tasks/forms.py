@@ -1,6 +1,11 @@
 from django import forms
-from .models import Task
+from .models import Task, Employee
+from .permissions import assignable_employees
 class TaskForm(forms.ModelForm):
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['assignee'].queryset = assignable_employees(user) if user else Employee.objects.none()
+
     class Meta:
         model = Task
         fields = ['title','description','assignee','status','importance','priority','start_date','due_date']

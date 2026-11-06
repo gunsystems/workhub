@@ -6,7 +6,7 @@ from .models import Department, Employee, Task
 
 class WorkhubTests(TestCase):
     def setUp(self):
-        self.user=get_user_model().objects.create_user('member',password='test-password')
+        self.user=get_user_model().objects.create_superuser('member',password='test-password')
         self.client.force_login(self.user)
         self.dept=Department.objects.create(name='개발팀')
         self.employee=Employee.objects.create(name='개발자',department=self.dept)
@@ -35,7 +35,7 @@ class WorkhubTests(TestCase):
         self.assertEqual(self.client.get('/',{'date':'bad','view':'bad','department':'bad'}).status_code,200)
     def test_filters_and_alerts(self):
         self.task(title='초과 업무',due_date=self.today-timedelta(days=1))
-        other=Department.objects.create(name='영업팀')
+        other=Department.objects.get_or_create(name='영업팀')[0]
         employee=Employee.objects.create(name='영업담당',department=other)
         self.task(title='다른 부서 업무',assignee=employee)
         r=self.client.get('/',{'department':self.dept.pk,'employee':self.employee.pk,'status':'todo'})
@@ -67,6 +67,11 @@ class WorkhubTests(TestCase):
         visible=[d for d in r.context['days'] if task in d['tasks']]
         self.assertEqual(len(visible),2)
     def test_regular_employee_login_and_logout(self):
+        self.user.is_superuser = False
+        self.user.is_staff = False
+        self.user.save()
+        self.employee.user = self.user
+        self.employee.save()
         self.client.logout()
         r=self.client.post('/login/',{'username':'member','password':'test-password'})
         self.assertRedirects(r,'/')
