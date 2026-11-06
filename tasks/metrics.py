@@ -22,7 +22,7 @@ def employee_metrics(employee, tasks, start, end):
     overdue = [t for t in active if t.deadline == 'overdue' and t.status != 'review']
     stale = [t for t in active if t.needs_report]
     not_started = [t for t in active if t.not_started]
-    report_gaps = sum(1 for t in tasks for event in t.events.all() if event.kind in ['progress','submitted'] and event.snapshot.get('report_gap_days',0) >= 3 and start <= timezone.localtime(event.created_at).date() <= end)
+    report_gaps = sum(1 for t in tasks for event in t.events.all() if event.kind in ['progress','submitted'] and event.snapshot.get('report_gap_days',0) >= event.snapshot.get('report_interval_days',3) and start <= timezone.localtime(event.created_at).date() <= end)
     reasons = []
     if report_gaps >= 2: reasons.append(f'기간 내 보고 공백 {report_gaps}회')
     if len(late) >= 2: reasons.append(f'기간 내 지연 {len(late)}건')

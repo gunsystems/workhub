@@ -1,5 +1,20 @@
 from django.contrib import admin
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from tasks import views
-urlpatterns = [path('employees/<int:pk>/feedback/',views.employee_feedback,name='employee_feedback'),path('dashboard/',views.dashboard,name='dashboard'),path('tasks/<int:pk>/actions/<str:action>/',views.task_action,name='task_action'),path('login/',auth_views.LoginView.as_view(template_name='tasks/login.html'),name='login'),path('logout/',auth_views.LogoutView.as_view(),name='logout'),path('admin/',admin.site.urls),path('',views.calendar_view,name='calendar'),path('tasks/new/',views.edit,name='task_new'),path('tasks/<int:pk>/',views.detail,name='task_detail'),path('tasks/<int:pk>/edit/',views.edit,name='task_edit')]
+from tasks import views, operations
+from .health import health
+urlpatterns = [path('guide/',operations.guide,name='guide'),path('healthz/',health,name='health'),
+path('projects/',operations.projects,name='projects'),
+path('projects/new/',operations.project_edit,name='project_new'),
+path('projects/<int:pk>/',operations.project_detail,name='project_detail'),
+path('projects/<int:pk>/edit/',operations.project_edit,name='project_edit'),
+path('intake/',operations.intake_list,name='intake_list'),
+path('intake/new/',operations.intake_new,name='intake_new'),
+path('intake/<int:pk>/',operations.intake_detail,name='intake_detail'),
+path('intake/<int:pk>/assign/',operations.intake_assign,name='intake_assign'),
+path('intake/<int:pk>/close/',operations.intake_close,name='intake_close'),
+path('alerts/',operations.alerts,name='alerts'),
+path('tasks/<int:pk>/accept/',operations.accept,name='task_accept'),
+path('tasks/<int:pk>/checklist/new/',operations.checklist_add,name='checklist_add'),
+path('tasks/<int:pk>/checklist/<int:item_pk>/',operations.checklist_update,name='checklist_update'),
+path('employees/<int:pk>/feedback/',views.employee_feedback,name='employee_feedback'),path('dashboard/',views.dashboard,name='dashboard'),path('tasks/<int:pk>/actions/<str:action>/',views.task_action,name='task_action'),path('login/',auth_views.LoginView.as_view(template_name='tasks/login.html'),name='login'),path('logout/',auth_views.LogoutView.as_view(),name='logout'),path('admin/',admin.site.urls),path('',views.calendar_view,name='calendar'),path('tasks/new/',views.edit,name='task_new'),path('tasks/<int:pk>/',views.detail,name='task_detail'),path('tasks/<int:pk>/edit/',views.edit,name='task_edit')]

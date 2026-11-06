@@ -19,7 +19,7 @@ class WorkflowTests(TestCase):
         self.leader=Employee.objects.create(name='부서장',user=self.manager,department=dept,role='manager')
         self.colleague=Employee.objects.create(name='동료',user=self.peer,department=dept)
         self.today=timezone.localdate()
-        self.task=Task.objects.create(title='업무',assignee=self.employee,start_date=self.today-timedelta(days=5),due_date=self.today)
+        self.task=Task.objects.create(title='업무',assignee=self.employee,start_date=self.today-timedelta(days=5),due_date=self.today,assigned_at=timezone.now()-timedelta(days=5))
         self.client.force_login(self.member)
 
     def action(self, action, data, task=None):
@@ -48,7 +48,7 @@ class WorkflowTests(TestCase):
         self.assertEqual(self.task.status,'done')
         self.assertEqual(self.task.completed_at,submitted)
         self.assertEqual(self.task.quality_score,80)
-        self.assertEqual(set(self.task.events.values_list('kind',flat=True)),{'progress','submitted','approved'})
+        self.assertEqual(set(self.task.events.values_list('kind',flat=True)),{'accepted','progress','submitted','approved'})
         approved=self.task.events.get(kind='approved')
         self.assertEqual(approved.author_name,'manager')
         self.assertEqual(approved.snapshot['quality_score'],'80')
@@ -223,7 +223,7 @@ class WorkflowTests(TestCase):
 
     def test_report_gap_is_recorded_with_report(self):
         self.action('progress',{'progress':20,'body':'첫 진행 보고','delay_reason':''})
-        self.assertEqual(self.task.events.get().snapshot['report_gap_days'],5)
+        self.assertEqual(self.task.events.get(kind='progress').snapshot['report_gap_days'],5)
 
 
 class MetricsTests(TestCase):

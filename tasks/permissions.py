@@ -27,7 +27,7 @@ def visible_departments(user):
 
 
 def visible_tasks(user):
-    return Task.objects.filter(assignee__in=visible_employees(user)).select_related('assignee__department','assignee__user')
+    return Task.objects.filter(assignee__in=visible_employees(user)).select_related('assignee__department','assignee__user','project')
 
 
 def assignable_employees(user):
@@ -65,3 +65,18 @@ def can_manage_employee(user, target):
 
 def can_report(user, task):
     return user.is_active and task.assignee.user_id == user.pk
+
+
+def visible_projects(user):
+    from .models import Project
+    return Project.objects.filter(department__in=visible_departments(user)).select_related('owner__user','department')
+
+
+def can_manage_project(user, project):
+    return is_company_admin(user) or (is_manager(user) and project.owner.user_id == user.pk)
+
+
+def visible_requests(user):
+    from .models import WorkRequest
+    requests = WorkRequest.objects.filter(department__in=visible_departments(user)).select_related('department','project','task')
+    return requests if is_manager(user) else requests.filter(creator=user)

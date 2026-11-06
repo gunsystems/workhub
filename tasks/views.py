@@ -60,7 +60,7 @@ def detail(request,pk):
     events = task.events.all()
     if not sensitive:
         events = events.exclude(kind__in=['approved','feedback','returned'])
-    return render(request,'tasks/detail.html',{'task':task,'can_edit':can_edit(request.user, task) and task.status not in ['review','done'], 'can_review':can_review(request.user, task),'can_report':can_report(request.user,task),'sensitive':sensitive,'events':events})
+    return render(request,'tasks/detail.html',{'task':task,'can_edit':can_edit(request.user, task) and task.status not in ['review','done'], 'can_review':can_review(request.user, task),'can_report':can_report(request.user,task),'sensitive':sensitive,'events':events,'checklist':task.checklist.filter(retired=False)})
 
 @login_required
 @transaction.atomic
@@ -73,9 +73,14 @@ def edit(request,pk=None):
     if task and task.status in ['review','done']:
         raise PermissionDenied('검토 대기 또는 완료 업무는 일반 수정할 수 없습니다.')
     before = snapshot(task) if task else None
-    form=TaskForm(request.POST if request.method == 'POST' else None,instance=task,user=request.user)
+    form=TaskForm(request.POST if request.method == 'POST' else None,instance=task,user=request.user,initial={'project':request.GET.get('project')} if not pk else None)
     if request.method=='POST' and form.is_valid():
-        task=form.save()
+        task=form.save(commit=False)
+        if before and str(task.assignee_id) != before['assignee_id']:
+            task.accepted_at = None
+            task.assigned_at = timezone.now()
+            task.last_report_at = None
+        task.save()
         record(task,request.user,'changed' if pk else 'created',form.cleaned_data.get('change_reason') or ('업무 정보 수정' if pk else '업무 등록'),{'before':before})
         return redirect('task_detail',pk=task.pk)
     return render(request,'tasks/form.html',{'form':form,'task':task})
@@ -121,6 +126,8 @@ def dashboard(request):
         'not_started': [t for t in tasks if t.not_started],
         'review': [t for t in tasks if t.status == 'review'],
         'done': [t for t in tasks if t.status == 'done'],
+        'unaccepted': [t for t in tasks if t.awaiting_acceptance],
+        'review_late': [t for t in tasks if t.review_overdue],
     }
     attention_count = sum(r['attention'] for r in rows)
     attention_only = request.GET.get('attention') == '1'
