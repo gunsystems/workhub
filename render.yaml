@@ -1,0 +1,23 @@
+# Dedicated TEST service only. A paid persistent disk preserves the SQLite DB.
+# Review Render's displayed price before creating this service.
+services:
+  - type: web
+    name: gunsystems-workhub-test
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 4 --access-logfile -
+    healthCheckPath: /login/
+    disk:
+      name: workhub-test-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: DEBUG
+        value: '0'
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SQLITE_PATH
+        value: /var/data/workhub.sqlite3
