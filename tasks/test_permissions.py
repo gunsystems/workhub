@@ -26,7 +26,7 @@ class DepartmentAccessTests(TestCase):
 
     def data(self, assignee=None):
         today = timezone.localdate().isoformat()
-        return dict(title='등록 업무',description='설명',assignee=(assignee or self.employee).pk,status='todo',importance='normal',priority=2,start_date=today,due_date=today)
+        return dict(change_reason='테스트 일정 변경',title='등록 업무',description='설명',assignee=(assignee or self.employee).pk,status='todo',importance='normal',priority=2,start_date=today,due_date=today)
 
     def test_department_calendar_filters_and_alerts_do_not_leak(self):
         for mode in ['month','week','day']:

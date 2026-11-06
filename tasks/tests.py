@@ -50,10 +50,10 @@ class WorkhubTests(TestCase):
         task=Task.objects.get(title='신규 업무')
         self.assertRedirects(r,f'/tasks/{task.pk}/')
         self.assertContains(self.client.get(r.url),'&lt;script&gt;')
-        data['status']='done'
+        data['status']='blocked'
         self.client.post(f'/tasks/{task.pk}/edit/',data)
         task.refresh_from_db()
-        self.assertEqual(task.status,'done')
+        self.assertEqual(task.status,'blocked')
         data['due_date']=(self.today-timedelta(days=1)).isoformat()
         r=self.client.post(f'/tasks/{task.pk}/edit/',data)
         self.assertEqual(r.status_code,200)
@@ -74,7 +74,7 @@ class WorkhubTests(TestCase):
         self.employee.save()
         self.client.logout()
         r=self.client.post('/login/',{'username':'member','password':'test-password'})
-        self.assertRedirects(r,'/')
+        self.assertRedirects(r,'/dashboard/')
         self.assertEqual(self.client.get('/').status_code,200)
         self.client.post('/logout/')
         self.assertRedirects(self.client.get('/'),'/login/?next=/')
