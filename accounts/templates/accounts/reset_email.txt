@@ -1,0 +1,6 @@
+GUNSYSTEMS Workhub 비밀번호 재설정 요청입니다.
+아래 일회용 링크에서 새 비밀번호를 설정하세요. 링크는 30분 동안 유효합니다.
+https://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}
+
+비밀번호를 변경해도 기존 OTP는 유지됩니다.
+요청하지 않았다면 이 메일을 무시하세요.
