@@ -14,28 +14,28 @@
 - 이메일 인증·로그인·OTP에 DB 기반 요청 횟수 제한. 관리자 로그인 경로도 동일 로그인 화면 사용.
 - 기존 계정·직원·업무는 유지. 기존 계정은 사용자명 로그인 유지, 계정 보안 메뉴에서 OTP 등록 가능. 새 초대로 기존 계정을 덮어쓰지 않음.
 
-## 하이웍스 연결 (서버 비밀 설정)
+## 하이웍스 API 연결 (서버 비밀 설정)
 
-하이웍스 공식 SMTP 설정: https://www.hiworks.com/cs/notice/11061
+공식 문서: https://documenter.getpostman.com/view/6863253/S1TVWcri?version=latest#2ef769c9-35cc-4605-8e20-4b16a2d1d275
 
-발신할 실제 하이웍스 계정에서 POP3/SMTP 사용을 허용하고 필요 시 메일 전용 비밀번호를 발급합니다. 현재 서비스/보안 정책에 따라 해당 계정의 설정 화면에서 확인하세요.
-
-Workhub 테스트 서비스의 Render Environment에 아래 값을 입력합니다. 실제 비밀번호는 문서·Git·채팅에 넣지 않습니다.
+하이웍스 서비스 연동에서 이메일 보내기 권한만 선택한 Office Token을 발급하고 Render Environment에 저장합니다. 토큰을 문서·Git·채팅에 넣지 않습니다.
 
 | 키 | 값 |
 | --- | --- |
-| EMAIL_HOST | smtps.hiworks.com |
-| EMAIL_PORT | 465 |
-| EMAIL_USE_SSL | 1 |
-| EMAIL_USE_TLS | 0 |
-| EMAIL_HOST_USER | 실제 발신 회사 이메일 |
-| EMAIL_HOST_PASSWORD | 해당 계정의 SMTP/메일 전용 비밀번호 (secret) |
-| DEFAULT_FROM_EMAIL | GUNSYSTEMS Workhub <실제 발신 회사 이메일> |
+| HIWORKS_OFFICE_TOKEN | 발급한 Office Token (secret) |
+| HIWORKS_USER_ID | admin (admin@gunsystems.co.kr의 사용자 ID) |
+| EMAIL_BACKEND | accounts.mail_backend.HiworksEmailBackend |
 | WORKHUB_BASE_URL | https://gunsystems-workhub-test.onrender.com |
 
-회사 메일 도메인 수신은 그대로 유지하며 MX 레코드를 변경하지 않습니다. 메일 발송만 하므로 메일함 읽기 연동은 하지 않습니다. 서버는 Oregon에 있으므로 하이웍스 접속 국가/IP 제한 정책이 적용된다면 해당 서버의 접속이 허용되어야 합니다. 무조건 전체 국가를 허용하지 말고 회사 정책에 맞춰 허용 범위를 정하세요.
+메일 발송 API는 https://api.hiworks.com/office/v2/webmail/sendMail 에 HTTPS POST multipart/form-data로 호출합니다. 토큰은 Authorization: Bearer 헤더에만 사용합니다. 보내는 계정은 user_id로 결정됩니다. SMTP로 자동 재시도하지 않습니다.
 
-메일 발송 서버의 접수 성공은 수신/열람 성공을 의미하지 않습니다. 전송 오류는 직원 기록을 보존하고 `발송 실패`로 표시합니다. 관리자 직원 목록에서 선택 후 초대 재발송이 가능합니다. 비밀 설정이 없으면 발송 실패가 정상이며 메일 발송/직원 인증을 완료한 것으로 표시하지 않습니다.
+허용 IP는 Render 서비스 Connect → Outbound의 전체 목록을 등록합니다. 2026-11-07 확인값은 74.220.48.0/24, 74.220.56.0/24이며 공유 지역 IP입니다. 변경 시 Render의 현재 목록을 기준으로 갱신합니다. 회사 메일의 MX 레코드와 웹메일 OTP는 변경하지 않습니다.
+
+HTTP 200만으로 성공 처리하지 않고 code=SUC 및 해당 수신자가 result.successList에 포함됐는지 확인합니다. 발송 접수 성공은 수신/열람 성공을 의미하지 않습니다. API 오류나 타임아웃은 자동 재시도하지 않으며, 원인 확인 후 관리자 직원 목록에서 초대 재발송이 가능합니다.
+
+인증 메일은 한 명씩 발송하고 save_sent_mail=N으로 보낸편지함에 인증 코드·초대 링크를 남기지 않습니다. 이메일 본문 텍스트는 HTML escape 처리하며 링크만 클릭 가능하게 표시합니다. API 리다이렉트는 허용하지 않고, 원본 응답·토큰을 오류나 로그에 출력하지 않습니다.
+
+기존 EMAIL_HOST_PASSWORD는 API 방식에서 사용하지 않습니다. API 실제 발송이 확인된 후 서버에서 제거할 수 있습니다.
 
 ## 배포와 DB
 
@@ -44,7 +44,7 @@ Workhub 테스트 서비스의 Render Environment에 아래 값을 입력합니�
 1. 변경 소스를 검토한 후 테스트 서비스에 배포합니다. 시작 명령의 migrate가 accounts/OTP 테이블만 추가합니다. 기존 계정·업무 삭제나 seed_demo 실행은 하지 않습니다.
 2. `/healthz/`의 version `0.4`, status `ok`, 배포 커밋을 확인합니다.
 3. 기존 관리자 로그인, 기존 직원·업무 조회를 확인합니다.
-4. 위 SMTP 비밀 설정 후 실제 테스트용 회사 이메일로 한 명만 초대합니다.
+4. 위 API 비밀 설정 후 실제 테스트용 회사 이메일로 한 명만 초대합니다.
 
 인증 코드·복구 코드·OTP QR 이미지·전체 초대 링크를 로그나 Git에 기록하지 않습니다. DB에는 OTP 인증용 비밀키가 있으므로 디스크/백업 접근은 관리자에게 제한해야 합니다. 앱의 기본 DB는 단일 인스턴스 SQLite입니다. 고가용성/다중 인스턴스 전환은 별도 작업입니다.
 
@@ -72,4 +72,4 @@ OTP와 복구 코드를 모두 잃은 계정은 메일만으로 OTP를 해제하
 .venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 ```
 
-`config.test_settings`는 테스트 전용 빠른 해시/메모리 메일함입니다. 배포에 사용하지 않습니다. 실제 SMTP 수신/인증 앱 스캔은 위 수동 절차로 별도 검증합니다.
+`config.test_settings`는 테스트 전용 빠른 해시/메모리 메일함입니다. 배포에 사용하지 않습니다. 실제 API 메일 수신/인증 앱 스캔은 위 수동 절차로 별도 검증합니다.

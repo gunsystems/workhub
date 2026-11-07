@@ -47,7 +47,9 @@ MIDDLEWARE.insert(MIDDLEWARE.index('django.contrib.auth.middleware.Authenticatio
 MIDDLEWARE.insert(MIDDLEWARE.index('django_otp.middleware.OTPMiddleware') + 1, 'accounts.middleware.RequireMFA')
 WORKHUB_EMAIL_DOMAIN = 'gunsystems.co.kr'
 WORKHUB_BASE_URL = os.getenv('WORKHUB_BASE_URL', 'https://gunsystems-workhub-test.onrender.com')
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+HIWORKS_OFFICE_TOKEN = os.getenv('HIWORKS_OFFICE_TOKEN', '')
+HIWORKS_USER_ID = os.getenv('HIWORKS_USER_ID', 'admin')
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'accounts.mail_backend.HiworksEmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtps.hiworks.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '465'))
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
