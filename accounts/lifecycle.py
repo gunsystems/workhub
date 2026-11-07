@@ -6,11 +6,21 @@ from django.db import transaction
 from django.utils import timezone
 
 from tasks.models import Employee, Task, Project, TaskEvent, EmployeeFeedback, WorkRequest
-from .models import AccountEvent, Invitation, RateBucket
+from .models import AccountEvent, Invitation, RateBucket, AccessProfile, RecoveryCode, OTPResetChallenge
 from .services import digest
 
 
-ACTIONS = dict(AccountEvent.ACTION_CHOICES)
+ACTIONS = {key:value for key,value in AccountEvent.ACTION_CHOICES if key not in ('grant_admin','revoke_admin')}
+
+
+def system_admin(user):
+    if not account_allowed(user) or not user.is_staff:
+        return False
+    if user.is_superuser:
+        return True
+    from django_otp import user_has_device
+    access = getattr(user, 'workhub_access', None)
+    return bool(access and access.verified_at and not access.otp_reset_key and user_has_device(user))
 
 
 def account_allowed(user):
@@ -56,11 +66,11 @@ def forget_limits(employee, email, invitation_id, user_id):
 
 @transaction.atomic
 def change_access(actor, employee_id, action, reason, confirmation=''):
-    if not actor.is_active or not actor.is_superuser:
+    if not system_admin(actor):
         raise PermissionDenied
     employee = Employee.objects.select_for_update().select_related('user').get(pk=employee_id)
     user = get_user_model().objects.select_for_update().get(pk=employee.user_id) if employee.user_id else None
-    if user and (user.pk == actor.pk or user.is_superuser):
+    if user and (user.pk == actor.pk or user.is_superuser or (user.is_staff and not actor.is_superuser)):
         raise ValidationError('본인 또는 최상위 관리자 계정은 직원 계정 관리에서 변경할 수 없습니다.')
     if action not in ACTIONS or not reason.strip():
         raise ValidationError('처리 항목과 사유를 입력하세요.')
@@ -76,7 +86,20 @@ def change_access(actor, employee_id, action, reason, confirmation=''):
             raise ValidationError('업무 이력이 있어 직원을 완전히 삭제할 수 없습니다. 로그인 계정 삭제 또는 사용 중지를 선택하세요.')
         if action == 'delete_access' and not user and not invitation:
             raise ValidationError('삭제할 로그인 계정이나 초대 정보가 없습니다.')
-    if action == 'reactivate':
+    if action == 'reset_mfa':
+        import secrets
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+        access = AccessProfile.objects.select_for_update().filter(user=user, verified_at__isnull=False).first() if user else None
+        if not user or not account_allowed(user) or not access:
+            raise ValidationError('사용 가능한 회사 이메일 인증 계정만 OTP를 초기화할 수 있습니다.')
+        revoke_sessions(user_id)
+        TOTPDevice.objects.filter(user=user).delete()
+        RecoveryCode.objects.filter(user=user).delete()
+        OTPResetChallenge.objects.filter(user=user).delete()
+        access.otp_reset_key = secrets.token_hex(32)
+        access.require_mfa = True
+        access.save(update_fields=['otp_reset_key', 'require_mfa'])
+    elif action == 'reactivate':
         if employee.is_active and (not user or user.is_active):
             raise ValidationError('이미 사용 가능한 직원입니다.')
         employee.is_active = True

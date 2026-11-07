@@ -44,7 +44,15 @@ class AccountFlowTests(TestCase):
         token = str(totp(device.bin_key, step=device.step, t0=device.t0, digits=device.digits)).zfill(6)
         response = self.client.post('/accounts/mfa/setup/', {'code':token})
         self.assertContains(response, 'OTP 등록 완료')
-        return device, response.context['codes']
+        self.assertNotContains(response, 'class="codes"')
+        return device, []
+
+    def next_otp(self, device, url, data=None):
+        device.refresh_from_db()
+        stamp = (device.last_t + 1) * device.step + device.t0
+        with patch('django_otp.oath.time', return_value=stamp), patch('django_otp.plugins.otp_totp.models.time.time', return_value=stamp):
+            token = str(totp(device.bin_key, step=device.step, t0=device.t0, digits=device.digits)).zfill(6)
+            return self.client.post(url, {**(data or {}), 'code':token})
 
     def test_full_invite_email_password_mfa_and_employee_workflow(self):
         url, user = self.activate()
@@ -52,7 +60,7 @@ class AccountFlowTests(TestCase):
         self.assertTrue(user.workhub_access.verified_at)
         self.assertRedirects(self.client.get('/dashboard/'), '/accounts/mfa/setup/', fetch_redirect_response=False)
         device, codes = self.enroll()
-        self.assertEqual(len(codes), 8)
+        self.assertEqual(codes, [])
         self.assertEqual(self.client.get('/dashboard/').status_code, 200)
         self.assertContains(self.client.get(url), '사용할 수 없는 초대')
         self.client.post('/logout/')
@@ -60,14 +68,13 @@ class AccountFlowTests(TestCase):
         self.assertRedirects(response, '/accounts/mfa/verify/', fetch_redirect_response=False)
         self.assertNotIn('_auth_user_id', self.client.session)
         self.assertEqual(self.client.get('/dashboard/').status_code, 302)
-        # A recovery code provides one successful second factor only.
-        self.client.post('/accounts/mfa/verify/', {'code':codes[0]})
-        self.assertEqual(RecoveryCode.objects.filter(user=user).count(), 7)
+        self.next_otp(device, '/accounts/mfa/verify/')
+        self.assertEqual(RecoveryCode.objects.filter(user=user).count(), 0)
         self.assertEqual(self.client.get('/dashboard/').status_code, 200)
         self.assertEqual(self.client.get('/admin/').status_code, 302)
         self.client.post('/logout/')
         self.client.post('/login/', {'username':self.email, 'password':'Test-password-873!'})
-        self.assertContains(self.client.post('/accounts/mfa/verify/', {'code':codes[0]}), '올바르지 않습니다')
+        self.assertContains(self.client.post('/accounts/mfa/verify/', {'code':'old-recovery-code'}), '올바르지 않습니다')
 
     def test_invitation_domain_expiry_resend_and_link_not_sufficient(self):
         for value in ['x@other.co.kr', 'x@gunsystems.co.kr.evil.com', 'x@sub.gunsystems.co.kr']:
@@ -214,15 +221,12 @@ class AccountFlowTests(TestCase):
 
     def test_recovery_regeneration_and_phone_replacement_require_reauthentication(self):
         _, user = self.activate()
-        _, codes = self.enroll()
-        response = self.client.post('/accounts/mfa/recovery/', {'action':'regenerate','password':'bad','code':codes[0]})
-        self.assertContains(response, '비밀번호와 OTP/복구 코드')
-        self.assertEqual(RecoveryCode.objects.filter(user=user).count(), 8)
-        response = self.client.post('/accounts/mfa/recovery/', {'action':'regenerate','password':'Test-password-873!','code':codes[0]})
-        self.assertEqual(len(response.context['codes']), 8)
-        fresh = response.context['codes']
-        self.assertFalse(any(check_password(codes[1], obj.digest) for obj in RecoveryCode.objects.filter(user=user)))
-        response = self.client.post('/accounts/mfa/recovery/', {'action':'replace','password':'Test-password-873!','code':fresh[0]})
+        device, _ = self.enroll()
+        response = self.client.post('/accounts/mfa/recovery/', {'action':'regenerate','password':'Test-password-873!','code':'123456'})
+        self.assertEqual(RecoveryCode.objects.filter(user=user).count(), 0)
+        response = self.next_otp(device, '/accounts/mfa/recovery/', {'action':'replace','password':'bad'})
+        self.assertContains(response, '비밀번호와 OTP')
+        response = self.next_otp(device, '/accounts/mfa/recovery/', {'action':'replace','password':'Test-password-873!'})
         self.assertRedirects(response, '/accounts/mfa/setup/', fetch_redirect_response=False)
         self.assertFalse(TOTPDevice.objects.filter(user=user, confirmed=True).exists())
         self.assertRedirects(self.client.get('/dashboard/'), '/accounts/mfa/setup/', fetch_redirect_response=False)

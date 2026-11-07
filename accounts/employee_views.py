@@ -7,7 +7,7 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 
 from tasks.models import Employee
-from .lifecycle import ACTIONS, business_counts, change_access
+from .lifecycle import ACTIONS, business_counts, change_access, system_admin
 from .models import AccountEvent
 
 
@@ -22,7 +22,7 @@ class AccountActionForm(forms.Form):
 @never_cache
 @require_http_methods(['GET', 'POST'])
 def manage_account(request, employee_id):
-    if not request.user.is_superuser:
+    if not system_admin(request.user):
         raise PermissionDenied
     employee = get_object_or_404(Employee.objects.select_related('user','department'), pk=employee_id)
     invitation = getattr(employee, 'invitation', None)
@@ -42,5 +42,5 @@ def manage_account(request, employee_id):
         'employee':employee, 'email':email, 'confirmation_text':email or employee.name,
         'form':form, 'counts':business_counts(employee),
         'events':AccountEvent.objects.filter(employee=employee).select_related('actor')[:10],
-        'protected':bool(user and (user.pk == request.user.pk or user.is_superuser)),
+        'protected':bool(user and (user.pk == request.user.pk or user.is_superuser or (user.is_staff and not request.user.is_superuser))),
     })

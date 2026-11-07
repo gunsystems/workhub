@@ -1,6 +1,14 @@
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
+
+
+class AdministratorAccount(User):
+    class Meta:
+        proxy = True
+        verbose_name = '관리자 계정'
+        verbose_name_plural = '관리자 계정 관리'
 
 
 class AccessProfile(models.Model):
@@ -8,6 +16,17 @@ class AccessProfile(models.Model):
     email = models.EmailField(unique=True)
     verified_at = models.DateTimeField(null=True)
     require_mfa = models.BooleanField(default=True)
+    otp_reset_key = models.CharField(max_length=64, blank=True)
+
+
+class OTPResetChallenge(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    reset_key = models.CharField(max_length=64)
+    session_digest = models.CharField(max_length=64)
+    code_digest = models.CharField(max_length=128)
+    expires_at = models.DateTimeField()
+    sent_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
 
 
 class Invitation(models.Model):
@@ -47,9 +66,10 @@ class RecoveryCode(models.Model):
 
 
 class AccountEvent(models.Model):
-    ACTION_CHOICES = [('suspend','사용 중지'), ('reactivate','재활성화'),
+    ACTION_CHOICES = [('reset_mfa','본인 확인 완료 · OTP 초기화'), ('suspend','사용 중지'), ('reactivate','재활성화'),
                       ('delete_access','로그인 계정 삭제 · 업무 이력 보존'),
-                      ('delete_employee','직원 완전 삭제 · 이력 없는 경우만')]
+                      ('delete_employee','직원 완전 삭제 · 이력 없는 경우만'),
+                      ('grant_admin','서브 관리자 지정'), ('revoke_admin','서브 관리자 해제')]
     employee = models.ForeignKey('tasks.Employee', null=True, on_delete=models.SET_NULL)
     employee_reference = models.PositiveBigIntegerField()
     actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)

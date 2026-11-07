@@ -19,7 +19,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
 from django_otp.plugins.otp_totp.models import TOTPDevice
-from .models import Invitation, AccessProfile, RecoveryCode
+from .models import Invitation, AccessProfile, RecoveryCode, OTPResetChallenge
 from .services import digest, deliver, allow
 from .lifecycle import account_allowed
 
@@ -245,10 +245,15 @@ def pending_user(request):
 
 
 def verify_factor(user, code):
+    access = getattr(user, 'workhub_access', None)
+    if access and access.otp_reset_key:
+        return None
     for device in TOTPDevice.objects.filter(user=user, confirmed=True):
         verified = django_otp.verify_token(user, device.persistent_id, code)
         if verified:
             return verified
+    if not user.is_superuser:
+        return None
     with transaction.atomic():
         for recovery in RecoveryCode.objects.select_for_update().filter(user=user):
             if check_password(code, recovery.digest):
@@ -275,8 +280,8 @@ def mfa_verify(request):
             request.session.pop('pending_mfa_user', None)
             request.session.pop('pending_mfa_at', None)
             return redirect('dashboard')
-        form.add_error('code', 'OTP 또는 복구 코드가 올바르지 않습니다. 잠시 후 다시 시도하세요.')
-    return page(request, '2차 인증', form, notice='인증 앱의 6자리 OTP 또는 일회용 복구 코드를 입력하세요.')
+        form.add_error('code', 'OTP가 올바르지 않습니다. 잠시 후 다시 시도하세요.')
+    return page(request, '2차 인증', form, notice='인증 앱의 6자리 OTP를 입력하세요. 휴대폰을 분실했거나 OTP를 사용할 수 없다면 회사 관리자에게 OTP 초기화를 요청하세요.')
 
 
 @login_required
@@ -290,17 +295,30 @@ def mfa_setup(request):
         device = TOTPDevice.objects.create(user=request.user, name='Workhub', confirmed=False)
     form = CodeForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
-        verified = django_otp.verify_token(request.user, device.persistent_id, form.cleaned_data['code']) if allow(f'otp-setup:{request.user.pk}', 10, 300) else None
-        if verified:
-            device.refresh_from_db()
-            device.confirmed = True
-            device.save(update_fields=['confirmed'])
-            django_otp.login(request, device)
-            codes = [secrets.token_hex(8) for _ in range(8)]
-            with transaction.atomic():
+        with transaction.atomic():
+            access = AccessProfile.objects.select_for_update().filter(user=request.user).first()
+            if access and access.otp_reset_key:
+                from .reset_views import recovery_proven
+                if not recovery_proven(request, access):
+                    return redirect('mfa_restore')
+            verified = django_otp.verify_token(request.user, device.persistent_id, form.cleaned_data['code']) if allow(f'otp-setup:{request.user.pk}', 10, 300) else None
+            if verified:
+                device.refresh_from_db()
+                device.confirmed = True
+                device.save(update_fields=['confirmed'])
+                django_otp.login(request, device)
                 RecoveryCode.objects.filter(user=request.user).delete()
-                RecoveryCode.objects.bulk_create([RecoveryCode(user=request.user, digest=make_password(code)) for code in codes])
-            return page(request, 'OTP 등록 완료', codes=codes, notice='복구 코드는 지금 한 번만 표시됩니다. 안전한 곳에 보관하세요.')
+                if access and access.otp_reset_key:
+                    access.otp_reset_key = ''
+                    access.save(update_fields=['otp_reset_key'])
+                    OTPResetChallenge.objects.filter(user=request.user).delete()
+                    # All sessions from before or during recovery lose authentication.
+                    from .lifecycle import revoke_sessions
+                    revoke_sessions(request.user.pk)
+                    request.session.cycle_key()
+                request.session.pop('otp_restore_proof', None)
+                request.session.pop('otp_restore_nonce', None)
+                return page(request, 'OTP 등록 완료', enrollment_complete=True, notice='등록이 완료되었습니다. 앞으로 회사 이메일·비밀번호와 인증 앱의 OTP로 로그인하세요. 휴대폰을 분실하면 회사 관리자에게 OTP 초기화를 요청하세요.')
         form.add_error('code', 'OTP가 올바르지 않거나 시도 한도를 초과했습니다.')
     buffer = io.BytesIO()
     qrcode.make(device.config_url).save(buffer, format='PNG')
@@ -316,12 +334,12 @@ def recovery(request):
         return redirect('mfa_verify')
     class SecurityForm(CodeForm):
         password = forms.CharField(label='현재 비밀번호', widget=forms.PasswordInput)
-        action = forms.ChoiceField(label='처리', choices=[('regenerate','복구 코드 새로 발급'),('replace','휴대폰 변경 · OTP 다시 등록')])
+        action = forms.ChoiceField(label='처리', choices=([('regenerate','관리자 비상 복구 코드 발급')] if request.user.is_superuser else []) + [('replace','휴대폰 변경 · OTP 다시 등록')])
     form = SecurityForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         permitted = allow(f'security:{request.user.pk}', 5, 900)
         if not permitted or not request.user.check_password(form.cleaned_data['password']) or not verify_factor(request.user, form.cleaned_data['code'].strip()):
-            form.add_error(None, '비밀번호와 OTP/복구 코드를 확인하거나 잠시 후 다시 시도하세요.')
+            form.add_error(None, '비밀번호와 OTP를 확인하거나 잠시 후 다시 시도하세요.')
         elif form.cleaned_data['action'] == 'replace':
             access = getattr(request.user, 'workhub_access', None)
             if not access or not access.verified_at:
@@ -344,4 +362,4 @@ def recovery(request):
                 RecoveryCode.objects.filter(user=request.user).delete()
                 RecoveryCode.objects.bulk_create([RecoveryCode(user=request.user, digest=make_password(code)) for code in codes])
             return page(request, '새 복구 코드', codes=codes, notice='이전 복구 코드는 모두 무효화되었습니다. 새 코드는 지금 한 번만 표시됩니다.')
-    return page(request, '계정 보안', form, notice=f'OTP가 등록되어 있습니다. 남은 일회용 복구 코드: {RecoveryCode.objects.filter(user=request.user).count()}개. 휴대폰과 복구 코드를 모두 분실하면 회사 관리자에게 본인 확인을 요청하세요.')
+    return page(request, '계정 보안', form, notice='OTP가 등록되어 있습니다. 현재 인증 앱을 사용할 수 있으면 아래에서 휴대폰을 변경할 수 있습니다. OTP를 사용할 수 없다면 회사 관리자에게 본인 확인 후 초기화를 요청하세요.')

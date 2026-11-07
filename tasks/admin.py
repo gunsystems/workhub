@@ -18,7 +18,8 @@ class TaskAdmin(admin.ModelAdmin):
     def has_change_permission(self, request, obj=None): return False
 
 # Django staff/group flags never grant access around department boundaries.
-# Organization configuration and the Django admin are superuser-only.
+# Sub-admins can manage employee access; organization/business permissions remain separate.
 def company_admin_access(request):
-    return request.user.is_active and request.user.is_staff and request.user.is_superuser
+    from accounts.lifecycle import system_admin
+    return system_admin(request.user)
 admin.site.has_permission = company_admin_access

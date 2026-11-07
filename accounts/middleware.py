@@ -15,6 +15,11 @@ class RequireMFA:
                 return redirect('login')
             access = getattr(request.user, 'workhub_access', None)
             enrolled = user_has_device(request.user)
+            if access and access.otp_reset_key:
+                from .reset_views import recovery_proven
+                allowed = ('/accounts/mfa/restore/', '/logout/')
+                if not request.path.startswith(allowed) and not (request.path == '/accounts/mfa/setup/' and recovery_proven(request, access)):
+                    return redirect('mfa_restore')
             if access and not access.verified_at:
                 from django.contrib.auth import logout
                 logout(request)
