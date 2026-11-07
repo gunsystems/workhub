@@ -1,0 +1,1 @@
+{% for item in group.items %}<a class="nav{% if item.active %} active{% endif %}" href="{{ item.href }}" {% if item.active %}aria-current="page"{% endif %}>{% include 'tasks/nav_icon.html' with icon=item.icon %}<span>{{ item.label }}</span>{% if item.key == 'alerts' and action_alert_count %}<span class="nav-count">{{ action_alert_count }}</span>{% endif %}</a>{% endfor %}

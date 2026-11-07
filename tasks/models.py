@@ -207,8 +207,12 @@ class PersonalBoard(models.Model):
 
 
 class PersonalColumn(models.Model):
+    COLORS=[('slate','회청색'),('blue','파란색'),('green','녹색'),('amber','주황색'),('purple','보라색'),('rose','분홍색')]
+    ROLES=[('free','상태 연결 안 함'),('todo','할 일'),('doing','진행 중'),('done','완료')]
     board = models.ForeignKey(PersonalBoard, on_delete=models.CASCADE, related_name='columns')
     name = models.CharField('목록 이름', max_length=80)
+    color = models.CharField('목록 색상',max_length=12,choices=COLORS,default='slate')
+    workflow_role = models.CharField('연결할 상태',max_length=12,choices=ROLES,default='free')
     position = models.PositiveIntegerField(default=0)
     class Meta:
         ordering = ['position','pk']
@@ -216,11 +220,13 @@ class PersonalColumn(models.Model):
 
 
 class PersonalCard(models.Model):
+    PRIORITIES=[('urgent','긴급'),('high','중요'),('normal','보통'),('low','낮음')]
     column = models.ForeignKey(PersonalColumn, on_delete=models.CASCADE, related_name='cards')
     title = models.CharField('제목', max_length=160)
     body = models.TextField('메모 · 링크 · 수행 기록', blank=True)
     checklist = models.JSONField(default=list)
     label = models.CharField('라벨', max_length=40, blank=True)
+    priority = models.CharField('중요도',max_length=12,choices=PRIORITIES,default='normal')
     due_date = models.DateField('기한 · 알림일', null=True, blank=True)
     repeat = models.CharField('반복', max_length=12, default='', blank=True, choices=[('','반복 안 함'),('daily','매일'),('weekly','매주'),('monthly','매월')])
     repeat_day = models.PositiveSmallIntegerField(null=True,editable=False)
@@ -231,6 +237,14 @@ class PersonalCard(models.Model):
     next_occurrence = models.OneToOneField('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='previous_occurrence')
     class Meta:
         ordering = ['position','pk']
+
+    @property
+    def checked_count(self): return sum(bool(item.get('done')) for item in self.checklist)
+
+    @property
+    def display_status(self):
+        if self.state!='active': return self.get_state_display()
+        return {'todo':'할 일','doing':'진행 중','done':'완료 확인 필요','free':'진행 카드'}[self.column.workflow_role]
 
 
 class WorkNotification(models.Model):

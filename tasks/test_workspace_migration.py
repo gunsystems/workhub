@@ -5,6 +5,27 @@ from django.test import TransactionTestCase
 
 
 class WorkspaceMigrationTests(TransactionTestCase):
+    def test_board_design_migration_keeps_existing_cards_and_checklists(self):
+        executor=MigrationExecutor(connection)
+        executor.migrate([('tasks','0012_personalcard_repeat_day_task_review_started_at')])
+        old=executor.loader.project_state([('tasks','0012_personalcard_repeat_day_task_review_started_at')]).apps
+        try:
+            owner=old.get_model('auth','User').objects.create(username='board-migration-owner')
+            board=old.get_model('tasks','PersonalBoard').objects.create(owner=owner,name='기존 개인 보드')
+            column=old.get_model('tasks','PersonalColumn').objects.create(board=board,name='완료')
+            card=old.get_model('tasks','PersonalCard').objects.create(column=column,title='기존 카드',body='보존 메모',
+                state='active',checklist=[{'text':'기존 체크','done':True}])
+        finally:
+            MigrationExecutor(connection).migrate([('tasks','0013_personalcard_priority_personalcolumn_color_and_more')])
+        from .models import PersonalCard
+        current=PersonalCard.objects.get(pk=card.pk)
+        self.assertEqual(current.state,'active')
+        self.assertEqual(current.body,'보존 메모')
+        self.assertTrue(current.checklist[0]['done'])
+        self.assertEqual(current.priority,'normal')
+        self.assertEqual(current.column.color,'green')
+        self.assertEqual(current.column.workflow_role,'done')
+
     def test_additive_migration_preserves_existing_owner_and_completed_task(self):
         executor=MigrationExecutor(connection)
         executor.migrate([('tasks','0009_employee_is_active')])
@@ -19,7 +40,7 @@ class WorkspaceMigrationTests(TransactionTestCase):
             old.get_model('tasks','TaskEvent').objects.create(task=task,author=owner,author_name='기존 관리자',kind='approved',body='보존할 승인 기록')
         finally:
             executor=MigrationExecutor(connection)
-            executor.migrate([('tasks','0012_personalcard_repeat_day_task_review_started_at')])
+            executor.migrate([('tasks','0013_personalcard_priority_personalcolumn_color_and_more')])
         from django.contrib.auth import get_user_model
         from .models import Task,Employee
         user=get_user_model().objects.get(pk=owner.pk)
