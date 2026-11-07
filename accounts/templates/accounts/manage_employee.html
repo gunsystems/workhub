@@ -1,0 +1,24 @@
+{% extends 'tasks/base.html' %}
+{% block content %}
+<style>
+.account-panel{max-width:760px;margin:28px auto;padding:28px;background:#fff;border:1px solid #dce5df;border-radius:14px}
+.account-panel h1{margin-top:0}.account-panel table{width:100%;border-collapse:collapse;margin:16px 0}.account-panel td,.account-panel th{text-align:left;padding:10px;border-bottom:1px solid #e6ece8}
+.account-panel label{display:block;font-weight:600;margin:18px 0 6px}.account-panel input,.account-panel textarea,.account-panel select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #bac9c1;border-radius:7px;font:inherit}
+.account-panel .helptext{display:block;font-size:13px;color:#677b70;margin-top:6px}.account-panel .errorlist{color:#ad302d}.account-panel .notice{padding:14px;background:#f0f5f2;border-radius:8px;line-height:1.8}
+.account-panel button{margin-top:20px;padding:12px 22px;border:0;border-radius:8px;background:#236c59;color:white;font:inherit;font-weight:600;cursor:pointer}
+.account-panel .actions{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+</style>
+<section class="account-panel">
+  <h1>직원 계정 관리</h1>
+  <p><strong>{{ employee.name }}</strong> · {{ employee.department }} · {{ employee.get_role_display }}</p>
+  <table><tr><th>회사 이메일</th><td>{{ email|default:'미등록' }}</td></tr><tr><th>상태</th><td>{% if not employee.is_active %}사용 중지{% elif employee.user and not employee.user.is_active %}로그인 중지{% elif employee.user %}계정 연결됨{% else %}계정 미연결{% endif %}</td></tr></table>
+  <div class="notice"><strong>퇴사 시에는 사용 중지를 권장합니다.</strong><br>중지하면 기존 로그인 세션도 종료됩니다. 재활성화해도 이전 세션은 복구되지 않으며 다시 로그인해야 합니다.<br>로그인 계정 삭제는 비밀번호·OTP·복구 코드·초대 정보를 삭제하고 직원과 업무 이력을 보존합니다. 직원 완전 삭제는 아래 업무 이력이 모두 0건인 경우에만 가능합니다.</div>
+  <h2>보존할 업무 이력</h2>
+  <table>{% for label,count in counts.items %}<tr><th>{{ label }}</th><td>{{ count }}건</td></tr>{% endfor %}</table>
+  {% if protected %}<p class="notice">본인 또는 최상위 관리자 계정은 이 화면에서 중지·삭제할 수 없습니다.</p>{% else %}
+  <p>삭제 확인 입력값: <strong>{{ confirmation_text }}</strong></p>
+  <form method="post">{% csrf_token %}{{ form.as_p }}<div class="actions"><button type="submit">선택한 처리 적용</button><a href="/admin/tasks/employee/">직원 목록으로</a></div></form>
+  {% endif %}
+  {% if events %}<h2>최근 처리 이력</h2><table><tr><th>일시</th><th>처리</th><th>관리자 · 사유</th></tr>{% for event in events %}<tr><td>{{ event.created_at|date:'Y-m-d H:i' }}</td><td>{{ event.get_action_display }}</td><td>{{ event.actor|default:'삭제된 관리자' }} · {{ event.reason }}</td></tr>{% endfor %}</table>{% endif %}
+</section>
+{% endblock %}

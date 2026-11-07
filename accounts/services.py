@@ -51,6 +51,8 @@ def deliver(subject, body, recipient, html_body=None):
 
 def invite(employee, email):
     email = company_email(email)
+    if not employee.is_active:
+        raise ValidationError('사용 중지된 직원입니다. 재활성화 후 초대하세요.')
     if employee.user_id:
         raise ValidationError('이미 계정이 연결된 직원입니다. 기존 계정은 덮어쓰지 않습니다.')
     if AccessProfile.objects.filter(email__iexact=email).exists() or get_user_model().objects.filter(email__iexact=email).exists():

@@ -44,3 +44,18 @@ class RateBucket(models.Model):
 class RecoveryCode(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     digest = models.CharField(max_length=128)
+
+
+class AccountEvent(models.Model):
+    ACTION_CHOICES = [('suspend','사용 중지'), ('reactivate','재활성화'),
+                      ('delete_access','로그인 계정 삭제 · 업무 이력 보존'),
+                      ('delete_employee','직원 완전 삭제 · 이력 없는 경우만')]
+    employee = models.ForeignKey('tasks.Employee', null=True, on_delete=models.SET_NULL)
+    employee_reference = models.PositiveBigIntegerField()
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    action = models.CharField(max_length=24, choices=ACTION_CHOICES)
+    reason = models.CharField(max_length=1000)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ['-created_at', '-pk']

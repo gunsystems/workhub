@@ -13,6 +13,7 @@ class Employee(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='employee', verbose_name='로그인 계정')
     role = models.CharField('업무 권한', max_length=10, choices=ROLE, default='employee')
     name = models.CharField('이름', max_length=80)
+    is_active = models.BooleanField('재직 · 사용 허용', default=True)
     department = models.ForeignKey(Department,on_delete=models.PROTECT,verbose_name='부서')
     def __str__(self): return f'{self.name} · {self.department}'
 

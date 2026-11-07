@@ -1,5 +1,6 @@
 from django.shortcuts import redirect
 from django_otp import user_has_device
+from .lifecycle import account_allowed
 
 
 class RequireMFA:
@@ -8,6 +9,10 @@ class RequireMFA:
 
     def __call__(self, request):
         if request.user.is_authenticated:
+            if not account_allowed(request.user):
+                from django.contrib.auth import logout
+                logout(request)
+                return redirect('login')
             access = getattr(request.user, 'workhub_access', None)
             enrolled = user_has_device(request.user)
             if access and not access.verified_at:

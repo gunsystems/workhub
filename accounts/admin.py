@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
+from django.urls import reverse
+from django.utils.html import format_html
 from .models import Invitation
 from .services import company_email, invite
 from tasks.admin import EmployeeAdmin
@@ -28,6 +30,8 @@ class EmployeeInviteForm(forms.ModelForm):
 
 
 def invitation_state(self, obj):
+    if not obj.is_active or (obj.user_id and not obj.user.is_active):
+        return '사용 중지'
     invitation = getattr(obj, 'invitation', None)
     if invitation:
         if invitation.used_at and obj.user_id:
@@ -67,11 +71,21 @@ def resend(self, request, queryset):
 
 class InvitedEmployeeAdmin(EmployeeAdmin):
     form = EmployeeInviteForm
-    list_display = ['name', 'department', 'user', 'role', 'invitation_state']
+    list_display = ['name', 'department', 'user', 'role', 'invitation_state', 'account_management']
+    list_filter = ['is_active', 'department', 'role']
+    readonly_fields = ['is_active']
     actions = ['resend']
     invitation_state = invitation_state
     save_related = save_related
     resend = resend
+
+    @admin.display(description='계정 관리')
+    def account_management(self, obj):
+        return format_html('<a href="{}">중지 · 재활성화 · 삭제</a>', reverse('manage_employee_account', args=[obj.pk]))
+
+    def has_delete_permission(self, request, obj=None):
+        # The account lifecycle page removes credentials and checks business history.
+        return False
 
 
 from tasks.models import Employee

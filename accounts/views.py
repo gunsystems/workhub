@@ -21,6 +21,7 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from .models import Invitation, AccessProfile, RecoveryCode
 from .services import digest, deliver, allow
+from .lifecycle import account_allowed
 
 
 def page(request, title, form=None, **context):
@@ -70,7 +71,7 @@ class VerifiedPasswordResetForm(PasswordResetForm):
     def get_users(self, email):
         for user in super().get_users(email):
             access = getattr(user, 'workhub_access', None)
-            if access and access.verified_at and access.email == email.strip().lower():
+            if account_allowed(user) and access and access.verified_at and access.email == email.strip().lower():
                 yield user
 
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
@@ -107,6 +108,10 @@ class ConfirmResetPassword(PasswordResetConfirmView):
     template_name = 'accounts/reset.html'
     success_url = '/login/'
 
+    def get_user(self, uidb64):
+        user = super().get_user(uidb64)
+        return user if account_allowed(user) else None
+
 
 @never_cache
 @sensitive_post_parameters('password')
@@ -124,7 +129,7 @@ def sign_in(request):
             candidate = matches.first() if matches.count() == 1 else None
             access = getattr(candidate, 'workhub_access', None) if candidate else None
             # New accounts must use their verified email. Preserve legacy credentials.
-            if candidate and (not access or (access.verified_at and identity == access.email)):
+            if candidate and account_allowed(candidate) and (not access or (access.verified_at and identity == access.email)):
                 user = authenticate(request, username=candidate.username, password=form.cleaned_data['password'])
             else:
                 get_user_model()().set_password(form.cleaned_data['password'])
@@ -145,7 +150,7 @@ def sign_in(request):
 @sensitive_post_parameters('code', 'new_password1', 'new_password2')
 def activate(request, token):
     invitation = Invitation.objects.filter(token_digest=digest(token), used_at__isnull=True, expires_at__gt=timezone.now()).first()
-    if not invitation or invitation.employee.user_id:
+    if not invitation or invitation.employee.user_id or not invitation.employee.is_active:
         return page(request, '사용할 수 없는 초대', notice='초대가 만료되었거나 이미 사용됐습니다. 관리자에게 재발송을 요청하세요.')
     if not request.session.get('activation_nonce'):
         request.session.cycle_key()
@@ -207,7 +212,7 @@ def activate(request, token):
                     from tasks.models import Employee
                     employee = Employee.objects.select_for_update().get(pk=invitation.employee_id)
                     if (invitation.token_digest != digest(token) or invitation.used_at or invitation.expires_at <= timezone.now()
-                            or employee.user_id or invitation.verified_session != session_digest
+                            or employee.user_id or not employee.is_active or invitation.verified_session != session_digest
                             or not invitation.code_expires_at or invitation.code_expires_at <= timezone.now()):
                         return HttpResponseBadRequest('이미 사용되었거나 만료된 초대입니다.')
                     if get_user_model().objects.filter(email__iexact=invitation.email).exists() or get_user_model().objects.filter(username__iexact=invitation.email).exists():
@@ -230,12 +235,13 @@ def activate(request, token):
 
 def pending_user(request):
     if request.user.is_authenticated:
-        return request.user if request.user.is_active else None
+        return request.user if account_allowed(request.user) else None
     stamp = request.session.get('pending_mfa_at', 0)
     if timezone.now().timestamp()-stamp > 300:
         request.session.pop('pending_mfa_user', None)
         return None
-    return get_user_model().objects.filter(pk=request.session.get('pending_mfa_user'), is_active=True).first()
+    user = get_user_model().objects.filter(pk=request.session.get('pending_mfa_user'), is_active=True).first()
+    return user if account_allowed(user) else None
 
 
 def verify_factor(user, code):

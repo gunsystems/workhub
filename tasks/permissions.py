@@ -5,7 +5,7 @@ from django.db.models import Q
 def profile(user):
     if not user.is_authenticated or not user.is_active:
         return None
-    return Employee.objects.filter(user=user).first()
+    return Employee.objects.filter(user=user, is_active=True).first()
 
 
 def is_company_admin(user):

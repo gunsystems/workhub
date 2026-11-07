@@ -1,7 +1,9 @@
 from django.urls import path
 from . import views
+from .employee_views import manage_account
 
 urlpatterns = [
+    path('employees/<int:employee_id>/manage/', manage_account, name='manage_employee_account'),
     path('invitation-preview/<int:employee_id>/', views.invitation_preview, name='invitation_preview'),
     path('activate/<str:token>/', views.activate, name='activate'),
     path('mfa/setup/', views.mfa_setup, name='mfa_setup'),

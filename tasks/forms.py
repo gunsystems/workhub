@@ -11,6 +11,9 @@ class TaskForm(forms.ModelForm):
         self.fields['review_days'].required = False
         self.fields['project'].queryset = visible_projects(user) if user else Project.objects.none()
         self.fields['assignee'].queryset = assignable_employees(user) if user else Employee.objects.none()
+        allowed = self.fields['assignee'].queryset
+        active = Q(is_active=True) & (Q(user__isnull=True) | Q(user__is_active=True))
+        self.fields['assignee'].queryset = allowed.filter(active | Q(pk=self.instance.assignee_id)) if self.instance.pk else allowed.filter(active)
         self.fields['status'].choices = [choice for choice in Task.STATUS if choice[0] in ['todo','doing','blocked']]
         if self.instance.pk and not is_manager(user):
             self.fields['start_date'].disabled = True
@@ -72,6 +75,9 @@ class ProjectForm(forms.ModelForm):
         super().__init__(*args,**kwargs)
         self.fields['department'].queryset = visible_departments(user)
         self.fields['owner'].queryset = assignable_employees(user)
+        allowed = self.fields['owner'].queryset
+        active = Q(is_active=True) & (Q(user__isnull=True) | Q(user__is_active=True))
+        self.fields['owner'].queryset = allowed.filter(active | Q(pk=self.instance.owner_id)) if self.instance.pk else allowed.filter(active)
         if not is_company_admin(user):
             self.fields['owner'].queryset = self.fields['owner'].queryset.filter(user=user)
         if self.instance.pk:
