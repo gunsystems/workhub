@@ -4,7 +4,7 @@ from django.utils import timezone
 
 def employee_metrics(employee, tasks, start, end):
     today = timezone.localdate()
-    tasks = [t for t in tasks if t.assignee_id == employee.pk]
+    tasks = [t for t in tasks if t.assignee_id == employee.pk and t.status not in ['draft','cancelled']]
     active = [t for t in tasks if t.status != 'done']
     cohort = [t for t in tasks if start <= (t.original_due_date or t.due_date) <= end]
     # Awaiting manager review and unknown legacy completions are not penalized.

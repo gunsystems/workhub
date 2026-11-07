@@ -27,7 +27,15 @@ def visible_departments(user):
 
 
 def visible_tasks(user):
-    return Task.objects.filter(assignee__in=visible_employees(user)).select_related('assignee__department','assignee__user','project')
+    tasks = Task.objects.all()
+    if not is_company_admin(user):
+        employee = profile(user)
+        legacy = Q(workflow_version=1, assignee__in=visible_employees(user))
+        involved = Q(creator=user) | Q(participants__user=user) | Q(watchers=user) | Q(approval_steps__approver=user)
+        oversight = Q(assignee__department_id=employee.department_id) if employee and employee.role == 'manager' else Q(pk__in=[])
+        tasks = tasks.filter(legacy | (Q(workflow_version=2) & (involved | oversight)))
+        tasks = tasks.exclude(Q(status='draft') & ~Q(creator=user))
+    return Task.objects.filter(pk__in=tasks.values('pk')).select_related('assignee__department','assignee__user','project')
 
 
 def assignable_employees(user):
@@ -40,6 +48,8 @@ def assignable_employees(user):
 
 
 def can_edit(user, task):
+    if task.workflow_version == 2:
+        return is_company_admin(user) or (user.is_active and task.creator_id == user.pk)
     return assignable_employees(user).filter(pk=task.assignee_id).exists()
 
 
@@ -49,6 +59,10 @@ def is_manager(user):
 
 
 def can_review(user, task):
+    if task.workflow_version == 2:
+        step = task.approval_steps.exclude(decision='approved').first()
+        return bool(user.is_active and task.status == 'review' and step and task.approval_steps.filter(stage=step.stage,approver=user).exclude(decision='approved').exists()
+                    and not task.participants.filter(user=user).exists())
     return can_manage_employee(user, task.assignee)
 
 
@@ -64,6 +78,8 @@ def can_manage_employee(user, target):
 
 
 def can_report(user, task):
+    if task.workflow_version == 2:
+        return user.is_active and task.participants.filter(user=user, is_active=True).exists()
     return user.is_active and task.assignee.user_id == user.pk
 
 

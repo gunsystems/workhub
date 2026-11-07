@@ -19,6 +19,7 @@
   <table><tr><th>회사 이메일</th><td>{{ email|default:'미등록' }}</td></tr><tr><th>상태</th><td>{% if not employee.is_active %}사용 중지{% elif employee.user and not employee.user.is_active %}로그인 중지{% elif employee.user %}계정 연결됨{% else %}계정 미연결{% endif %}</td></tr></table>
   <div class="notice"><strong>퇴사 시에는 사용 중지를 권장합니다.</strong><br>중지하면 기존 로그인 세션도 종료됩니다. 재활성화해도 이전 세션은 복구되지 않으며 다시 로그인해야 합니다.<br>로그인 계정 삭제는 비밀번호·OTP·복구 코드·초대 정보를 삭제하고 직원과 업무 이력을 보존합니다. 직원 완전 삭제는 아래 업무 이력이 모두 0건인 경우에만 가능합니다.</div>
   <h2>보존할 업무 이력</h2>
+  <p>계정을 삭제하면 해당 계정의 개인 보드도 삭제됩니다. 개인 보드 내용은 관리자에게 표시되지 않습니다. 퇴사 시 먼저 미완료 업무와 결재를 인계해 주세요.</p>
   <p class="notice"><strong>휴대폰 분실 · OTP 초기화</strong><br>직원에게 직접 연락해 본인을 확인한 뒤 선택하세요. 모든 로그인과 기존 OTP가 무효화됩니다. 직원은 기존 비밀번호로 로그인하고 회사 이메일 인증 후 새 OTP를 등록합니다. 새 OTP 등록 전에는 업무를 이용할 수 없습니다. 확인 방법을 처리 사유에 기록하세요.</p>
   <table>{% for label,count in counts.items %}<tr><th>{{ label }}</th><td>{{ count }}건</td></tr>{% endfor %}</table>
   {% if protected %}<p class="notice">본인 또는 최상위 관리자 계정은 이 화면에서 중지·삭제할 수 없습니다.</p>{% else %}

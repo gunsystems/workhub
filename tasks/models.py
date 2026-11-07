@@ -9,6 +9,9 @@ class Department(models.Model):
     def __str__(self): return self.name
 
 class Employee(models.Model):
+    POSITION = [('member','팀원'),('leader','팀장'),('head','본부장'),('executive','대표')]
+    position = models.CharField('직책', max_length=12, choices=POSITION, default='member')
+    supervisor = models.ForeignKey('self', verbose_name='직속 상위자', on_delete=models.SET_NULL, null=True, blank=True)
     ROLE = [('employee','일반 직원'),('manager','부서 관리자')]
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='employee', verbose_name='로그인 계정')
     role = models.CharField('업무 권한', max_length=10, choices=ROLE, default='employee')
@@ -16,6 +19,14 @@ class Employee(models.Model):
     is_active = models.BooleanField('재직 · 사용 허용', default=True)
     department = models.ForeignKey(Department,on_delete=models.PROTECT,verbose_name='부서')
     def __str__(self): return f'{self.name} · {self.department}'
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        seen={self.pk} if self.pk else set()
+        node=self.supervisor
+        while node:
+            if node.pk in seen: raise ValidationError({'supervisor':'직속 상위자에 본인이나 순환 관계를 지정할 수 없습니다.'})
+            seen.add(node.pk); node=node.supervisor
 
 class Project(models.Model):
     name = models.CharField('프로젝트명', max_length=160)
@@ -32,7 +43,15 @@ class Project(models.Model):
 
 
 class Task(models.Model):
-    STATUS = [('todo','예정'),('doing','진행 중'),('blocked','보류'),('review','검토 대기'),('done','완료')]
+    STATUS = [('draft','초안'),('todo','예정'),('doing','진행 중'),('blocked','보류'),('review','검토 대기'),('done','완료'),('cancelled','취소')]
+    workflow_version = models.PositiveSmallIntegerField(default=1, editable=False)
+    revision = models.PositiveIntegerField(default=0, editable=False)
+    report_round = models.PositiveIntegerField(default=0, editable=False)
+    review_started_at = models.DateTimeField(null=True, editable=False)
+    creator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_tasks')
+    participants = models.ManyToManyField(Employee, through='TaskParticipation', related_name='collaborating_tasks')
+    watchers = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name='watched_tasks')
+    group_key = models.CharField(max_length=32, blank=True, editable=False)
     IMPORTANCE = [('normal','보통'),('high','중요'),('critical','매우 중요')]
     PRIORITY = [(1,'P1 · 최우선'),(2,'P2 · 높음'),(3,'P3 · 일반'),(4,'P4 · 낮음')]
     title = models.CharField('업무명', max_length=160)
@@ -74,11 +93,12 @@ class Task(models.Model):
 
     @property
     def awaiting_acceptance(self):
-        return self.accepted_at is None and self.status not in ['review','done']
+        return self.accepted_at is None and self.status in ['todo','doing','blocked']
 
     @property
     def review_overdue(self):
-        return self.status == 'review' and self.submitted_at is not None and (timezone.localdate()-timezone.localtime(self.submitted_at).date()).days >= self.review_days
+        started = self.review_started_at or self.submitted_at
+        return self.status == 'review' and started is not None and (timezone.localdate()-timezone.localtime(started).date()).days >= self.review_days
 
     @property
     def not_started(self):
@@ -89,6 +109,7 @@ class Task(models.Model):
         constraints = [models.CheckConstraint(condition=models.Q(due_date__gte=models.F('start_date')),name='valid_task_dates')]
     @property
     def deadline(self):
+        if self.status in ['draft','cancelled']: return 'inactive'
         if self.status == 'done': return 'done'
         if self.status == 'review': return 'review'
         today = timezone.localdate()
@@ -98,7 +119,7 @@ class Task(models.Model):
     def __str__(self): return self.title
 
 class TaskEvent(models.Model):
-    KIND = [('accepted','배정 확인'),('checklist','체크리스트'),('created','업무 등록'),('changed','업무 변경'),('progress','진행 보고'),('submitted','완료 보고'),('approved','완료 승인'),('returned','보완 요청'),('feedback','관리자 피드백')]
+    KIND = [('accepted','배정 확인'),('checklist','체크리스트'),('created','업무 등록'),('changed','업무 변경'),('progress','진행 보고'),('submitted','완료 보고'),('approved','완료 승인'),('returned','보완 요청'),('feedback','피드백'),('comment','질문 · 의견'),('override','대표 직권 처리'),('handover','업무 인계')]
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='events')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     author_name = models.CharField(max_length=150)
@@ -152,3 +173,71 @@ class ChecklistItem(models.Model):
     checked_at = models.DateTimeField(null=True)
     class Meta:
         ordering = ['pk']
+
+
+class TaskParticipation(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='assignments')
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT)
+    accepted_at = models.DateTimeField(null=True)
+    progress = models.PositiveSmallIntegerField(default=0, validators=[MaxValueValidator(100)])
+    completed_at = models.DateTimeField(null=True)
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['task','employee'], name='unique_task_participant')]
+
+
+class ApprovalStep(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='approval_steps')
+    approver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    approver_name = models.CharField(max_length=150)
+    position = models.PositiveSmallIntegerField()
+    stage = models.PositiveSmallIntegerField(default=1)
+    decision = models.CharField(max_length=12, default='pending', choices=[('pending','대기'),('approved','승인'),('returned','반려')])
+    decided_at = models.DateTimeField(null=True)
+    class Meta:
+        ordering = ['stage','position','pk']
+        constraints = [models.UniqueConstraint(fields=['task','position'], name='unique_task_approval_position')]
+
+
+class PersonalBoard(models.Model):
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    name = models.CharField('보드 이름', max_length=80)
+    class Meta:
+        ordering = ['pk']
+    def __str__(self): return self.name
+
+
+class PersonalColumn(models.Model):
+    board = models.ForeignKey(PersonalBoard, on_delete=models.CASCADE, related_name='columns')
+    name = models.CharField('목록 이름', max_length=80)
+    position = models.PositiveIntegerField(default=0)
+    class Meta:
+        ordering = ['position','pk']
+    def __str__(self): return self.name
+
+
+class PersonalCard(models.Model):
+    column = models.ForeignKey(PersonalColumn, on_delete=models.CASCADE, related_name='cards')
+    title = models.CharField('제목', max_length=160)
+    body = models.TextField('메모 · 링크 · 수행 기록', blank=True)
+    checklist = models.JSONField(default=list)
+    label = models.CharField('라벨', max_length=40, blank=True)
+    due_date = models.DateField('기한 · 알림일', null=True, blank=True)
+    repeat = models.CharField('반복', max_length=12, default='', blank=True, choices=[('','반복 안 함'),('daily','매일'),('weekly','매주'),('monthly','매월')])
+    repeat_day = models.PositiveSmallIntegerField(null=True,editable=False)
+    state = models.CharField(max_length=12, default='active', choices=[('active','진행'),('done','완료'),('archived','보관'),('trash','휴지통')])
+    position = models.PositiveIntegerField(default=0)
+    completed_at = models.DateTimeField(null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    next_occurrence = models.OneToOneField('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='previous_occurrence')
+    class Meta:
+        ordering = ['position','pk']
+
+
+class WorkNotification(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE)
+    message = models.CharField(max_length=240)
+    created_at = models.DateTimeField(default=timezone.now)
+    read_at = models.DateTimeField(null=True)
+    class Meta:
+        ordering = ['-created_at','-pk']

@@ -5,7 +5,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
-from tasks.models import Employee, Task, Project, TaskEvent, EmployeeFeedback, WorkRequest
+from tasks.models import Employee, Task, Project, TaskEvent, EmployeeFeedback, WorkRequest, TaskParticipation, ApprovalStep
 from .models import AccountEvent, Invitation, RateBucket, AccessProfile, RecoveryCode, OTPResetChallenge
 from .services import digest
 
@@ -39,6 +39,9 @@ def business_counts(employee):
         '작성한 업무 보고·피드백': TaskEvent.objects.filter(author_id=user_id).count() if user_id else 0,
         '작성한 종합 피드백': EmployeeFeedback.objects.filter(author_id=user_id).count() if user_id else 0,
         '접수한 업무 요청': WorkRequest.objects.filter(creator_id=user_id).count() if user_id else 0,
+        '공동 수행 업무': TaskParticipation.objects.filter(employee=employee).count(),
+        '등록한 공식 업무': Task.objects.filter(creator_id=user_id).count() if user_id else 0,
+        '지정된 결재': ApprovalStep.objects.filter(approver_id=user_id).count() if user_id else 0,
     }
 
 

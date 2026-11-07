@@ -9,6 +9,13 @@ from tasks.admin import EmployeeAdmin
 
 
 class EmployeeInviteForm(forms.ModelForm):
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.fields['position'].required=False
+
+    def clean_position(self):
+        return self.cleaned_data.get('position') or 'member'
+
     invitation_email = forms.EmailField(label='초대할 회사 이메일', required=False,
         help_text='새 직원은 저장 시 초대 메일을 보냅니다. 계정이 이미 연결된 직원은 기존 계정을 유지합니다.')
 
@@ -74,7 +81,7 @@ def resend(self, request, queryset):
 
 class InvitedEmployeeAdmin(EmployeeAdmin):
     form = EmployeeInviteForm
-    list_display = ['name', 'department', 'user', 'role', 'invitation_state', 'account_management']
+    list_display = ['name', 'department', 'position', 'supervisor', 'user', 'role', 'invitation_state', 'account_management']
     list_filter = ['is_active', 'department', 'role']
     readonly_fields = ['is_active', 'user']
     actions = ['resend']

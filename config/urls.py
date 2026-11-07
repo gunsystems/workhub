@@ -4,7 +4,7 @@ from django.contrib.auth import views as auth_views
 from tasks import views, operations
 from .health import health
 from accounts.views import sign_in
-urlpatterns = [path('admin/login/',sign_in),path('accounts/',include('accounts.urls')),path('guide/',operations.guide,name='guide'),path('healthz/',health,name='health'),
+urlpatterns = [path('work/',include('tasks.workspace_urls')),path('admin/login/',sign_in),path('accounts/',include('accounts.urls')),path('guide/',operations.guide,name='guide'),path('healthz/',health,name='health'),
 path('projects/',operations.projects,name='projects'),
 path('projects/new/',operations.project_edit,name='project_new'),
 path('projects/<int:pk>/',operations.project_detail,name='project_detail'),

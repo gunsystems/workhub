@@ -17,6 +17,8 @@ def record(task, user, kind, body, extra=None):
 def transition(user, pk, action, data):
     # Keep the status change and immutable event in one database transaction.
     task = visible_tasks(user).select_for_update().get(pk=pk)
+    if task.workflow_version == 2:
+        raise ValidationError('새 공식 업무 화면의 처리 버튼을 이용하세요.')
     if action in ['review','feedback']:
         if not can_review(user,task):
             raise PermissionDenied

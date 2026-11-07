@@ -75,7 +75,9 @@ class DepartmentAccessTests(TestCase):
     def test_manager_can_assign_and_edit_in_own_department(self):
         self.client.force_login(self.manager)
         r=self.client.get('/tasks/new/')
-        self.assertEqual(set(r.context['form'].fields['assignee'].queryset),{self.employee,self.leader})
+        # The new official-work form supports explicit collaboration across teams.
+        self.assertIn('collaborators',r.context['form'].fields)
+        self.assertTrue({self.employee,self.leader}.issubset(set(r.context['form'].fields['assignee'].queryset)))
         self.assertEqual(self.client.post('/tasks/new/',self.data(self.employee)).status_code,302)
         self.assertEqual(self.client.post(f'/tasks/{self.own.pk}/edit/',self.data(self.leader)).status_code,302)
         self.own.refresh_from_db()

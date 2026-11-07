@@ -179,4 +179,4 @@ def alerts(request):
 
 @login_required
 def guide(request):
-    return render(request,'tasks/guide.html')
+    return render(request,'tasks/guide_v05.html')

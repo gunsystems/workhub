@@ -38,7 +38,7 @@ form ul{padding-left:20px}.errorlist{color:#a52c2c;font-size:13px;padding-left:2
   <p class="notice">{% if form.email %}메일의 재설정 링크는 30분 동안 유효합니다. 메일이 보이지 않으면 스팸메일함도 확인해 주세요.{% else %}비밀번호를 변경해도 기존 OTP는 유지됩니다. 로그인할 때 인증 앱의 OTP를 함께 입력해 주세요.{% endif %}</p>
 {% else %}
   <h1>재설정 링크를 확인해 주세요</h1>
-  <p class="intro">만료되었거나 이미 사용한 링크입니다.<br>재설정 메일을 다시 요청해 주세요.</p>
+  <p class="intro">만료되었거나 사용할 수 없는 링크입니다.<br>이미 사용한 경우에도 재설정 메일을 다시 요청해 주세요.</p>
   <a class="button" href="{% url 'password_reset' %}">재설정 메일 다시 요청</a>
 {% endif %}
 <p class="back"><a href="{% url 'login' %}">로그인으로 돌아가기</a></p>

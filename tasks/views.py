@@ -56,6 +56,9 @@ def calendar_view(request):
 @login_required
 def detail(request,pk):
     task = get_object_or_404(visible_tasks(request.user), pk=pk)
+    if task.workflow_version == 2:
+        from .collaboration_views import official_detail
+        return official_detail(request,task)
     sensitive = is_company_admin(request.user) or can_review(request.user,task) or task.assignee.user_id == request.user.pk
     events = task.events.all()
     if not sensitive:
@@ -67,7 +70,13 @@ def detail(request,pk):
 def edit(request,pk=None):
     if not is_company_admin(request.user) and not profile(request.user):
         return render(request, 'tasks/access_pending.html', status=403)
+    if pk is None and request.method=='GET':
+        from .collaboration import edit_task
+        return edit_task(request)
     task=get_object_or_404(visible_tasks(request.user).select_for_update(),pk=pk) if pk else None
+    if task and task.workflow_version == 2:
+        from .collaboration import edit_task
+        return edit_task(request,task)
     if task and not can_edit(request.user, task):
         raise PermissionDenied('이 업무를 수정할 권한이 없습니다.')
     if task and task.status in ['review','done']:
@@ -95,7 +104,7 @@ def dashboard(request):
     tasks = visible_tasks(request.user).prefetch_related('events')
     employees = visible_employees(request.user).select_related('department')
     if not managing:
-        tasks = tasks.filter(assignee=employee) if employee else tasks.none()
+        tasks = tasks.filter(Q(assignee=employee)|Q(participants=employee)|Q(creator=request.user)|Q(approval_steps__approver=request.user)|Q(watchers=request.user)).distinct() if employee else tasks.none()
         employees = employees.filter(pk=employee.pk) if employee else employees.none()
     department_id = request.GET.get('department','')
     employee_id = request.GET.get('employee','')
@@ -120,7 +129,7 @@ def dashboard(request):
     rows.sort(key=lambda row:(not row['attention'],row['score'] if row['score'] is not None else 101,row['employee'].name))
     bucket = request.GET.get('bucket','active')
     buckets = {
-        'active': [t for t in tasks if t.status != 'done'],
+        'active': [t for t in tasks if t.status not in ['done','cancelled','draft']],
         'overdue': [t for t in tasks if t.deadline == 'overdue' and t.status != 'review'],
         'stale': [t for t in tasks if t.needs_report],
         'not_started': [t for t in tasks if t.not_started],
