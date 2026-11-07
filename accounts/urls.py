@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('invitation-preview/<int:employee_id>/', views.invitation_preview, name='invitation_preview'),
     path('activate/<str:token>/', views.activate, name='activate'),
     path('mfa/setup/', views.mfa_setup, name='mfa_setup'),
     path('mfa/verify/', views.mfa_verify, name='mfa_verify'),

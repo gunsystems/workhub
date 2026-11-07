@@ -41,9 +41,14 @@ class HiworksEmailBackend(BaseEmailBackend):
         if len(recipients) != 1 or message.cc or message.bcc or message.attachments:
             raise ValidationError('인증 메일은 첨부 없이 한 명에게만 발송합니다.')
         boundary = 'workhub-' + secrets.token_hex(16)
+        # HTML alternatives are produced by our autoescaped Django templates.
+        # Plain text input remains escaped; do not interpret user content as HTML.
+        html_alternatives = [part[0] for part in getattr(message, 'alternatives', []) if part[1] == 'text/html']
+        content = (html_alternatives[-1] if html_alternatives else
+                   '<div style="white-space:pre-wrap">' + str(urlize(message.body, autoescape=True)) + '</div>')
         fields = {
             'to': recipients[0], 'user_id': user_id, 'subject': message.subject,
-            'content': '<div style="white-space:pre-wrap">' + str(urlize(message.body, autoescape=True)) + '</div>',
+            'content': content,
             # Do not retain live authentication codes or invitation links in Sent mail.
             'save_sent_mail': 'N',
         }

@@ -80,3 +80,13 @@ class HiworksMailTests(SimpleTestCase):
         message = mail.EmailMessage('test', 'test', to=['a@gunsystems.co.kr', 'b@gunsystems.co.kr'])
         self.assertEqual(backend.send_messages([message]), 0)
         build.assert_not_called()
+
+    @patch('accounts.mail_backend.build_opener')
+    def test_designed_html_alternative_is_sent_without_being_escaped(self, build):
+        build.return_value.open.return_value = self.response({'code':'SUC','result':{'successList':['lee@gunsystems.co.kr']}})
+        message = mail.EmailMultiAlternatives('초대', '일반 텍스트', 'admin@gunsystems.co.kr', ['lee@gunsystems.co.kr'])
+        message.attach_alternative('<table role="presentation"><tr><td>회사 초대</td></tr></table>', 'text/html')
+        self.assertEqual(message.send(), 1)
+        payload = build.return_value.open.call_args.args[0].data.decode()
+        self.assertIn('<table role="presentation">', payload)
+        self.assertNotIn('&lt;table', payload)

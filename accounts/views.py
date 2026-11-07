@@ -27,6 +27,25 @@ def page(request, title, form=None, **context):
     return render(request, 'accounts/form.html', {'title': title, 'form': form, **context})
 
 
+@login_required
+@never_cache
+def invitation_preview(request, employee_id):
+    """Administrator-only design preview. Contains no usable activation token."""
+    from django.core.exceptions import PermissionDenied
+    from django.shortcuts import get_object_or_404
+    from tasks.models import Employee
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    employee = get_object_or_404(Employee.objects.select_related('department'), pk=employee_id)
+    invitation = getattr(employee, 'invitation', None)
+    return render(request, 'accounts/email_invitation.html', {
+        'employee_name': employee.name,
+        'email': invitation.email if invitation else 'employee@gunsystems.co.kr',
+        'department_name': employee.department.name, 'role_name': employee.get_role_display(),
+        'activation_url': '#design-preview-only', 'expires_at': timezone.now()+timedelta(days=2),
+    })
+
+
 class LoginForm(forms.Form):
     username = forms.CharField(label='회사 이메일', max_length=254)
     password = forms.CharField(label='비밀번호', widget=forms.PasswordInput)

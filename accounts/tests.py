@@ -25,7 +25,7 @@ class AccountFlowTests(TestCase):
 
     def invitation(self):
         invite(self.employee, self.email)
-        return re.search(r'https://[^\s]+(/accounts/activate/[^\s]+)', mail.outbox[-1].body).group(1)
+        return re.search(r'href="https://[^/"]+(/accounts/activate/[^"]+)"', mail.outbox[-1].alternatives[0].content).group(1)
 
     def activate(self):
         url = self.invitation()
@@ -233,3 +233,44 @@ class AccountFlowTests(TestCase):
         csrf_client = self.client_class(enforce_csrf_checks=True)
         self.assertEqual(csrf_client.post(url, {'action':'send'}).status_code, 403)
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_invitation_has_branded_html_with_named_links_and_no_visible_raw_url(self):
+        path = self.invitation()
+        message = mail.outbox[-1]
+        html = message.alternatives[0].content
+        self.assertEqual(message.alternatives[0].mimetype, 'text/html')
+        for text in ['GUNSYSTEMS', '계정 활성화하기', self.employee.name, self.email,
+                     self.department.name, '일반 직원', '48시간', 'OTP 등록']:
+            self.assertIn(text, html)
+        self.assertIn(f'href="https://gunsystems-workhub-test.onrender.com{path}"', html)
+        from django.utils.html import strip_tags
+        self.assertNotIn('https://', strip_tags(html))
+        self.assertNotIn('https://', message.body)
+        self.assertIn('활성화 페이지 열기', html)
+        self.assertNotIn('<html', message.body)
+
+    def test_invitation_html_escapes_employee_and_department_input(self):
+        self.employee.name = '<script>alert(1)</script>'
+        self.employee.save()
+        self.department.name = '<img src=x onerror=alert(1)>'
+        self.department.save()
+        self.invitation()
+        html = mail.outbox[-1].alternatives[0].content
+        self.assertNotIn('<script>', html)
+        self.assertNotIn('<img src=x', html)
+        self.assertIn('&lt;script&gt;', html)
+        self.assertIn('&lt;img', html)
+
+    def test_mail_design_preview_is_admin_only_and_never_issues_an_invitation(self):
+        url = f'/accounts/invitation-preview/{self.employee.pk}/'
+        self.assertEqual(self.client.get(url).status_code, 302)
+        member = get_user_model().objects.create_user('preview-member', password='test')
+        self.client.force_login(member)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        admin = get_user_model().objects.create_superuser('preview-admin', password='test')
+        self.client.force_login(admin)
+        response = self.client.get(url)
+        self.assertContains(response, '#design-preview-only')
+        self.assertNotContains(response, '/accounts/activate/')
+        self.assertFalse(Invitation.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)

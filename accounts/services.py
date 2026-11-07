@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.db import transaction
 from django.utils import timezone
+from django.template.loader import render_to_string
 from .models import Invitation, RateBucket, AccessProfile
 
 
@@ -37,14 +38,14 @@ def allow(key, limit, seconds):
     return bucket.count <= limit
 
 
-def deliver(subject, body, recipient):
+def deliver(subject, body, recipient, html_body=None):
     # Never print invitation links or verification codes to production logs.
     if settings.EMAIL_BACKEND.endswith(('console.EmailBackend', 'filebased.EmailBackend')):
         raise ValidationError('실제 메일 발송 연결이 필요합니다. 로그 출력 방식으로 인증 메일을 보내지 않습니다.')
     if settings.EMAIL_BACKEND == 'django.core.mail.backends.smtp.EmailBackend' and not (
             settings.EMAIL_HOST and settings.EMAIL_HOST_USER and settings.EMAIL_HOST_PASSWORD):
         raise ValidationError('SMTP 발신 계정과 인증정보를 서버 비밀 설정에 등록하세요.')
-    if send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [recipient], fail_silently=False) != 1:
+    if send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [recipient], fail_silently=False, html_message=html_body) != 1:
         raise ValidationError('메일 발송 서비스가 요청을 접수하지 못했습니다.')
 
 
@@ -67,11 +68,18 @@ def invite(employee, email):
             'used_at': None, 'code_digest': '', 'code_expires_at': None, 'code_attempts': 0,
             'code_sent_at': None, 'verified_session': '', 'delivery': 'pending', 'sent_at': None})
     try:
-        deliver('GUNSYSTEMS 업무관리 시스템 사용 안내',
+        activation_url = f'{base}/accounts/activate/{token}/'
+        html_body = render_to_string('accounts/email_invitation.html', {
+            'employee_name': employee.name, 'email': email,
+            'department_name': employee.department.name, 'role_name': employee.get_role_display(),
+            'activation_url': activation_url, 'expires_at': invitation.expires_at,
+        })
+        deliver('[GUNSYSTEMS] Workhub 계정 활성화 안내',
                 f'{employee.name}님, 회사 업무관리 시스템에 초대되었습니다.\n'
-                f'아래 주소에서 이메일 인증, 비밀번호 설정 및 OTP 등록을 완료하세요.\n'
-                f'{base}/accounts/activate/{token}/\n초대는 48시간 동안 유효합니다.\n'
-                '요청하지 않은 초대라면 회사 관리자에게 문의하세요.', email)
+                f'소속: {employee.department.name} / 계정: {email}\n'
+                '메일의 계정 활성화하기 버튼에서 이메일 인증, 비밀번호 설정 및 OTP 등록을 완료하세요.\n'
+                '초대는 48시간 동안 유효합니다. 버튼이 보이지 않으면 HTML 메일 보기로 전환해 주세요.\n'
+                '요청하지 않은 초대라면 회사 관리자에게 문의하세요.', email, html_body=html_body)
     except Exception:
         Invitation.objects.filter(pk=invitation.pk).update(delivery='failed')
         raise ValidationError('초대 메일 발송에 실패했습니다. 메일 설정 확인 후 재발송하세요.')

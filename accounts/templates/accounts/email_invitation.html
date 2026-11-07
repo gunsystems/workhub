@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>GUNSYSTEMS Workhub 초대</title>
+<style>@media only screen and (max-width:600px){.outer{padding:16px 8px!important}.content{padding:28px 22px!important}.brand{padding:26px 22px!important}.heading{font-size:25px!important}.action{display:block!important;text-align:center!important}.account-value{word-break:break-all!important}}</style></head>
+<body style="margin:0;padding:0;background-color:#f2f5f4;color:#243b35;font-family:'Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f2f5f4;font-size:1px;">{{ employee_name }}님, 회사 업무관리 시스템에 초대되었습니다. 이메일 인증 후 업무를 시작해 주세요.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f2f5f4;"><tr><td class="outer" align="center" style="padding:40px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border:1px solid #dfe7e3;border-radius:12px;overflow:hidden;">
+<tr><td class="brand" style="padding:30px 36px;background-color:#163e35;color:#ffffff;">
+  <div style="font-family:Arial,sans-serif;font-size:21px;font-weight:700;letter-spacing:2px;">GUNSYSTEMS</div>
+  <div style="margin-top:8px;font-size:12px;letter-spacing:1px;color:#c9e2d6;">WORKHUB &nbsp;/&nbsp; 업무관리 시스템</div>
+</td></tr>
+<tr><td class="content" style="padding:36px;">
+  <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:#39735e;">WORKSPACE INVITATION</div>
+  <h1 class="heading" style="margin:14px 0 18px;font-size:29px;line-height:1.45;font-weight:700;letter-spacing:-1px;color:#173b31;">함께 일하는 공간에<br>초대합니다.</h1>
+  <p style="margin:0 0 10px;font-size:16px;line-height:1.8;"><strong>{{ employee_name }}님, 안녕하세요.</strong></p>
+  <p style="margin:0 0 26px;font-size:14px;line-height:1.9;color:#566b63;">GUNSYSTEMS의 업무관리 시스템 <strong style="color:#243b35;">Workhub</strong>에 초대되었습니다.<br>계정을 활성화하고 업무 배정, 진행 보고와 피드백을 한곳에서 확인하세요.</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f7f5;border:1px solid #e0e8e3;border-radius:8px;font-size:13px;line-height:1.7;">
+    <tr><td colspan="2" style="padding:17px 20px 8px;font-size:11px;font-weight:700;letter-spacing:1px;color:#648072;">초대된 계정</td></tr>
+    <tr><td style="padding:4px 0 4px 20px;width:84px;color:#6b7d74;">회사 이메일</td><td class="account-value" style="padding:4px 20px 4px 0;color:#173b31;font-weight:700;overflow-wrap:anywhere;">{{ email }}</td></tr>
+    <tr><td style="padding:4px 0 4px 20px;color:#6b7d74;">소속 부서</td><td style="padding:4px 20px 4px 0;color:#173b31;">{{ department_name }}</td></tr>
+    <tr><td style="padding:4px 0 17px 20px;color:#6b7d74;">업무 권한</td><td style="padding:4px 20px 17px 0;color:#173b31;">{{ role_name }}</td></tr>
+  </table>
+  <p style="margin:28px 0 14px;font-size:14px;font-weight:700;color:#243b35;">다음 순서로 시작해 주세요.</p>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;line-height:1.8;color:#52665d;">
+    <tr><td valign="top" style="width:34px;padding:5px 0;color:#39735e;font-weight:700;">01</td><td style="padding:5px 0;"><strong style="color:#243b35;">이메일 인증</strong><br>회사 메일로 받은 인증 코드를 입력합니다.</td></tr>
+    <tr><td valign="top" style="padding:7px 0;color:#39735e;font-weight:700;">02</td><td style="padding:7px 0;"><strong style="color:#243b35;">비밀번호 설정</strong><br>로그인에 사용할 비밀번호를 직접 설정합니다.</td></tr>
+    <tr><td valign="top" style="padding:7px 0;color:#39735e;font-weight:700;">03</td><td style="padding:7px 0;"><strong style="color:#243b35;">OTP 등록</strong><br>인증 앱을 연결하고 복구 코드를 보관합니다.</td></tr>
+  </table>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:25px;"><tr><td align="center" bgcolor="#1b6048" style="background-color:#1b6048;border-radius:7px;"><a class="action" href="{{ activation_url }}" style="display:block;padding:17px 20px;border:1px solid #1b6048;border-radius:7px;font-size:15px;line-height:1.4;font-weight:700;color:#ffffff;text-decoration:none;text-align:center;">계정 활성화하기 &nbsp; →</a></td></tr></table>
+  <p style="margin:13px 0 0;font-size:12px;line-height:1.8;text-align:center;color:#6b7d74;">초대 링크는 발송 후 <strong>48시간</strong> 동안 한 번만 사용할 수 있습니다.<br>{{ expires_at|date:"Y년 m월 d일 H:i" }}까지 · 한국시간</p>
+  <div style="height:1px;background-color:#e4ebe6;margin:28px 0 20px;"></div>
+  <p style="margin:0;font-size:11px;line-height:1.8;color:#7a8a81;">버튼이 작동하지 않으면 <a href="{{ activation_url }}" style="color:#39735e;text-decoration:underline;">활성화 페이지 열기</a>를 눌러 주세요.</p>
+  <p style="margin:18px 0 0;font-size:11px;line-height:1.9;color:#7a8a81;">본인에게 해당하지 않는 초대이거나 도움이 필요하면 회사 관리자에게 문의해 주세요.<br>초대 링크와 인증 코드, 비밀번호 및 OTP는 다른 사람에게 공유하지 마세요.</p>
+</td></tr>
+<tr><td style="padding:20px 36px;border-top:1px solid #e4ebe6;background-color:#fafcfb;">
+  <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:1px;color:#3c5b4d;">GUNSYSTEMS</p>
+  <p style="margin:6px 0 0;font-size:11px;line-height:1.8;color:#859389;">Workhub · 사내 업무관리 시스템<br>본 메일은 계정 초대 요청에 따라 자동으로 발송되었습니다.</p>
+</td></tr>
+</table>
+</td></tr></table>
+</body></html>
