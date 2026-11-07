@@ -207,8 +207,15 @@ class AccountFlowTests(TestCase):
         self.client.post('/logout/')
         self.client.post('/accounts/password/reset/', {'email':self.email})
         reset_body = mail.outbox[-1].body
-        self.assertIn('https://gunsystems-workhub-test.onrender.com/accounts/password/reset/', reset_body)
-        url = re.search(r'https://[^\s]+(/accounts/password/reset/[^\s]+)', reset_body).group(1)
+        reset_html = mail.outbox[-1].alternatives[0].content
+        from django.utils.html import strip_tags
+        for text in ['GUNSYSTEMS','비밀번호 재설정하기','재설정 페이지 열기','30분','기존 OTP는 그대로 유지',self.email]:
+            self.assertIn(text, reset_html)
+        self.assertNotIn('https://', reset_body)
+        self.assertNotIn('https://', strip_tags(reset_html))
+        self.assertEqual(mail.outbox[-1].alternatives[0].mimetype, 'text/html')
+        self.assertIn('https://gunsystems-workhub-test.onrender.com/accounts/password/reset/', reset_html)
+        url = re.search(r'href="https://[^/"]+(/accounts/password/reset/[^"]+)"', reset_html).group(1)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
         url = response.url
@@ -277,4 +284,17 @@ class AccountFlowTests(TestCase):
         self.assertContains(response, '#design-preview-only')
         self.assertNotContains(response, '/accounts/activate/')
         self.assertFalse(Invitation.objects.exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_reset_mail_preview_is_admin_only_and_has_no_live_token(self):
+        url = '/accounts/password/reset-preview/'
+        self.assertEqual(self.client.get(url).status_code, 302)
+        user = get_user_model().objects.create_user('reset-preview-member', password='test')
+        self.client.force_login(user)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        admin = get_user_model().objects.create_superuser('reset-preview-owner', password='test')
+        self.client.force_login(admin)
+        response = self.client.get(url)
+        self.assertContains(response, '#design-preview-only')
+        self.assertNotContains(response, '/accounts/password/reset/')
         self.assertEqual(len(mail.outbox), 0)

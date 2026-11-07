@@ -7,6 +7,11 @@
 .account-panel .helptext{display:block;font-size:13px;color:#677b70;margin-top:6px}.account-panel .errorlist{color:#ad302d}.account-panel .notice{padding:14px;background:#f0f5f2;border-radius:8px;line-height:1.8}
 .account-panel button{margin-top:20px;padding:12px 22px;border:0;border-radius:8px;background:#236c59;color:white;font:inherit;font-weight:600;cursor:pointer}
 .account-panel .actions{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.delete-dialog{width:calc(100% - 32px);max-width:520px;border:0;border-radius:16px;padding:28px;color:#19283d;box-shadow:0 12px 60px #172b4d40}
+.delete-dialog::backdrop{background:#14203480}.delete-dialog h2{margin:0 0 16px}.delete-dialog p{line-height:1.8;overflow-wrap:anywhere}
+.delete-dialog .dialog-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:24px;flex-wrap:wrap}
+.delete-dialog button{padding:12px 20px;border-radius:8px;border:1px solid #b8c8bf;font:inherit;cursor:pointer;background:white;color:#253c31}
+.delete-dialog .danger{background:#a52c2c;border-color:#a52c2c;color:white;font-weight:700}
 </style>
 <section class="account-panel">
   <h1>직원 계정 관리</h1>
@@ -17,9 +22,31 @@
   <p class="notice"><strong>휴대폰 분실 · OTP 초기화</strong><br>직원에게 직접 연락해 본인을 확인한 뒤 선택하세요. 모든 로그인과 기존 OTP가 무효화됩니다. 직원은 기존 비밀번호로 로그인하고 회사 이메일 인증 후 새 OTP를 등록합니다. 새 OTP 등록 전에는 업무를 이용할 수 없습니다. 확인 방법을 처리 사유에 기록하세요.</p>
   <table>{% for label,count in counts.items %}<tr><th>{{ label }}</th><td>{{ count }}건</td></tr>{% endfor %}</table>
   {% if protected %}<p class="notice">본인 또는 최상위 관리자 계정은 이 화면에서 중지·삭제할 수 없습니다.</p>{% else %}
-  <p>삭제 확인 입력값: <strong>{{ confirmation_text }}</strong></p>
+  {% if has_history %}<p class="notice">업무 이력이 있어 <strong>직원 완전 삭제는 불가능</strong>합니다. 퇴사 시에는 <strong>사용 중지</strong>를 선택하세요. 로그인 계정 삭제는 인증 정보를 지우고 직원·업무 이력을 보존합니다.</p>{% endif %}
   <form method="post">{% csrf_token %}{{ form.as_p }}<div class="actions"><button type="submit">선택한 처리 적용</button><a href="/admin/tasks/employee/">직원 목록으로</a></div></form>
   {% endif %}
   {% if events %}<h2>최근 처리 이력</h2><table><tr><th>일시</th><th>처리</th><th>관리자 · 사유</th></tr>{% for event in events %}<tr><td>{{ event.created_at|date:'Y-m-d H:i' }}</td><td>{{ event.get_action_display }}</td><td>{{ event.actor|default:'삭제된 관리자' }} · {{ event.reason }}</td></tr>{% endfor %}</table>{% endif %}
 </section>
+{% if pending_delete and not protected %}
+<dialog id="delete-confirmation" class="delete-dialog" open aria-labelledby="delete-title" aria-describedby="delete-description">
+  <h2 id="delete-title">{% if pending_delete.action == 'delete_employee' %}직원을 완전히 삭제할까요?{% else %}로그인 계정을 삭제할까요?{% endif %}</h2>
+  <p><strong>{{ employee.name }}</strong> · {{ employee.department }}<br>{{ email|default:'회사 이메일 미등록' }}</p>
+  <p id="delete-description">{% if pending_delete.action == 'delete_employee' %}직원 기록과 로그인 계정, 비밀번호·OTP·초대 정보를 삭제합니다. 이 작업은 되돌릴 수 없습니다.{% else %}로그인 계정, 비밀번호·OTP·초대 정보를 삭제하고 모든 로그인을 종료합니다. 직원 기록과 업무 이력은 보존됩니다. 삭제한 인증 정보는 되돌릴 수 없습니다.{% endif %}</p>
+  <p>처리 사유: {{ pending_delete.reason }}</p>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="action" value="{{ pending_delete.action }}">
+    <input type="hidden" name="reason" value="{{ pending_delete.reason }}">
+    <input type="hidden" name="confirmation" value="{{ pending_delete.token }}">
+    <div class="dialog-actions"><button type="button" id="cancel-delete" autofocus>취소</button><button type="submit" class="danger">{% if pending_delete.action == 'delete_employee' %}직원 완전 삭제{% else %}로그인 계정 삭제{% endif %}</button></div>
+    <noscript><p><a href="">삭제 취소하고 돌아가기</a></p></noscript>
+  </form>
+</dialog>
+<script>
+(() => {
+  const dialog = document.getElementById('delete-confirmation');
+  if (typeof dialog.showModal === 'function') { dialog.removeAttribute('open'); dialog.showModal(); }
+  document.getElementById('cancel-delete').addEventListener('click', () => dialog.close());
+})();
+</script>
+{% endif %}
 {% endblock %}

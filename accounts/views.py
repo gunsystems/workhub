@@ -63,6 +63,16 @@ class LoginForm(forms.Form):
     password = forms.CharField(label='비밀번호', widget=forms.PasswordInput)
 
 
+@login_required
+@never_cache
+def password_reset_preview(request):
+    from django.core.exceptions import PermissionDenied
+    if not request.user.is_superuser:
+        raise PermissionDenied
+    return render(request, 'accounts/email_password_reset.html', {
+        'email':'employee@gunsystems.co.kr', 'reset_url':'#design-preview-only'})
+
+
 class CodeForm(forms.Form):
     code = forms.CharField(label='인증 코드', max_length=32, widget=forms.TextInput(attrs={'autocomplete':'one-time-code'}))
 
@@ -76,13 +86,18 @@ class VerifiedPasswordResetForm(PasswordResetForm):
 
     def send_mail(self, subject_template_name, email_template_name, context, from_email, to_email, html_email_template_name=None):
         from django.template.loader import render_to_string
+        from django.urls import reverse
+        reset_path = reverse('password_reset_confirm', kwargs={'uidb64':context['uid'], 'token':context['token']})
+        context = {**context, 'reset_url':f"{context['protocol']}://{context['domain']}{reset_path}"}
         deliver(''.join(render_to_string(subject_template_name, context).splitlines()),
-                render_to_string(email_template_name, context), to_email)
+                render_to_string(email_template_name, context), to_email,
+                html_body=render_to_string(html_email_template_name, context) if html_email_template_name else None)
 
 
 class ResetPassword(PasswordResetView):
     template_name = 'accounts/reset.html'
     email_template_name = 'accounts/reset_email.txt'
+    html_email_template_name = 'accounts/email_password_reset.html'
     subject_template_name = 'accounts/reset_subject.txt'
     form_class = VerifiedPasswordResetForm
     success_url = '/accounts/password/reset/sent/'
@@ -97,7 +112,8 @@ class ResetPassword(PasswordResetView):
         try:
             form.save(use_https=True, domain_override=urlparse(settings.WORKHUB_BASE_URL).netloc,
                       from_email=settings.DEFAULT_FROM_EMAIL, email_template_name=self.email_template_name,
-                      subject_template_name=self.subject_template_name)
+                      subject_template_name=self.subject_template_name,
+                      html_email_template_name=self.html_email_template_name)
         except Exception:
             # Same response for unknown addresses and temporary mail failures.
             pass

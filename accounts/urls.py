@@ -5,6 +5,7 @@ from .reset_views import restore
 from .administrator_views import administrators
 
 urlpatterns = [
+    path('password/reset-preview/', views.password_reset_preview, name='password_reset_preview'),
     path('administrators/', administrators, name='administrators'),
     path('employees/<int:employee_id>/manage/', manage_account, name='manage_employee_account'),
     path('invitation-preview/<int:employee_id>/', views.invitation_preview, name='invitation_preview'),

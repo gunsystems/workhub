@@ -1,4 +1,6 @@
 from datetime import timedelta
+import time
+from unittest.mock import patch
 
 import django_otp
 from django.contrib.auth import get_user_model
@@ -136,10 +138,62 @@ class EmployeeLifecycleTests(TestCase):
         self.assertContains(self.client.get(url), '보존할 업무 이력')
         self.assertEqual(self.employee_client().get(url).status_code, 403)
         response = self.client.post(url, {'action':'delete_employee','reason':'테스트','confirmation':'wrong'})
-        self.assertContains(response, '정확히 입력')
+        self.assertContains(response, '삭제 확인이 만료되었거나 올바르지 않습니다')
         response = self.client.post(url, {'action':'suspend','reason':'퇴사'})
         self.assertRedirects(response, '/admin/tasks/employee/', fetch_redirect_response=False)
         self.assertContains(self.client.get('/admin/tasks/employee/'), '사용 중지')
+
+    def test_delete_popup_is_required_and_confirm_button_deletes_without_typing_name(self):
+        url = f'/accounts/employees/{self.employee.pk}/manage/'
+        self.assertNotContains(self.client.get(url), '삭제 확인 입력값')
+        self.assertNotContains(self.client.get(url), 'id_confirmation')
+        response = self.client.post(url, {'action':'delete_employee', 'reason':'테스트 재등록'})
+        self.assertContains(response, '직원을 완전히 삭제할까요?')
+        self.assertContains(response, 'id="cancel-delete"')
+        self.assertTrue(Employee.objects.filter(pk=self.employee.pk).exists())
+        self.assertTrue(get_user_model().objects.filter(pk=self.user.pk).exists())
+        token = response.context['pending_delete']['token']
+        # Closing or cancelling the popup never submits the final deletion.
+        self.client.get(url)
+        self.assertTrue(Employee.objects.filter(pk=self.employee.pk).exists())
+        response = self.client.post(url, {'action':'delete_employee', 'reason':'테스트 재등록', 'confirmation':token})
+        self.assertRedirects(response, '/admin/tasks/employee/', fetch_redirect_response=False)
+        self.assertFalse(Employee.objects.filter(pk=self.employee.pk).exists())
+        self.assertFalse(get_user_model().objects.filter(pk=self.user.pk).exists())
+        self.assertTrue(get_user_model().objects.filter(pk=self.admin.pk).exists())
+
+    def test_delete_popup_confirmation_is_bound_to_session_action_reason_and_expires(self):
+        url = f'/accounts/employees/{self.employee.pk}/manage/'
+        response = self.client.post(url, {'action':'delete_employee', 'reason':'테스트'})
+        token = response.context['pending_delete']['token']
+        for action,reason in [('delete_access','테스트'), ('delete_employee','다른 사유')]:
+            response = self.client.post(url, {'action':action, 'reason':reason, 'confirmation':token})
+            self.assertContains(response, '처리 내용이 변경')
+        other = Client()
+        other.force_login(self.admin)
+        self.assertContains(other.post(url, {'action':'delete_employee','reason':'테스트','confirmation':token}), '처리 내용이 변경')
+        with patch('django.core.signing.time.time', return_value=time.time()+301):
+            self.assertContains(self.client.post(url, {'action':'delete_employee','reason':'테스트','confirmation':token}), '만료되었거나')
+        self.assertTrue(Employee.objects.filter(pk=self.employee.pk).exists())
+
+    def test_history_blocks_popup_and_new_history_blocks_previously_confirmed_deletion(self):
+        url = f'/accounts/employees/{self.employee.pk}/manage/'
+        response = self.client.post(url, {'action':'delete_employee', 'reason':'테스트'})
+        token = response.context['pending_delete']['token']
+        today = timezone.localdate()
+        Task.objects.create(title='보존 업무', assignee=self.employee, start_date=today, due_date=today)
+        for confirmation in ['', token]:
+            response = self.client.post(url, {'action':'delete_employee','reason':'테스트','confirmation':confirmation})
+            self.assertContains(response, '담당 업무 1건')
+            self.assertNotContains(response, '<dialog')
+        response = self.client.post(url, {'action':'delete_access', 'reason':'퇴사'})
+        self.assertContains(response, '직원 기록과 업무 이력은 보존됩니다')
+        token = response.context['pending_delete']['token']
+        response = self.client.post(url, {'action':'delete_access','reason':'퇴사','confirmation':token})
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Employee.objects.filter(pk=self.employee.pk).exists())
+        self.assertTrue(Task.objects.filter(assignee_id=self.employee.pk).exists())
+        self.assertFalse(get_user_model().objects.filter(pk=self.user.pk).exists())
 
     def test_management_post_requires_csrf_and_get_does_not_change_state(self):
         client = Client(enforce_csrf_checks=True)
