@@ -1,0 +1,8 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ title }} · Workhub</title>
+<style>body{margin:0;background:#f3f5f8;color:#19283d;font:16px/1.6 system-ui,sans-serif}main{max-width:440px;margin:6vh auto;padding:32px;background:white;border-radius:16px;box-shadow:0 8px 40px #172b4d12}h1{font-size:25px}.brand{color:#236c59;font-weight:800}label{display:block;margin:16px 0 6px}input{box-sizing:border-box;width:100%;padding:12px;border:1px solid #abb8c5;border-radius:6px}button,.button{display:inline-block;margin-top:18px;padding:12px 20px;border:0;border-radius:7px;background:#236c59;color:white;cursor:pointer}a{color:#236c59}img{max-width:100%}.errorlist{color:#b12828;padding-left:20px}.notice{background:#f0f5f4;padding:14px;border-radius:8px}.codes{font-family:monospace;display:grid;grid-template-columns:1fr 1fr;gap:10px}small{color:#5e6c7a}</style></head>
+<body><main><div class="brand">GUNSYSTEMS · Workhub</div><h1>{{ title }}</h1>{% if notice %}<p class="notice">{{ notice }}</p>{% endif %}
+{% if qr %}<img src="data:image/png;base64,{{ qr }}" alt="인증 앱 등록 QR코드">{% endif %}
+{% if form %}<form method="post">{% csrf_token %}{{ form.as_p }}<button type="submit">확인</button>{% if send_code %}<button type="submit" name="action" value="send" formnovalidate>인증 코드 발송 / 재발송</button>{% endif %}</form>{% endif %}
+{% if codes %}<div class="codes">{% for code in codes %}<code>{{ code }}</code>{% endfor %}</div><p><a class="button" href="/dashboard/">업무 시작하기</a></p>{% endif %}
+{% if title == 'Workhub 로그인' %}<p><a href="/accounts/password/reset/">비밀번호를 잊으셨나요?</a></p>{% endif %}
+<p><small>회사 이메일로 이용하는 사내 업무 공간입니다.</small></p></main></body></html>

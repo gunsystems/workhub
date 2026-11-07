@@ -205,7 +205,7 @@ class OperationsTests(TestCase):
         self.client.logout()
         r=self.client.get('/healthz/')
         self.assertEqual(r.status_code,200)
-        self.assertEqual(r.json()['version'],'0.3')
+        self.assertEqual(r.json()['version'],'0.4')
         self.assertEqual(r.json()['status'],'ok')
         self.assertNotContains(r,'owner')
 

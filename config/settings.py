@@ -39,3 +39,24 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME':'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME':'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+
+# Employee invitation and MFA. Existing legacy accounts remain intact.
+INSTALLED_APPS += ['accounts', 'django_otp', 'django_otp.plugins.otp_totp']
+MIDDLEWARE.insert(MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1, 'django_otp.middleware.OTPMiddleware')
+MIDDLEWARE.insert(MIDDLEWARE.index('django_otp.middleware.OTPMiddleware') + 1, 'accounts.middleware.RequireMFA')
+WORKHUB_EMAIL_DOMAIN = 'gunsystems.co.kr'
+WORKHUB_BASE_URL = os.getenv('WORKHUB_BASE_URL', 'https://gunsystems-workhub-test.onrender.com')
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtps.hiworks.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '465'))
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', '0') == '1'
+EMAIL_USE_SSL = os.getenv('EMAIL_USE_SSL', '1') == '1'
+EMAIL_TIMEOUT = 15
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'GUNSYSTEMS Workhub <workhub@gunsystems.co.kr>')
+OTP_TOTP_ISSUER = 'GUNSYSTEMS Workhub'
+OTP_TOTP_THROTTLE_FACTOR = 1
+
+PASSWORD_RESET_TIMEOUT = 1800

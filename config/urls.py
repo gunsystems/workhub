@@ -1,9 +1,10 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from tasks import views, operations
 from .health import health
-urlpatterns = [path('guide/',operations.guide,name='guide'),path('healthz/',health,name='health'),
+from accounts.views import sign_in
+urlpatterns = [path('admin/login/',sign_in),path('accounts/',include('accounts.urls')),path('guide/',operations.guide,name='guide'),path('healthz/',health,name='health'),
 path('projects/',operations.projects,name='projects'),
 path('projects/new/',operations.project_edit,name='project_new'),
 path('projects/<int:pk>/',operations.project_detail,name='project_detail'),
@@ -17,4 +18,4 @@ path('alerts/',operations.alerts,name='alerts'),
 path('tasks/<int:pk>/accept/',operations.accept,name='task_accept'),
 path('tasks/<int:pk>/checklist/new/',operations.checklist_add,name='checklist_add'),
 path('tasks/<int:pk>/checklist/<int:item_pk>/',operations.checklist_update,name='checklist_update'),
-path('employees/<int:pk>/feedback/',views.employee_feedback,name='employee_feedback'),path('dashboard/',views.dashboard,name='dashboard'),path('tasks/<int:pk>/actions/<str:action>/',views.task_action,name='task_action'),path('login/',auth_views.LoginView.as_view(template_name='tasks/login.html'),name='login'),path('logout/',auth_views.LogoutView.as_view(),name='logout'),path('admin/',admin.site.urls),path('',views.calendar_view,name='calendar'),path('tasks/new/',views.edit,name='task_new'),path('tasks/<int:pk>/',views.detail,name='task_detail'),path('tasks/<int:pk>/edit/',views.edit,name='task_edit')]
+path('employees/<int:pk>/feedback/',views.employee_feedback,name='employee_feedback'),path('dashboard/',views.dashboard,name='dashboard'),path('tasks/<int:pk>/actions/<str:action>/',views.task_action,name='task_action'),path('login/',sign_in,name='login'),path('logout/',auth_views.LogoutView.as_view(),name='logout'),path('admin/',admin.site.urls),path('',views.calendar_view,name='calendar'),path('tasks/new/',views.edit,name='task_new'),path('tasks/<int:pk>/',views.detail,name='task_detail'),path('tasks/<int:pk>/edit/',views.edit,name='task_edit')]
