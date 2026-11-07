@@ -26,3 +26,11 @@
 - 하이웍스 API backend는 HTML alternative를 유지하며 일반 텍스트 메일은 계속 HTML escape 처리.
 - 관리자만 볼 수 있는 디자인 미리보기는 사용 가능한 초대 토큰을 생성하거나 노출하지 않음.
 - 사용자 요청으로 lee@gunsystems.co.kr에 디자인 적용 초대를 재발송할 예정. 재발송은 이전 링크를 무효화.
+
+## HTTPS 인증 요청 CSRF 수정
+
+- 사용자가 이메일 코드 발송 버튼에서 CSRF 403 오류를 보고함. 배포된 로그인 화면에서도 브라우저의 일반 form POST로 동일 오류를 재현.
+- 인증 화면의 Referrer-Policy:no-referrer가 HTTPS CSRF provenance 검사와 충돌. same-origin으로 변경해 외부 URL 유출 차단을 유지하면서 정상 same-origin POST를 허용.
+- HTTPS reverse proxy 조건에서 Origin/Referer 유무·올바른 토큰·잘못된 토큰·외부 Origin·쿠키 누락을 검증하는 테스트 추가.
+- CSRF 검증 자체는 유지. 만료/잘못된 요청은 403으로 차단하고 브랜드 안내와 화면 다시 열기 링크를 제공.
+- 기존 초대·코드·직원 데이터는 변경하지 않음. 배포 후 기존 인증 페이지를 새로 열어야 새 정책이 적용됨.

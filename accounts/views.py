@@ -27,6 +27,17 @@ def page(request, title, form=None, **context):
     return render(request, 'accounts/form.html', {'title': title, 'form': form, **context})
 
 
+@never_cache
+def csrf_failure(request, reason=''):
+    # No provider details, tokens, submitted credentials or internal error text.
+    response = page(request, '화면을 다시 열어 주세요',
+                    notice='요청을 확인하지 못했습니다. 아래 버튼으로 화면을 다시 연 뒤 시도해 주세요. 입력한 비밀번호나 인증 코드는 처리되지 않았습니다.',
+                    retry_url=request.path)
+    response.status_code = 403
+    response['Referrer-Policy'] = 'same-origin'
+    return response
+
+
 @login_required
 @never_cache
 def invitation_preview(request, employee_id):

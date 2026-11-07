@@ -22,5 +22,7 @@ class RequireMFA:
         response = self.get_response(request)
         if request.path.startswith(('/accounts/', '/login/')):
             response['Cache-Control'] = 'no-store'
-            response['Referrer-Policy'] = 'no-referrer'
+            # Keep same-origin form provenance for HTTPS CSRF checks while
+            # preventing activation/reset URLs from leaking to other sites.
+            response['Referrer-Policy'] = 'same-origin'
         return response
