@@ -139,7 +139,7 @@ def edit_task(request, task=None):
                                          for n,u in enumerate(form.cleaned_data['reviewers'],1)])
         if task and before['assignee_id'] != str(obj.assignee_id):
             obj.accepted_at=None; obj.assigned_at=timezone.now(); obj.save(update_fields=['accepted_at','assigned_at'])
-        record(obj,request.user,'created' if is_new else 'changed',form.cleaned_data.get('change_reason') or '공식 업무 등록 · 참여자 및 결재라인 설정',
+        record(obj,request.user,'created' if is_new else 'changed',form.cleaned_data.get('change_reason') or '업무 등록 · 참여자 및 결재라인 설정',
                {'before':before,'previous_participation':prior,'previous_approval_line':old_line,
                 'participants':list(members),'approval_line':[user_name(u) for u in form.cleaned_data['reviewers']]})
         if is_new and form.cleaned_data['allocation']=='individual':

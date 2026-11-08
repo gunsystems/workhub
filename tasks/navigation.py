@@ -10,7 +10,7 @@ def navigation(request):
             item('내 업무','/dashboard/?scope=mine','home',path=='/dashboard/' and request.GET.get('scope')=='mine'),
             item('개인 보드','/work/personal/','board',path.startswith('/work/personal/'))]},
         {'label':'업무 관리','items':[
-            item('공식 업무','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/personal/','/work/notifications/')))),
+            item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/personal/','/work/notifications/')))),
             item('프로젝트','/projects/','folder',path.startswith('/projects/')),
             item('업무 접수함','/intake/','inbox',path.startswith('/intake/')),
             item('캘린더','/','calendar',path=='/')]},
