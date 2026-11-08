@@ -64,8 +64,9 @@ def detail(request,pk):
     if not sensitive:
         events = events.exclude(kind__in=['approved','feedback','returned'])
     from .google_calendar import official_allowed
+    from .calendar_views import task_calendar_registered
     calendar_export_allowed = official_allowed(request.user, task)
-    return render(request,'tasks/detail.html',{'task':task,'can_export_calendar':calendar_export_allowed,'can_edit':can_edit(request.user, task) and task.status not in ['review','done'], 'can_review':can_review(request.user, task),'can_report':can_report(request.user,task),'sensitive':sensitive,'events':events,'checklist':task.checklist.filter(retired=False)})
+    return render(request,'tasks/detail.html',{'task':task,'can_export_calendar':calendar_export_allowed,'calendar_registered':task_calendar_registered(request.user,task),'can_edit':can_edit(request.user, task) and task.status not in ['review','done'], 'can_review':can_review(request.user, task),'can_report':can_report(request.user,task),'sensitive':sensitive,'events':events,'checklist':task.checklist.filter(retired=False)})
 
 @login_required
 @transaction.atomic

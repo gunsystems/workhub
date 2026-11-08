@@ -185,7 +185,7 @@ class EmployeeLifecycleTests(TestCase):
         for confirmation in ['', token]:
             response = self.client.post(url, {'action':'delete_employee','reason':'테스트','confirmation':confirmation})
             self.assertContains(response, '담당 업무 1건')
-            self.assertNotContains(response, '<dialog')
+            self.assertNotContains(response, 'id="delete-confirmation"')
         response = self.client.post(url, {'action':'delete_access', 'reason':'퇴사'})
         self.assertContains(response, '직원 기록과 업무 이력은 보존됩니다')
         token = response.context['pending_delete']['token']

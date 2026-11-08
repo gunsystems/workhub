@@ -32,7 +32,7 @@
     @media(max-width:480px){main{padding:24px;margin:24px auto}.form-actions{flex-direction:column}.form-actions button{width:100%}.codes{grid-template-columns:1fr}}
   </style>
 </head>
-<body><main>
+<body><main><div style="display:flex;justify-content:flex-end;margin-bottom:12px">{% include 'tasks/page_help.html' %}</div>
   <div class="brand">GUNSYSTEMS · Workhub</div>
   <h1>{{ title }}</h1>
   {% if notice %}<p class="notice">{{ notice }}</p>{% endif %}

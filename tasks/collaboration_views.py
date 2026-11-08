@@ -8,6 +8,7 @@ from .permissions import visible_tasks,can_report,can_review,can_edit,is_company
 
 def official_detail(request,task):
     from .google_calendar import official_allowed
+    from .calendar_views import task_calendar_registered
     steps=list(task.approval_steps.all())
     current=next((s for s in steps if s.decision!='approved'),None)
     return render(request,'tasks/official_detail.html',{
@@ -18,7 +19,7 @@ def official_detail(request,task):
         'executive':is_company_admin(request.user),'events':task.events.all(),
         'group_tasks':visible_tasks(request.user).filter(group_key=task.group_key) if task.group_key else [],
         'checklist':task.checklist.filter(retired=False),
-        'can_export_calendar':official_allowed(request.user,task),
+        'can_export_calendar':official_allowed(request.user,task),'calendar_registered':task_calendar_registered(request.user,task),
     })
 
 
