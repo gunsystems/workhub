@@ -14,3 +14,4 @@
 
 /* Urgent work needs a clear visual distinction from amber high-priority work. */
 .personal-card.priority-urgent{border-left:6px solid #ff0000}.badge-urgent{background:#fff0f0;color:#c60000}.key-urgent{background:#ff0000;height:5px;width:17px}
+.personal-card{border-left-width:6px}.key-line{height:5px;width:17px}
