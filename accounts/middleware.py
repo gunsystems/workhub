@@ -1,6 +1,7 @@
 from django.shortcuts import redirect
 from django_otp import user_has_device
-from .lifecycle import account_allowed
+from django.conf import settings
+from .lifecycle import local_account_allowed
 
 
 class RequireMFA:
@@ -9,7 +10,7 @@ class RequireMFA:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            if not account_allowed(request.user):
+            if not local_account_allowed(request.user):
                 from django.contrib.auth import logout
                 logout(request)
                 return redirect('login')
@@ -24,8 +25,16 @@ class RequireMFA:
                 from django.contrib.auth import logout
                 logout(request)
                 return redirect('login')
-            if not request.path.startswith(('/accounts/', '/logout/', '/static/', '/healthz/')):
-                if access and access.require_mfa and not enrolled:
+            authentication_path = request.path.startswith(('/accounts/mfa/', '/accounts/activate/', '/accounts/password/', '/static/')) or request.path in ('/accounts/hiworks/access/', '/logout/', '/login/', '/healthz/')
+            if not authentication_path:
+                from .hiworks_access import allowed
+                if not allowed(request.user):
+                    from django.shortcuts import render
+                    response=render(request, 'accounts/hiworks_required.html', status=403)
+                    response['Cache-Control']='no-store'
+                    response['Referrer-Policy']='no-referrer'
+                    return response
+                if access and (access.require_mfa or (settings.WORKHUB_REQUIRE_HIWORKS and not request.user.is_superuser)) and not enrolled:
                     return redirect('mfa_setup')
                 if enrolled and not request.user.is_verified():
                     return redirect('mfa_verify')

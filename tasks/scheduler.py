@@ -51,6 +51,8 @@ def tick(now=None,sync_google=True):
                     if account_allowed(connection.user): sync_connection(connection)
                     SchedulerLease.objects.filter(key='personal',token=token).update(expires_at=timezone.now()+timedelta(minutes=5),heartbeat_at=timezone.now())
             from .hiworks import deliver_pending, sync_automatic_links
+            from accounts.hiworks_access import refresh_directory
+            refresh_directory()
             sync_automatic_links()
             deliver_pending()
             return {'created':created}

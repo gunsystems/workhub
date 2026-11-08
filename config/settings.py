@@ -73,3 +73,7 @@ WORKHUB_SCHEDULER_ENABLED = os.getenv('WORKHUB_SCHEDULER_ENABLED','1') == '1'
 # Independent minimum-scope tokens: never broaden the existing authentication mail token.
 HIWORKS_DIRECTORY_TOKEN = os.getenv('HIWORKS_DIRECTORY_TOKEN', '')
 HIWORKS_NOTIFY_TOKEN = os.getenv('HIWORKS_NOTIFY_TOKEN', '')
+
+# Company staff access requires a recent authoritative Hiworks directory match.
+# Local development/test fixtures opt in explicitly; production defaults to enforced.
+WORKHUB_REQUIRE_HIWORKS = os.getenv('WORKHUB_REQUIRE_HIWORKS', '0' if DEBUG else '1') == '1'

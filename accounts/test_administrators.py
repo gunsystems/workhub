@@ -53,8 +53,12 @@ class AdministratorTests(TestCase):
         self.member.is_staff = True
         self.member.save()
         self.client.force_login(self.member)
-        self.assertEqual(self.client.get('/accounts/administrators/').status_code, 403)
+        self.assertRedirects(self.client.get('/accounts/administrators/'),'/accounts/mfa/verify/',fetch_redirect_response=False)
         self.assertEqual(self.client.get('/admin/').status_code, 302)  # OTP still required.
+        session=self.client.session
+        session['otp_device_id']=TOTPDevice.objects.get(user=self.member,confirmed=True).persistent_id
+        session.save()
+        self.assertEqual(self.client.get('/accounts/administrators/').status_code,403)
         with self.assertRaises(ValidationError):
             change_access(self.member, self.employee.pk, 'suspend', '본인 중지 시도')
         another = get_user_model().objects.create_user('other-admin', is_staff=True)

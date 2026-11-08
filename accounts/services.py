@@ -51,6 +51,8 @@ def deliver(subject, body, recipient, html_body=None):
 
 def invite(employee, email):
     email = company_email(email)
+    from .hiworks_access import require_mailbox
+    require_mailbox(email)
     if not employee.is_active:
         raise ValidationError('사용 중지된 직원입니다. 재활성화 후 초대하세요.')
     if employee.user_id:

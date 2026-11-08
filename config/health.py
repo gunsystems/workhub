@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.db import DatabaseError
 from tasks.models import Task, Project, WorkRequest, ApprovalStep, PersonalCard,WorkNotification
 from accounts.models import AccessProfile, Invitation
+from tasks.models import HiworksDirectoryCache
 
 
 def health(request):
@@ -16,6 +17,7 @@ def health(request):
         ApprovalStep.objects.first()
         PersonalCard.objects.first()
         WorkNotification.objects.first()
+        HiworksDirectoryCache.objects.first()
     except DatabaseError:
         return JsonResponse({**data,'status':'database_not_ready'},status=503)
     return JsonResponse({**data,'status':'ok'})

@@ -23,11 +23,17 @@ def system_admin(user):
     return bool(access and access.verified_at and not access.otp_reset_key and user_has_device(user))
 
 
-def account_allowed(user):
+def local_account_allowed(user):
     if not user or not user.is_active:
         return False
     employee = getattr(user, 'employee', None)
     return employee is None or employee.is_active
+
+
+def account_allowed(user):
+    if not local_account_allowed(user): return False
+    from .hiworks_access import allowed
+    return allowed(user)
 
 
 def business_counts(employee):

@@ -378,3 +378,11 @@ class HiworksSyncStatus(models.Model):
     checked_at = models.DateTimeField(null=True)
     status = models.CharField(max_length=16, default='pending')
     message = models.CharField(max_length=240, blank=True)
+
+
+class HiworksDirectoryCache(models.Model):
+    key = models.CharField(max_length=32, primary_key=True, default='access')
+    rows = models.JSONField(default=list)
+    checked_at = models.DateTimeField(null=True)
+    attempted_at = models.DateTimeField(null=True)
+    error = models.CharField(max_length=240, blank=True)

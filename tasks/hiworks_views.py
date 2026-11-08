@@ -20,6 +20,8 @@ def settings_view(request):
         try:
             if action == 'retry':
                 request_auto_sync()
+                from accounts.hiworks_access import refresh_directory
+                refresh_directory(force=True)
                 messages.success(request,'자동 연결을 다시 확인하도록 요청했습니다. 잠시 후 새로고침해 주세요.')
                 return redirect('hiworks_settings')
             elif action == 'preview':
@@ -67,9 +69,12 @@ def settings_view(request):
             row['department_match'] = Department.objects.filter(name=row.get('department','')).first()
             matches=Employee.objects.filter(user__email__iexact=row['email']).exclude(user__is_superuser=True)
             row['suggested']=matches.first().pk if matches.count()==1 else None
+    from .models import HiworksDirectoryCache
+    access_cache=HiworksDirectoryCache.objects.first()
     automatic_employees=eligible_auto_employees()
     configured=set(HiworksLink.objects.filter(auto_configured=True).values_list('employee_id',flat=True))
     return render(request, 'tasks/hiworks_settings.html', {
+        'access_cache':access_cache,
         'pending_employees':[e for e in automatic_employees if e.pk not in configured],'sync_status':HiworksSyncStatus.objects.first(),
         'review':review, 'directory_ready':bool(settings.HIWORKS_DIRECTORY_TOKEN), 'notify_ready':bool(settings.HIWORKS_NOTIFY_TOKEN),
         'employees':Employee.objects.exclude(user__is_superuser=True).select_related('department'), 'departments':Department.objects.all(),

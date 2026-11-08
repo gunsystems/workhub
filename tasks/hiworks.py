@@ -122,7 +122,9 @@ def sync_automatic_links():
     if not SchedulerLease.objects.filter(key='hiworks-directory',expires_at__lte=now).update(token=token,expires_at=now+timedelta(minutes=3),heartbeat_at=now): return
     retry_minutes = 15
     try:
-        rows = {row['email']:row for row in directory_rows()}
+        from accounts.hiworks_access import fresh_cache
+        cached=fresh_cache() if settings.WORKHUB_REQUIRE_HIWORKS else None
+        rows = {row['email']:row for row in (cached.rows if cached else directory_rows())}
         linked = missing = conflicts = 0
         for employee in pending:
             row = rows.get(employee.invitation.email.strip().lower())

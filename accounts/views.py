@@ -145,8 +145,13 @@ def sign_in(request):
             candidate = matches.first() if matches.count() == 1 else None
             access = getattr(candidate, 'workhub_access', None) if candidate else None
             # New accounts must use their verified email. Preserve legacy credentials.
-            if candidate and account_allowed(candidate) and (not access or (access.verified_at and identity == access.email)):
+            from .lifecycle import local_account_allowed
+            if candidate and local_account_allowed(candidate) and (not access or (access.verified_at and identity == access.email)):
                 user = authenticate(request, username=candidate.username, password=form.cleaned_data['password'])
+                if user and not account_allowed(user):
+                    from .hiworks_access import refresh_directory
+                    refresh_directory()
+                    if not account_allowed(user): user = None
             else:
                 get_user_model()().set_password(form.cleaned_data['password'])
         if user:
@@ -157,7 +162,8 @@ def sign_in(request):
                 return redirect('mfa_verify')
             login(request, user)
             access = getattr(user, 'workhub_access', None)
-            return redirect('mfa_setup' if access and access.require_mfa else 'dashboard')
+            from django.conf import settings
+            return redirect('mfa_setup' if access and (access.require_mfa or (settings.WORKHUB_REQUIRE_HIWORKS and not user.is_superuser)) else 'dashboard')
         form.add_error(None, '로그인할 수 없습니다. 입력 내용을 확인하거나 잠시 후 다시 시도하세요.')
     return page(request, 'Workhub 로그인', form)
 
@@ -168,6 +174,11 @@ def activate(request, token):
     invitation = Invitation.objects.filter(token_digest=digest(token), used_at__isnull=True, expires_at__gt=timezone.now()).first()
     if not invitation or invitation.employee.user_id or not invitation.employee.is_active:
         return page(request, '사용할 수 없는 초대', notice='초대가 만료되었거나 이미 사용됐습니다. 관리자에게 재발송을 요청하세요.')
+    from .hiworks_access import require_mailbox
+    from django.core.exceptions import ValidationError
+    try: require_mailbox(invitation.email)
+    except ValidationError as exc:
+        return page(request, '회사 직원 등록 확인 필요', notice=exc.messages[0])
     if not request.session.get('activation_nonce'):
         request.session.cycle_key()
         request.session['activation_nonce'] = secrets.token_urlsafe(32)

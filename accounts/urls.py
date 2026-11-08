@@ -1,3 +1,4 @@
+from . import access_views
 from . import staff_views
 from django.urls import path
 from . import views
@@ -6,6 +7,7 @@ from .reset_views import restore
 from .administrator_views import administrators
 
 urlpatterns = [
+    path('hiworks/access/', access_views.retry, name='hiworks_access_retry'),
     path('employees/', staff_views.employee_list, name='employee_list'),
     path('employees/new/', staff_views.employee_edit, name='employee_new'),
     path('employees/<int:pk>/edit/', staff_views.employee_edit, name='employee_edit'),

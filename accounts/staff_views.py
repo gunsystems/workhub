@@ -45,7 +45,10 @@ def employee_list(request):
     for employee in employees[:300]:
         invitation=getattr(employee,'invitation',None)
         email=(employee.user.email if employee.user_id else '') or (invitation.email if invitation else '')
-        rows.append({'employee':employee,'email':email,'state':invitation_state(None,employee),
+        from django.conf import settings
+        from .hiworks_access import allowed
+        membership = ('하이웍스 등록 확인됨' if allowed(employee.user) else '하이웍스 확인 필요') if settings.WORKHUB_REQUIRE_HIWORKS and employee.user_id and not employee.user.is_superuser else ''
+        rows.append({'employee':employee,'email':email,'state':invitation_state(None,employee),'membership':membership,
             'can_edit':not (employee.user_id and (employee.user.is_superuser or (employee.user.is_staff and not request.user.is_superuser))),
             'can_invite':bool(not employee.user_id and employee.is_active and invitation)})
     return render(request,'accounts/staff_list.html',{'rows':rows,'query':query,'department':department,'departments':Department.objects.all()})
