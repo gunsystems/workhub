@@ -16,7 +16,7 @@ from .models import AccountEvent
 class AdministratorForm(forms.Form):
     employee = forms.ModelChoiceField(label='직원', queryset=Employee.objects.none())
     action = forms.ChoiceField(label='처리', choices=[('grant_admin','서브 관리자 지정'),('revoke_admin','서브 관리자 해제')])
-    reason = forms.CharField(label='처리 사유', max_length=1000)
+    reason = forms.CharField(label='처리 사유', max_length=1000, widget=forms.Textarea(attrs={'rows':4}))
 
 
 @login_required
