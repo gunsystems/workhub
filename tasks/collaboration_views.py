@@ -3,7 +3,7 @@ from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404,render,redirect
 from django.utils import timezone
 from .models import Task, WorkNotification,PersonalReminder
-from .permissions import visible_tasks,can_report,can_review,can_edit,is_company_admin
+from .permissions import visible_departments,visible_employees,performing_department,performing_employee,visible_tasks,can_report,can_review,can_edit,is_company_admin
 
 
 def official_detail(request,task):
@@ -29,9 +29,13 @@ def official_list(request):
     tasks=visible_tasks(request.user)
     if status in dict(Task.STATUS): tasks=tasks.filter(status=status)
     else: tasks=tasks.exclude(status__in=['done','cancelled'])
+    department=request.GET.get('department','')
+    employee=request.GET.get('employee','')
+    if department.isdigit(): tasks=tasks.filter(performing_department(department)).distinct()
+    if employee.isdigit(): tasks=tasks.filter(performing_employee(employee)).distinct()
     query=request.GET.get('q','').strip()[:200]
     if query: tasks=tasks.filter(title__icontains=query)
-    return render(request,'tasks/official_list.html',{'tasks':tasks[:200],'statuses':Task.STATUS,'status':status,'query':query})
+    return render(request,'tasks/official_list.html',{'tasks':tasks[:200],'departments':visible_departments(request.user),'employees':visible_employees(request.user),'department':department,'employee':employee,'statuses':Task.STATUS,'status':status,'query':query})
 
 
 @login_required

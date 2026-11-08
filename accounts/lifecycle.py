@@ -74,7 +74,7 @@ def change_access(actor, employee_id, action, reason, confirmation=''):
     employee = Employee.objects.select_for_update().select_related('user').get(pk=employee_id)
     user = get_user_model().objects.select_for_update().get(pk=employee.user_id) if employee.user_id else None
     if user and (user.pk == actor.pk or user.is_superuser or (user.is_staff and not actor.is_superuser)):
-        raise ValidationError('본인 또는 최상위 관리자 계정은 직원 계정 관리에서 변경할 수 없습니다.')
+        raise ValidationError('본인 또는 관리자 계정은 직원 계정 관리에서 변경할 수 없습니다.')
     if action not in ACTIONS or not reason.strip():
         raise ValidationError('처리 항목과 사유를 입력하세요.')
     invitation = Invitation.objects.select_for_update().filter(employee=employee).first()

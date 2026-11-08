@@ -11,6 +11,7 @@ from .permissions import is_manager, can_review, can_report, can_manage_employee
 from .workflow import record, snapshot, transition
 from .metrics import employee_metrics
 from .permissions import profile, is_company_admin, visible_tasks, visible_departments, visible_employees, can_edit
+from .permissions import can_view_company, performing_department, performing_employee
 from .models import Task, Department, Employee, TaskEvent, EmployeeFeedback
 from .forms import TaskForm, ProgressForm, SubmitForm, ReviewForm, FeedbackForm
 
@@ -40,8 +41,8 @@ def calendar_view(request):
     tasks = visible_tasks(request.user)
     department = request.GET.get('department','')
     employee = request.GET.get('employee','')
-    if department.isdigit(): tasks = tasks.filter(assignee__department_id=department)
-    if employee.isdigit(): tasks = tasks.filter(assignee_id=employee)
+    if department.isdigit(): tasks = tasks.filter(performing_department(department)).distinct()
+    if employee.isdigit(): tasks = tasks.filter(performing_employee(employee)).distinct()
     status = request.GET.get('status','')
     if status in dict(Task.STATUS): tasks=tasks.filter(status=status)
     tasks=list(tasks)
@@ -49,6 +50,10 @@ def calendar_view(request):
     for offset in range((end-start).days+1):
         day=start+timedelta(days=offset)
         days.append({'date':day,'today':day==today,'outside':day.month!=selected.month,'tasks':[t for t in tasks if t.start_date<=day<=t.due_date]})
+    for day in days:
+        day['total'] = len(day['tasks'])
+        day['more'] = max(0, day['total'] - 4) if mode == 'month' else 0
+        if mode == 'month': day['tasks'] = day['tasks'][:4]
     query=request.GET.copy()
     for key in ['date','view']: query.pop(key,None)
     return render(request,'tasks/calendar.html',{'days':days,'mode':mode,'selected':selected,'today':today,'prev':prev,'next':nxt,'query':query.urlencode(),'departments':visible_departments(request.user),'employees':visible_employees(request.user).select_related('department'),'department':department,'employee':employee,'status':status,'statuses':Task.STATUS,'count':len(tasks),'overdue':[t for t in tasks if t.deadline=='overdue'],'soon':[t for t in tasks if t.deadline=='soon']})
@@ -103,7 +108,7 @@ def dashboard(request):
     employee = profile(request.user)
     if not is_company_admin(request.user) and not employee:
         return render(request,'tasks/access_pending.html',status=403)
-    managing = is_manager(request.user) and request.GET.get('scope') != 'mine'
+    managing = (is_manager(request.user) or can_view_company(request.user)) and request.GET.get('scope') != 'mine'
     tasks = visible_tasks(request.user).prefetch_related('events')
     employees = visible_employees(request.user).select_related('department')
     if not managing:
@@ -112,10 +117,10 @@ def dashboard(request):
     department_id = request.GET.get('department','')
     employee_id = request.GET.get('employee','')
     if department_id.isdigit():
-        tasks = tasks.filter(assignee__department_id=department_id)
+        tasks = tasks.filter(performing_department(department_id)).distinct()
         employees = employees.filter(department_id=department_id)
     if employee_id.isdigit():
-        tasks = tasks.filter(assignee_id=employee_id)
+        tasks = tasks.filter(performing_employee(employee_id)).distinct()
         employees = employees.filter(pk=employee_id)
     today = timezone.localdate()
     try:
@@ -124,7 +129,7 @@ def dashboard(request):
         month = today.replace(day=1)
     end = month.replace(day=calendar.monthrange(month.year,month.month)[1])
     tasks = list(tasks)
-    if managing and not is_company_admin(request.user):
+    if managing and not can_view_company(request.user):
         employees = employees.filter(Q(role='employee') | Q(pk=employee.pk)).exclude(user__is_superuser=True)
     rows = [employee_metrics(e,tasks,month,end) for e in employees]
     for row in rows:
@@ -147,7 +152,7 @@ def dashboard(request):
     if bucket not in buckets: bucket='active'
     query = request.GET.copy()
     query.pop('bucket',None)
-    return render(request,'tasks/dashboard.html',{'managing':managing,'is_manager':is_manager(request.user),'rows':rows,'tasks':buckets[bucket],'counts':{k:len(v) for k,v in buckets.items()},'bucket':bucket,'query':query.urlencode(),'month':month,'departments':visible_departments(request.user),'employees':visible_employees(request.user),'department':department_id,'employee':employee_id,'scope':request.GET.get('scope',''),'attention_count':attention_count,'attention_only':attention_only,'today':today,'employee_feedbacks':EmployeeFeedback.objects.filter(employee__in=employees).select_related('employee')[:10],'feedbacks':TaskEvent.objects.filter(task_id__in=[t.pk for t in tasks if is_company_admin(request.user) or t.assignee.user_id == request.user.pk or (managing and t.assignee.role == 'employee' and not (t.assignee.user_id and t.assignee.user.is_superuser))],kind__in=['feedback','returned','approved']).select_related('task')[:10]})
+    return render(request,'tasks/dashboard.html',{'company_view':can_view_company(request.user),'managing':managing,'is_manager':is_manager(request.user),'rows':rows,'tasks':buckets[bucket],'counts':{k:len(v) for k,v in buckets.items()},'bucket':bucket,'query':query.urlencode(),'month':month,'departments':visible_departments(request.user),'employees':visible_employees(request.user),'department':department_id,'employee':employee_id,'scope':request.GET.get('scope',''),'attention_count':attention_count,'attention_only':attention_only,'today':today,'employee_feedbacks':EmployeeFeedback.objects.filter(employee__in=employees).select_related('employee')[:10],'feedbacks':TaskEvent.objects.filter(task_id__in=[t.pk for t in tasks if is_company_admin(request.user) or t.assignee.user_id == request.user.pk or (managing and t.assignee.role == 'employee' and not (t.assignee.user_id and t.assignee.user.is_superuser))],kind__in=['feedback','returned','approved']).select_related('task')[:10]})
 
 
 @login_required

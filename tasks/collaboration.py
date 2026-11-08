@@ -90,12 +90,15 @@ class OfficialTaskForm(TaskForm):
         return data
 
 
-def notify(task, message):
+def notify(task, message, external=True):
     ids = set(task.participants.exclude(user=None).values_list('user_id',flat=True))
     ids.update(task.watchers.values_list('pk',flat=True))
     ids.update(task.approval_steps.exclude(approver=None).values_list('approver_id',flat=True))
     if task.creator_id: ids.add(task.creator_id)
-    WorkNotification.objects.bulk_create([WorkNotification(user_id=pk,task=task,message=message[:240]) for pk in ids])
+    from .hiworks import enqueue
+    for pk in ids:
+        notification = WorkNotification.objects.create(user_id=pk,task=task,message=message[:240])
+        if external: enqueue(notification)
 
 
 @login_required
@@ -327,5 +330,5 @@ def _change(user,pk,kind,data):
     task.revision+=1; task.save()
     record(task,user,event,data['body'],{'before':before,'action':kind,'decision':data.get('decision'),
            'round':task.report_round,'step':current.position if current else None})
-    notify(task,('대표 직권 처리: ' if kind=='override' else '')+data['body'][:150])
+    notify(task,('대표 직권 처리: ' if kind=='override' else '')+data['body'][:150], external=kind in ['submit','review','override','delegate','handover','cancel'])
     return task

@@ -22,7 +22,7 @@
   <p>계정을 삭제하면 해당 계정의 개인 보드도 삭제됩니다. 개인 보드 내용은 관리자에게 표시되지 않습니다. 퇴사 시 먼저 미완료 업무와 결재를 인계해 주세요.</p>
   <p class="notice"><strong>휴대폰 분실 · OTP 초기화</strong><br>직원에게 직접 연락해 본인을 확인한 뒤 선택하세요. 모든 로그인과 기존 OTP가 무효화됩니다. 직원은 기존 비밀번호로 로그인하고 회사 이메일 인증 후 새 OTP를 등록합니다. 새 OTP 등록 전에는 업무를 이용할 수 없습니다. 확인 방법을 처리 사유에 기록하세요.</p>
   <table>{% for label,count in counts.items %}<tr><th>{{ label }}</th><td>{{ count }}건</td></tr>{% endfor %}</table>
-  {% if protected %}<p class="notice">본인 또는 최상위 관리자 계정은 이 화면에서 중지·삭제할 수 없습니다.</p>{% else %}
+  {% if protected %}<p class="notice">본인 또는 관리자 계정은 이 화면에서 중지·삭제할 수 없습니다.</p>{% else %}
   {% if has_history %}<p class="notice">업무 이력이 있어 <strong>직원 완전 삭제는 불가능</strong>합니다. 퇴사 시에는 <strong>사용 중지</strong>를 선택하세요. 로그인 계정 삭제는 인증 정보를 지우고 직원·업무 이력을 보존합니다.</p>{% endif %}
   <form method="post">{% csrf_token %}{{ form.as_p }}<div class="actions"><button type="submit">선택한 처리 적용</button><a href="/admin/tasks/employee/">직원 목록으로</a></div></form>
   {% endif %}

@@ -347,3 +347,26 @@ class CalendarExport(models.Model):
     class Meta:
         constraints=[models.CheckConstraint(condition=(models.Q(card__isnull=False,task__isnull=True)|models.Q(card__isnull=True,task__isnull=False)),name='calendar_export_one_source'),
                      models.UniqueConstraint(fields=['user','task'],name='unique_user_task_export')]
+
+
+class HiworksLink(models.Model):
+    employee = models.OneToOneField(Employee, on_delete=models.CASCADE)
+    user_id = models.CharField(max_length=150, unique=True)
+    remote_id = models.CharField(max_length=150, unique=True)
+    email = models.EmailField()
+    notifications_enabled = models.BooleanField(default=False)
+
+
+class HiworksReview(models.Model):
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    rows = models.JSONField(default=list)
+    created_at = models.DateTimeField(default=timezone.now)
+    applied_at = models.DateTimeField(null=True)
+
+
+class HiworksDelivery(models.Model):
+    notification = models.OneToOneField(WorkNotification, on_delete=models.CASCADE)
+    state = models.CharField(max_length=16, default='pending')
+    created_at = models.DateTimeField(default=timezone.now)
+    attempted_at = models.DateTimeField(null=True)
+    detail = models.CharField(max_length=200, blank=True)

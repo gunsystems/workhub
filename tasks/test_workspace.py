@@ -165,15 +165,18 @@ class WorkspaceTests(TestCase):
         with self.assertRaises(ValidationError): self.act(self.worker,task,'progress',progress=50)
         self.assertTrue(TaskEvent.objects.filter(task=task).exists())
 
-    def test_draft_hidden_until_published_and_unrelated_peer_cannot_access(self):
+    def test_draft_is_private_to_creator_until_published(self):
         task=self.task(status='draft')
         self.assertNotIn(task,visible_tasks(self.worker))
         self.assertIn(task,visible_tasks(self.author))
-        self.assertIn(task,visible_tasks(self.ceo))
+        self.assertNotIn(task,visible_tasks(self.ceo))
         self.assertNotIn(task,visible_tasks(self.other))
-        for user in [self.worker,self.other]:
+        for user in [self.worker,self.other,self.ceo]:
             self.client.force_login(user)
             self.assertEqual(self.client.get(f'/tasks/{task.pk}/').status_code,404)
+        task.status='doing';task.save()
+        self.assertIn(task,visible_tasks(self.other))
+        self.assertIn(task,visible_tasks(self.ceo))
 
     def test_form_validation_and_individual_copies(self):
         bad=OfficialTaskForm(data=self.form_data(approver_1=self.worker.pk),user=self.author)

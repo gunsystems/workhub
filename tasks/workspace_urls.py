@@ -1,6 +1,7 @@
 from django.urls import path
-from . import collaboration,collaboration_views,personal,calendar_views
+from . import collaboration,collaboration_views,personal,calendar_views,hiworks_views
 urlpatterns=[
+    path('hiworks/',hiworks_views.settings_view,name='hiworks_settings'),
     path('calendar/',calendar_views.settings_view,name='calendar_settings'),
     path('calendar/google/connect/',calendar_views.connect,name='google_calendar_connect'),
     path('calendar/google/callback/',calendar_views.callback,name='google_calendar_callback'),
