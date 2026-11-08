@@ -4,6 +4,8 @@
 
 - 추가 요청: 중요·보통·낮음도 강조선 6px 통일. commit 3575d9814409f7fc9e55ff1c910f05f91ffde54a / dep-dbo3aap5efls73cp16bg live. 실제 보통/중요/긴급 카드의 computed border-left-width=6px 확인. outputs/workhub-priority-borders-6px.png 저장.
 - 사용자가 새 Google OAuth callback URI 추가 저장 확인. DNS 전파도 완료되어 공개 DNS에서 workhub CNAME 정상 확인. Render Verified, Certificate Pending 상태. 인증서 발급이 끝나고 HTTPS 200 확인 후에만 WORKHUB_BASE_URL을 새 주소로 바꿀 것. 기존 Google 인증정보/SECRET_KEY는 유지.
+- 17:47 KST 확인: 공개 DNS에는 CNAME 조회되지만 호스팅케이알 authoritative ns1/ns2/ns4는 NXDOMAIN, ns3에서만 새 CNAME 조회. 네임서버 간 전파 진행 중으로 보임. HTTPS는 SSL handshake 실패, 기준 URL은 아직 기존 주소 그대로. DNS 사용자 스크린샷의 CNAME 입력값은 정확하므로 재입력/삭제하지 말 것.
+- 사용자의 추가 요청으로 왼쪽 상단 임시 W workhub를 GUNSYSTEMS 단독 워드마크로 교체. commit 73aa8d4a7e11ed80088ce8ebf90edfdc8ceefee4 / dep-dbo3dvhsrm7s73asdgcg 배포. 실제 보드에서 로고/카드 6px 강조선 확인, outputs/gunsystems-logo-priority-update.png 저장.
 
 - 긴급 카드 왼쪽 선을 #FF0000, 6px로 변경(중요는 기존 amber), 배지/범례도 빨간색으로 구분. commit 0e47fedb2ca6c773417870dbea58a2c4e671823e / dep-dbo372vf3r2c73a2g6gg live. 실제 CSS 규칙과 범례 색상 확인, 사용자 카드 중요도/상태는 변경하지 않음. Django check 통과.
 - Render 서비스에 workhub.gunsystems.co.kr 사용자 도메인 추가 완료. Django ALLOWED_HOSTS에도 추가. 아직 DNS/TLS 확인 대기. WORKHUB_BASE_URL은 기존 onrender 주소 유지, 메일/OAuth 기준 주소를 성급히 바꾸지 말 것.
