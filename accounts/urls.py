@@ -1,3 +1,4 @@
+from . import staff_views
 from django.urls import path
 from . import views
 from .employee_views import manage_account
@@ -5,6 +6,11 @@ from .reset_views import restore
 from .administrator_views import administrators
 
 urlpatterns = [
+    path('employees/', staff_views.employee_list, name='employee_list'),
+    path('employees/new/', staff_views.employee_edit, name='employee_new'),
+    path('employees/<int:pk>/edit/', staff_views.employee_edit, name='employee_edit'),
+    path('employees/<int:pk>/resend/', staff_views.resend_invitation, name='employee_resend'),
+    path('departments/', staff_views.departments, name='department_management'),
     path('password/reset-preview/', views.password_reset_preview, name='password_reset_preview'),
     path('administrators/', administrators, name='administrators'),
     path('employees/<int:employee_id>/manage/', manage_account, name='manage_employee_account'),

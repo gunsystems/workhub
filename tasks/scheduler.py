@@ -50,7 +50,8 @@ def tick(now=None,sync_google=True):
                 for connection in GoogleCalendarConnection.objects.exclude(status__in=['disconnected','reconnect']).select_related('user'):
                     if account_allowed(connection.user): sync_connection(connection)
                     SchedulerLease.objects.filter(key='personal',token=token).update(expires_at=timezone.now()+timedelta(minutes=5),heartbeat_at=timezone.now())
-            from .hiworks import deliver_pending
+            from .hiworks import deliver_pending, sync_automatic_links
+            sync_automatic_links()
             deliver_pending()
             return {'created':created}
         finally:

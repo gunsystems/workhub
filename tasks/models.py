@@ -350,6 +350,7 @@ class CalendarExport(models.Model):
 
 
 class HiworksLink(models.Model):
+    auto_configured = models.BooleanField(default=False)
     employee = models.OneToOneField(Employee, on_delete=models.CASCADE)
     user_id = models.CharField(max_length=150, unique=True)
     remote_id = models.CharField(max_length=150, unique=True)
@@ -370,3 +371,10 @@ class HiworksDelivery(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     attempted_at = models.DateTimeField(null=True)
     detail = models.CharField(max_length=200, blank=True)
+
+
+class HiworksSyncStatus(models.Model):
+    key = models.CharField(max_length=32, primary_key=True, default='directory')
+    checked_at = models.DateTimeField(null=True)
+    status = models.CharField(max_length=16, default='pending')
+    message = models.CharField(max_length=240, blank=True)

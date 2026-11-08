@@ -24,7 +24,7 @@
   <table>{% for label,count in counts.items %}<tr><th>{{ label }}</th><td>{{ count }}건</td></tr>{% endfor %}</table>
   {% if protected %}<p class="notice">본인 또는 관리자 계정은 이 화면에서 중지·삭제할 수 없습니다.</p>{% else %}
   {% if has_history %}<p class="notice">업무 이력이 있어 <strong>직원 완전 삭제는 불가능</strong>합니다. 퇴사 시에는 <strong>사용 중지</strong>를 선택하세요. 로그인 계정 삭제는 인증 정보를 지우고 직원·업무 이력을 보존합니다.</p>{% endif %}
-  <form method="post">{% csrf_token %}{{ form.as_p }}<div class="actions"><button type="submit">선택한 처리 적용</button><a href="/admin/tasks/employee/">직원 목록으로</a></div></form>
+  <form method="post">{% csrf_token %}{{ form.as_p }}<div class="actions"><button type="submit">선택한 처리 적용</button><a href="/accounts/employees/">직원 목록으로</a></div></form>
   {% endif %}
   {% if events %}<h2>최근 처리 이력</h2><table><tr><th>일시</th><th>처리</th><th>관리자 · 사유</th></tr>{% for event in events %}<tr><td>{{ event.created_at|date:'Y-m-d H:i' }}</td><td>{{ event.get_action_display }}</td><td>{{ event.actor|default:'삭제된 관리자' }} · {{ event.reason }}</td></tr>{% endfor %}</table>{% endif %}
 </section>

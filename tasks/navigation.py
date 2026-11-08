@@ -23,9 +23,14 @@ def navigation(request):
     organization=[]
     if can_view_company(user) or (employee and employee.role=='manager'):
         organization.append(item('전사 현황' if can_view_company(user) else '팀 현황','/dashboard/','chart',path=='/dashboard/' and request.GET.get('scope')!='mine'))
-    if user.is_staff: organization.append(item('직원 관리','/admin/tasks/employee/','users',path.startswith('/admin/tasks/employee/')))
-    if user.is_superuser: organization.append(item('관리자 계정','/accounts/administrators/','shield',path=='/accounts/administrators/'))
-    if user.is_superuser: organization.append(item('하이웍스 연동','/work/hiworks/','users',path=='/work/hiworks/'))
-    if organization: groups.append({'label':'조직 관리','items':organization,'collapsible':True,'open':any(i['active'] for i in organization)})
+    if organization: groups.append({'label':'조직 현황','items':organization})
+    from accounts.lifecycle import system_admin
+    administration=[]
+    if system_admin(user):
+        administration.append(item('직원 관리','/accounts/employees/','users',path.startswith('/accounts/employees/') or path=='/accounts/departments/' or path.startswith('/admin/tasks/employee/')))
+    if user.is_superuser:
+        administration.append(item('관리자 계정','/accounts/administrators/','shield',path=='/accounts/administrators/'))
+        administration.append(item('하이웍스 자동 연동','/work/hiworks/','users',path=='/work/hiworks/'))
+    if administration: groups.append({'label':'관리자 전용','items':administration,'collapsible':True,'open':any(i['active'] for i in administration)})
     current=next((i['label'] for group in groups for i in group['items'] if i['active']),'업무 공간')
     return {'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username()}

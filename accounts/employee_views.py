@@ -65,7 +65,7 @@ def manage_account(request, employee_id):
         else:
             if not pending_delete:
                 messages.success(request, f'{employee.name}: {result} 완료')
-                return redirect('/admin/tasks/employee/')
+                return redirect('employee_list')
     return render(request, 'accounts/manage_employee.html', {
         'employee':employee, 'email':email, 'pending_delete':pending_delete,
         'form':form, 'counts':counts, 'has_history':any(counts.values()),

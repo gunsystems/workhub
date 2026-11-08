@@ -6,7 +6,7 @@
 </style>
 <section class="admin-accounts"><div class="eyebrow">ADMINISTRATOR ACCOUNTS</div>
 <h1>관리자 계정 관리</h1>
-<p>일반 직원은 <a href="/admin/tasks/employee/">직원 관리</a>에서 초대합니다. 별도 로그인 계정을 만들지 않고, 인증을 마친 직원에게 서브 관리자 권한을 지정합니다.</p>
+<p>일반 직원은 <a href="/accounts/employees/">직원 관리</a>에서 초대합니다. 별도 로그인 계정을 만들지 않고, 인증을 마친 직원에게 서브 관리자 권한을 지정합니다.</p>
 {% for message in messages %}<div class="admin-message" role="status">{{ message }}</div>{% endfor %}
 <section class="admin-section" aria-labelledby="current-administrators"><h2 id="current-administrators">현재 관리자</h2><ul class="admin-list">{% for administrator in administrators %}<li><strong>{{ administrator.username }}</strong><span class="admin-role">{% if administrator.is_superuser %}관리자{% else %}서브 관리자{% endif %}</span></li>{% endfor %}</ul>
 <div class="admin-policy"><p><strong>서브 관리자는 계정 운영을 담당합니다.</strong><br>직원 초대·계정 중지·OTP 초기화를 처리합니다. 다른 관리자 권한을 지정하거나 변경할 수 없습니다. 부서의 ‘업무 관리자’ 역할과는 별개이며, 전사 업무 열람 권한은 부여되지 않습니다.</p></div></section>

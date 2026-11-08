@@ -74,10 +74,11 @@ class PersonalDesignTests(TestCase):
         response=self.client.get(f'/work/personal/boards/{self.board.pk}/')
         for text in ['내 공간','업무 관리','알림','aria-current="page"','nav-toggle']:
             self.assertContains(response,text)
-        self.assertNotContains(response,'조직 관리')
+        self.assertNotContains(response,'관리자 전용')
         self.client.force_login(self.admin)
         response=self.client.get('/work/')
-        self.assertContains(response,'조직 관리')
+        self.assertContains(response,'조직 현황')
+        self.assertContains(response,'관리자 전용')
         self.assertContains(response,'nav-collapsible')
         self.assertNotContains(response,'중요 점검')
 

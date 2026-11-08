@@ -140,7 +140,7 @@ class EmployeeLifecycleTests(TestCase):
         response = self.client.post(url, {'action':'delete_employee','reason':'테스트','confirmation':'wrong'})
         self.assertContains(response, '삭제 확인이 만료되었거나 올바르지 않습니다')
         response = self.client.post(url, {'action':'suspend','reason':'퇴사'})
-        self.assertRedirects(response, '/admin/tasks/employee/', fetch_redirect_response=False)
+        self.assertRedirects(response, '/accounts/employees/', fetch_redirect_response=False)
         self.assertContains(self.client.get('/admin/tasks/employee/'), '사용 중지')
 
     def test_delete_popup_is_required_and_confirm_button_deletes_without_typing_name(self):
@@ -157,7 +157,7 @@ class EmployeeLifecycleTests(TestCase):
         self.client.get(url)
         self.assertTrue(Employee.objects.filter(pk=self.employee.pk).exists())
         response = self.client.post(url, {'action':'delete_employee', 'reason':'테스트 재등록', 'confirmation':token})
-        self.assertRedirects(response, '/admin/tasks/employee/', fetch_redirect_response=False)
+        self.assertRedirects(response, '/accounts/employees/', fetch_redirect_response=False)
         self.assertFalse(Employee.objects.filter(pk=self.employee.pk).exists())
         self.assertFalse(get_user_model().objects.filter(pk=self.user.pk).exists())
         self.assertTrue(get_user_model().objects.filter(pk=self.admin.pk).exists())

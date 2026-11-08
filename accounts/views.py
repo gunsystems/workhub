@@ -59,7 +59,7 @@ def invitation_preview(request, employee_id):
 
 
 class LoginForm(forms.Form):
-    username = forms.CharField(label='회사 이메일', max_length=254)
+    username = forms.CharField(label='이메일 또는 관리자 아이디', max_length=254)
     password = forms.CharField(label='비밀번호', widget=forms.PasswordInput)
 
 
@@ -322,6 +322,8 @@ def mfa_setup(request):
                 device.refresh_from_db()
                 device.confirmed = True
                 device.save(update_fields=['confirmed'])
+                from tasks.hiworks import request_auto_sync
+                transaction.on_commit(request_auto_sync,robust=True)
                 django_otp.login(request, device)
                 RecoveryCode.objects.filter(user=request.user).delete()
                 if access and access.otp_reset_key:
