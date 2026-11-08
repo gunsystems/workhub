@@ -1,5 +1,10 @@
 # 개발 인수인계 · 2026-11-07
 
+## 2026-11-08 · 회사명 아래 프로그램명 추가
+
+- 사용자 요청으로 GUNSYSTEMS 로고 아래 Workhub · 업무관리 시스템 표기 추가. 회사명 24px, 제품명 14px로 위계 정리. desktop 실제 화면/계산 스타일 확인, outputs/gunsystems-workhub-branding.png 저장.
+- 최종 commit 4f359cb939273413fcbcc84d42bff56dabe46d5f / dep-dbo3h9p5efls73cpgah0. DNS/TLS 전환은 여전히 인증서 대기이며 WORKHUB_BASE_URL은 변경하지 않음.
+
 ## 2026-11-08 · 긴급 카드 강조 · 회사 도메인 연결 진행
 
 - 추가 요청: 중요·보통·낮음도 강조선 6px 통일. commit 3575d9814409f7fc9e55ff1c910f05f91ffde54a / dep-dbo3aap5efls73cp16bg live. 실제 보통/중요/긴급 카드의 computed border-left-width=6px 확인. outputs/workhub-priority-borders-6px.png 저장.
