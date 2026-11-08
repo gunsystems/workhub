@@ -1,5 +1,11 @@
 # 개발 인수인계 · 2026-11-07
 
+## 2026-11-08 · 관리자 화면 배치 · 브랜드 하단 글자 균형
+
+- 관리자 계정 화면을 현재 관리자/서브 관리자 권한 설정 카드로 분리. 직원·처리 두 열 정렬, 사유 4줄 textarea, 입력칸/버튼 간격 및 취소 링크 추가. 기존 권한 검사와 계정 변경 동작은 유지. 관련 3개 테스트 통과. 실제 권한 변경 POST는 하지 않음.
+- Workhub와 업무관리 시스템의 크기/굵기를 모두 14px/700으로 통일. 실제 계산 스타일 및 sidebar 내부 배치 확인.
+- commit cfe7895b0a71a0cb291e5d7930aede36084e0029 / dep-dbo3kke7bikc73fsp3bg, 배포 후 실제 관리자 화면과 입력칸/버튼 비겹침 확인. outputs/workhub-administrator-layout.png 저장.
+
 ## 2026-11-08 · 회사명 아래 프로그램명 추가
 
 - 사용자 요청으로 GUNSYSTEMS 로고 아래 Workhub · 업무관리 시스템 표기 추가. 회사명 24px, 제품명 14px로 위계 정리. desktop 실제 화면/계산 스타일 확인, outputs/gunsystems-workhub-branding.png 저장.
