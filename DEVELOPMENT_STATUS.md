@@ -1,5 +1,13 @@
 # 개발 인수인계 · 2026-11-07
 
+## 2026-11-08 · 긴급 카드 강조 · 회사 도메인 연결 진행
+
+- 긴급 카드 왼쪽 선을 #FF0000, 6px로 변경(중요는 기존 amber), 배지/범례도 빨간색으로 구분. commit 0e47fedb2ca6c773417870dbea58a2c4e671823e / dep-dbo372vf3r2c73a2g6gg live. 실제 CSS 규칙과 범례 색상 확인, 사용자 카드 중요도/상태는 변경하지 않음. Django check 통과.
+- Render 서비스에 workhub.gunsystems.co.kr 사용자 도메인 추가 완료. Django ALLOWED_HOSTS에도 추가. 아직 DNS/TLS 확인 대기. WORKHUB_BASE_URL은 기존 onrender 주소 유지, 메일/OAuth 기준 주소를 성급히 바꾸지 말 것.
+- DNS 관리자는 호스팅케이알. 사용자가 CNAME 추가했다고 답했으나 Google DNS 및 ns1/ns2.hosting.co.kr 직접 조회에서 새 주소 NXDOMAIN. 정확한 저장 레코드 확인 요청 중. 기존 @/www/메일 DNS는 변경하지 않음.
+- Google Workhub Web 클라이언트에 https://workhub.gunsystems.co.kr/work/calendar/google/callback/ URI 추가 요청 중(기존 URI 유지). DNS/TLS 및 Google URI 저장 확인 후 Render WORKHUB_BASE_URL 전환·새 주소 로그인/메일/Google 연결 확인 필요.
+- 현재 실제 Google 연결·일정 생성은 사용자가 성공 확인한 상태이며 Google CLIENT_ID/SECRET은 사용자가 Render에 저장함. 비밀 값을 읽거나 덮어쓰지 말 것.
+
 ## 2026-11-08 · 개인 보드 설정 닫기와 하단 간격
 
 - 보드 설정 저장 옆에 취소 버튼 추가. 취소·Esc·바깥 클릭·설정 버튼 재클릭으로 닫을 수 있고 입력 중인 보드 이름/새 보드 이름은 저장 없이 원래 값으로 복원.
