@@ -5,6 +5,7 @@ from urllib.error import HTTPError, URLError
 from datetime import timedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.utils import timezone
 from accounts.mail_backend import NoRedirect
 from .models import HiworksLink, HiworksDelivery
@@ -45,12 +46,16 @@ def directory_rows():
             if 'node_id' in value and 'user_no' not in value:
                 department = str(value.get('name') or '')[:80]
             mail_id = str(value.get('mail_id') or '').strip()
-            email = str(value.get('email') or (mail_id+'@'+settings.WORKHUB_EMAIL_DOMAIN if mail_id and '@' not in mail_id else mail_id)).strip().lower()
+            # HR email is a contact address and may be shared by multiple users.
+            # Only the office mail ID identifies the employee's company mailbox.
+            email = (mail_id if '@' in mail_id else mail_id+'@'+settings.WORKHUB_EMAIL_DOMAIN).lower() if mail_id else ''
+            try: validate_email(email)
+            except ValidationError: email = ''
             remote_id = str(value.get('user_no') or value.get('id') or '').strip()
             mail_id = str(value.get('mail_id') or '').strip()
             name = str(value.get('name') or '').strip()
             if email.endswith('@' + settings.WORKHUB_EMAIL_DOMAIN) and remote_id and mail_id and name:
-                found.append({'email': email, 'remote_id': remote_id[:150], 'user_id': mail_id[:150], 'name': name[:80], 'department':department})
+                found.append({'email': email, 'remote_id': remote_id[:150], 'user_id': mail_id.split('@',1)[0].lower()[:150], 'name': name[:80], 'department':department})
             else:
                 for child in value.values():
                     if isinstance(child, (dict, list)): walk(child, department)

@@ -55,9 +55,32 @@ class PriorityTests(TestCase):
     @override_settings(HIWORKS_DIRECTORY_TOKEN='directory-test')
     @patch('tasks.hiworks.api')
     def test_directory_accepts_company_email_only_and_no_implicit_changes(self, api):
-        api.return_value={'entries':[{'user_no':1,'mail_id':'worker','name':'직원','email':'worker@gunsystems.co.kr'},{'user_no':2,'mail_id':'evil','name':'외부','email':'evil@example.com'}]}
+        api.return_value={'entries':[{'user_no':1,'mail_id':'worker','name':'직원','email':'worker@gunsystems.co.kr'},{'user_no':2,'mail_id':'evil@example.com','name':'외부','email':'evil@example.com'}]}
         self.assertEqual(len(directory_rows()),1)
         self.assertEqual(HiworksLink.objects.count(),0)
+
+    @override_settings(HIWORKS_DIRECTORY_TOKEN='directory-test')
+    @patch('tasks.hiworks.api')
+    def test_directory_shared_contact_email_does_not_merge_office_accounts(self, api):
+        api.return_value={'node_id':'root','name':'회사','entries':[
+            {'user_no':'1','mail_id':'admin','name':'관리자','email':'admin@gunsystems.co.kr'},
+            {'user_no':'2','mail_id':'lee','name':'직원','email':'admin@gunsystems.co.kr'},
+            {'user_no':'3','mail_id':'member','name':'팀원','email':'private@example.com'}]}
+        rows=directory_rows()
+        self.assertEqual([r['email'] for r in rows],['admin@gunsystems.co.kr','lee@gunsystems.co.kr','member@gunsystems.co.kr'])
+        self.assertEqual([r['remote_id'] for r in rows],['1','2','3'])
+        self.assertEqual(HiworksLink.objects.count(),0)
+
+    @override_settings(HIWORKS_DIRECTORY_TOKEN='directory-test')
+    @patch('tasks.hiworks.api')
+    def test_directory_full_mailbox_and_duplicate_office_id_safety(self, api):
+        from django.core.exceptions import ValidationError
+        api.return_value={'entries':[{'user_no':'1','mail_id':'Lee@gunsystems.co.kr','name':'직원','email':''}]}
+        row=directory_rows()[0]
+        self.assertEqual(row['user_id'],'lee')
+        self.assertEqual(row['email'],'lee@gunsystems.co.kr')
+        api.return_value['entries'].append({'user_no':'2','mail_id':'lee','name':'다른 직원','email':''})
+        with self.assertRaises(ValidationError): directory_rows()
 
     @patch('tasks.hiworks_views.directory_rows')
     def test_review_apply_and_replay_protection(self, rows):
