@@ -56,7 +56,7 @@ class ProductionCSRFFlowTests(TestCase):
             response = self.client.post(self.path, {'action':'send','csrfmiddlewaretoken':value},
                                         HTTP_ORIGIN=origin, **self.proxy)
             self.assertEqual(response.status_code, 403)
-            self.assertContains(response, '화면 다시 열기', status_code=403)
+            self.assertContains(response, '다시 시도하기', status_code=403)
             self.assertNotContains(response, 'DEBUG', status_code=403)
         self.assertEqual(len(mail.outbox), 1)
 
