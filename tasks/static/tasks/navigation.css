@@ -8,3 +8,5 @@
 .app-sidebar .company-logo{min-width:0;gap:0;padding:5px 0}.app-sidebar .company-wordmark{font-family:Arial,Helvetica,sans-serif;font-size:24px;font-weight:900;letter-spacing:.35px;line-height:1.25;color:#225f49;white-space:nowrap}.sidebar-brand-row{margin-bottom:22px}
 @media(min-width:701px) and (max-width:1100px){.app-sidebar .company-wordmark{font-size:22px;letter-spacing:0}}
 @media(max-width:700px){.sidebar-brand-row{margin-bottom:0}.app-sidebar .company-wordmark{font-size:24px}}
+
+.app-sidebar .company-logo{flex-direction:column;align-items:flex-start;gap:5px}.app-sidebar .company-product{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.15px;color:#49695b;line-height:1.5}.company-product small{font-size:10px;font-weight:500;letter-spacing:0;color:#84978c}
