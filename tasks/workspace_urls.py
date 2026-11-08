@@ -1,6 +1,14 @@
 from django.urls import path
-from . import collaboration,collaboration_views,personal
+from . import collaboration,collaboration_views,personal,calendar_views
 urlpatterns=[
+    path('calendar/',calendar_views.settings_view,name='calendar_settings'),
+    path('calendar/google/connect/',calendar_views.connect,name='google_calendar_connect'),
+    path('calendar/google/callback/',calendar_views.callback,name='google_calendar_callback'),
+    path('calendar/google/disconnect/',calendar_views.disconnect,name='google_calendar_disconnect'),
+    path('calendar/policy/',calendar_views.policy,name='calendar_export_policy'),
+    path('calendar/task/<int:pk>/',calendar_views.export_task,name='google_export_task'),
+    path('personal/schedules/<int:pk>/toggle/',calendar_views.toggle_schedule,name='personal_schedule_toggle'),
+    path('personal/reminders/<int:pk>/read/',calendar_views.read_reminder,name='personal_reminder_read'),
     path('',collaboration_views.official_list,name='official_list'),
     path('new/',collaboration.edit_task,name='official_new'),
     path('<int:pk>/<str:kind>/',collaboration.action,name='official_action'),

@@ -235,8 +235,16 @@ class PersonalCard(models.Model):
     completed_at = models.DateTimeField(null=True)
     updated_at = models.DateTimeField(auto_now=True)
     next_occurrence = models.OneToOneField('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='previous_occurrence')
+    tags = models.ManyToManyField('PersonalTag',blank=True,related_name='cards')
+    due_time = models.TimeField('예정 시간 · 한국 시간',null=True,blank=True)
+    reminder_minutes = models.PositiveIntegerField('미리 알림 (분)',default=0)
+    reminder_enabled = models.BooleanField('프로그램 내 알림 받기',default=True)
+    calendar_display = models.CharField('Google Calendar 표시',max_length=12,default='none',choices=[('none','연동하지 않음'),('minimal','시간만 · 제목은 업무 일정'),('title','제목 · 시간 · 바로가기'),('details','제목 · 시간 · 메모 포함')])
+    series = models.ForeignKey('PersonalSchedule',null=True,blank=True,on_delete=models.SET_NULL,related_name='occurrences')
+    occurrence_at = models.DateTimeField(null=True,blank=True)
     class Meta:
         ordering = ['position','pk']
+        constraints=[models.UniqueConstraint(fields=['series','occurrence_at'],name='unique_personal_schedule_occurrence')]
 
     @property
     def checked_count(self): return sum(bool(item.get('done')) for item in self.checklist)
@@ -255,3 +263,87 @@ class WorkNotification(models.Model):
     read_at = models.DateTimeField(null=True)
     class Meta:
         ordering = ['-created_at','-pk']
+
+
+class PersonalTag(models.Model):
+    owner=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE,null=True,blank=True)
+    name=models.CharField('태그 이름',max_length=40)
+    class Meta:
+        ordering=['owner_id','name']
+        constraints=[models.UniqueConstraint(fields=['owner','name'],name='unique_owner_tag'),
+                     models.UniqueConstraint(fields=['name'],condition=models.Q(owner__isnull=True),name='unique_default_tag')]
+    def __str__(self): return self.name
+
+
+class PersonalSchedule(models.Model):
+    template_card=models.OneToOneField(PersonalCard,on_delete=models.CASCADE,related_name='schedule_template')
+    column=models.ForeignKey(PersonalColumn,on_delete=models.CASCADE)
+    mode=models.CharField(max_length=12,default='calendar',choices=[('calendar','일정 기준'),('completion','완료 기준')])
+    kind=models.CharField(max_length=20,default='daily')
+    interval=models.PositiveSmallIntegerField(default=1)
+    weekdays=models.JSONField(default=list)
+    month_day=models.PositiveSmallIntegerField(default=1)
+    week_number=models.SmallIntegerField(default=1)
+    month_end=models.CharField(max_length=8,default='last')
+    starts_at=models.DateTimeField()
+    next_at=models.DateTimeField(null=True)
+    until=models.DateField(null=True,blank=True)
+    max_count=models.PositiveIntegerField(null=True,blank=True)
+    generated_count=models.PositiveIntegerField(default=1)
+    enabled=models.BooleanField(default=True)
+    rule_version=models.PositiveIntegerField(default=1)
+
+    @property
+    def summary(self):
+        labels={'daily':'일','weekdays':'주 · 평일','weekly':'주','monthly_date':'개월','monthly_weekday':'개월 · 요일 기준','yearly':'년'}
+        text=f'{self.interval}{labels.get(self.kind,"")}마다'
+        return text+(' · 완료 기준' if self.mode=='completion' else '')+(' · 중지됨' if not self.enabled else '')
+
+
+class PersonalReminder(models.Model):
+    card=models.ForeignKey(PersonalCard,on_delete=models.CASCADE,related_name='reminders')
+    scheduled_for=models.DateTimeField()
+    notify_at=models.DateTimeField()
+    delivered_at=models.DateTimeField(null=True)
+    read_at=models.DateTimeField(null=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['card','scheduled_for'],name='unique_card_reminder')]
+        ordering=['-notify_at']
+
+
+class SchedulerLease(models.Model):
+    key=models.CharField(max_length=32,primary_key=True)
+    token=models.CharField(max_length=64,blank=True)
+    expires_at=models.DateTimeField()
+    heartbeat_at=models.DateTimeField(null=True)
+
+
+class GoogleCalendarConnection(models.Model):
+    user=models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
+    subject=models.CharField(max_length=255)
+    email=models.EmailField()
+    encrypted_refresh_token=models.TextField()
+    calendar_id=models.CharField(max_length=255)
+    connected_at=models.DateTimeField(default=timezone.now)
+    status=models.CharField(max_length=16,default='connected')
+    last_sync_at=models.DateTimeField(null=True)
+    error=models.CharField(max_length=240,blank=True)
+
+
+class CalendarExportPolicy(models.Model):
+    allow_official=models.BooleanField(default=False)
+
+
+class CalendarExport(models.Model):
+    user=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
+    card=models.OneToOneField(PersonalCard,null=True,blank=True,on_delete=models.CASCADE)
+    task=models.ForeignKey(Task,null=True,blank=True,on_delete=models.CASCADE)
+    detail=models.CharField(max_length=12,default='minimal')
+    event_id=models.CharField(max_length=100,blank=True)
+    calendar_id=models.CharField(max_length=255,blank=True)
+    payload_digest=models.CharField(max_length=64,blank=True)
+    error=models.CharField(max_length=240,blank=True)
+    updated_at=models.DateTimeField(auto_now=True)
+    class Meta:
+        constraints=[models.CheckConstraint(condition=(models.Q(card__isnull=False,task__isnull=True)|models.Q(card__isnull=True,task__isnull=False)),name='calendar_export_one_source'),
+                     models.UniqueConstraint(fields=['user','task'],name='unique_user_task_export')]

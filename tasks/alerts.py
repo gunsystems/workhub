@@ -36,9 +36,12 @@ def action_alerts(user):
         for intake in visible_requests(user).filter(task__isnull=True,closed_at__isnull=True):
             waiting = (timezone.now()-intake.created_at).days >= 2
             add(f'intake:{intake.pk}','미배정 요청 지연' if waiting or intake.overdue else '업무 배정 필요',intake.title,reverse('intake_detail',args=[intake.pk]),3 if waiting or intake.overdue else 2)
-    from .models import PersonalCard
-    for card in PersonalCard.objects.filter(column__board__owner=user,state='active',due_date__lte=timezone.localdate()):
+    from .models import PersonalCard,PersonalReminder
+    clock=timezone.localtime()
+    for card in PersonalCard.objects.filter(column__board__owner=user,state='active').filter(Q(due_date__lt=clock.date())|Q(due_date=clock.date(),due_time__isnull=True)|Q(due_date=clock.date(),due_time__lte=clock.time().replace(tzinfo=None))):
         add(f'personal:{card.pk}','개인 카드 확인 · 나만 보기',card.title,reverse('personal_card_edit',args=[card.pk]),1)
+    for reminder in PersonalReminder.objects.filter(card__column__board__owner=user,card__state='active',delivered_at__isnull=False,read_at__isnull=True).select_related('card'):
+        add(f'personal:{reminder.card_id}','개인 일정 알림 · 나만 보기',reminder.card.title,reverse('personal_card_edit',args=[reminder.card_id]),1)
     return sorted(alerts,key=lambda a:(-a['level'],a['key']))
 
 

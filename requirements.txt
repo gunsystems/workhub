@@ -3,3 +3,4 @@ gunicorn==24.1.1
 whitenoise==6.12.0
 django-otp==1.7.5
 qrcode[pil]==8.2
+cryptography==50.0.2

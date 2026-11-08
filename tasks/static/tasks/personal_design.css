@@ -5,3 +5,5 @@
 .personal-card h3{font-size:14px}.personal-card .card-preview{font-size:12px;color:#718176}.card-meta{font-size:10px;color:#718276}.priority-badge{font-size:10px;color:#728476}.badge-urgent{color:#a34e44}.badge-high{color:#987039}.badge-low{color:#5f7d96}.column-caption{font-size:11px;color:#7b8d81}.personal-add{font-size:12px;color:#64816c}.board-help{font-size:11px;color:#7e9485}.card-status{color:#6e8777}.card-complete-form button{font-size:10px}.board-key{font-size:11px;color:#7f9185}
 
 .card-popover{position:absolute;top:34px;left:auto;right:10px}.personal-column{position:relative}
+
+.tag-choices>div{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0}.tag-choices label{display:flex;align-items:center;gap:7px;border:1px solid #dce7df;border-radius:20px;padding:8px 12px;font-size:12px;cursor:pointer}.tag-choices input[type=checkbox]{width:auto}.tag-choices label:has(input:checked){background:#eaf4ed;border-color:#85ac91;color:#326b45}.personal-editor .detail{min-height:0}

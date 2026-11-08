@@ -30,6 +30,8 @@ class RequireMFA:
                 if enrolled and not request.user.is_verified():
                     return redirect('mfa_verify')
         response = self.get_response(request)
+        if request.path == '/work/calendar/google/callback/':
+            response['Referrer-Policy']='no-referrer'
         if request.path.startswith(('/accounts/', '/login/')):
             response['Cache-Control'] = 'no-store'
             # Keep same-origin form provenance for HTTPS CSRF checks while
