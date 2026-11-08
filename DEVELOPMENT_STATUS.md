@@ -1,5 +1,13 @@
 # 개발 인수인계 · 2026-11-07
 
+## 2026-11-08 · 회사 도메인 기준 주소 전환 완료
+
+- 사용자가 새 도메인 접속을 확인하고 남은 전환 작업을 승인. HTTPS 로그인 화면을 직접 확인한 뒤 Render WORKHUB_BASE_URL만 https://workhub.gunsystems.co.kr로 merge 업데이트. Google/메일 비밀 값·SECRET_KEY·DB·계정·OTP는 변경하지 않음.
+- canonical middleware는 기존 onrender 주소의 GET/HEAD를 같은 경로/쿼리의 회사 주소로 302 이동. 이전 페이지에서 보낸 POST 등은 409 안내로 저장 없이 중단하고 새 화면에서 재입력을 안내해 인증정보 재전송·업무 중복 처리를 방지. healthz/static 예외, 로컬·회사 도메인은 그대로 처리.
+- 메일 초대/재설정 링크, Google OAuth callback의 새 도메인 생성 테스트 및 CSRF·연동 회귀 검사 통과. 전체 185개 테스트 통과.
+- c4e7c1a176d3f0e6a08094c660f03f8d38d47b65 / dep-dbo60qajnfac73e05qmg live. 실제 기존 /login/에서 https://workhub.gunsystems.co.kr/login/으로 이동 확인. AUTH_SETUP.md·SCHEDULES_GOOGLE_SETUP.md의 안내 주소도 변경.
+- Google 새 callback URI 추가는 사용자가 이미 저장 확인. 사용자가 lee@gunsystems.co.kr로 새 도메인 정상 로그인 확인. 확인용 IAB 세션에는 로그인 상태가 공유되지 않아 Google 실제 OAuth 동의·일정 등록은 추가 수행하지 않았음. 코드/설정의 새 callback 주소는 테스트 확인했으며 기존 refresh token은 보존.
+
 ## 2026-11-08 · 화면별 그림 도움말 · Google 등록 표현 정리
 
 - 각 업무 화면 상단에 ? 도움말 버튼과 현재 화면별 목적/사용 순서/주의사항을 제공. 로그인·인증 및 Django 직원 관리 화면도 포함. 흐름도는 SVG, 개인 카드 색상 예시·프로젝트 진행률 평균·Google 종일 일정 예시 추가. 모달 닫기/바깥 클릭/Esc/포커스 복귀 확인.

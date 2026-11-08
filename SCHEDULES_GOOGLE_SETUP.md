@@ -14,7 +14,7 @@
 2. Google Auth Platform의 대상 사용자/동의 화면을 구성한다. 개인 Gmail도 연결하려면 외부 사용자를 지원해야 한다. 테스트 상태라면 연결할 Google 이메일을 테스트 사용자로 등록한다. Google 테스트 앱의 토큰 만료/검증 정책에 따라 재연결이 필요할 수 있다.
 3. 웹 애플리케이션 OAuth 클라이언트를 만들고 승인된 리디렉션 URI에 아래 값을 정확히 등록한다.
 
-   `https://gunsystems-workhub-test.onrender.com/work/calendar/google/callback/`
+   `https://workhub.gunsystems.co.kr/work/calendar/google/callback/`
 
 4. Render 서비스 환경 변수에 `GOOGLE_CALENDAR_CLIENT_ID`, `GOOGLE_CALENDAR_CLIENT_SECRET`을 저장하고 배포한다. 비밀 값은 채팅·Git 저장소에 넣지 않는다.
 5. Workhub의 `/work/calendar/`에서 직원이 본인 Google 계정을 선택해 동의한다. 회사 로그인 이메일은 바뀌지 않는다. 실제 Google 동의와 전송 테스트는 이 설정 후 진행한다.

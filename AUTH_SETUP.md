@@ -29,7 +29,7 @@
 | HIWORKS_OFFICE_TOKEN | 발급한 Office Token (secret) |
 | HIWORKS_USER_ID | admin (admin@gunsystems.co.kr의 사용자 ID) |
 | EMAIL_BACKEND | accounts.mail_backend.HiworksEmailBackend |
-| WORKHUB_BASE_URL | https://gunsystems-workhub-test.onrender.com |
+| WORKHUB_BASE_URL | https://workhub.gunsystems.co.kr |
 
 메일 발송 API는 https://api.hiworks.com/office/v2/webmail/sendMail 에 HTTPS POST multipart/form-data로 호출합니다. 토큰은 Authorization: Bearer 헤더에만 사용합니다. 보내는 계정은 user_id로 결정됩니다. SMTP로 자동 재시도하지 않습니다.
 
