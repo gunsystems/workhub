@@ -1,1 +1,20 @@
-{% extends 'tasks/base.html' %}{% block content %}<section class="heading"><div><div class="eyebrow">ADMINISTRATION · 관리자 전용</div><h1>{% if employee %}직원 정보 수정{% else %}직원 초대{% endif %}</h1><p>회사 이메일로 초대합니다. 직원이 이메일 인증·비밀번호·OTP 설정을 마치면 하이웍스 연결과 업무 알림이 자동으로 준비됩니다.</p></div></section>{% if employee %}<p class="workspace-notice">로그인 계정·비밀번호·OTP는 이 화면에서 변경하지 않습니다. 사용 중지·복구는 계정 관리에서 처리하세요.</p>{% endif %}<section class="detail"><form method="post" class="task-form">{% csrf_token %}{{ form.as_p }}<div class="workspace-actions" style="display:flex;gap:12px;margin-top:28px"><button class="button primary">{% if employee %}변경사항 저장{% else %}등록하고 초대 보내기{% endif %}</button><a class="button" href="{% url 'employee_list' %}">취소</a></div></form></section>{% endblock %}
+{% extends 'tasks/base.html' %}{% block content %}<section class="heading"><div><div class="eyebrow">ADMINISTRATION · 관리자 전용</div><h1>{% if employee %}직원 정보 수정{% else %}직원 초대{% endif %}</h1><p>회사 이메일로 초대합니다. 직원이 이메일 인증·비밀번호·OTP 설정을 마치면 하이웍스 연결과 업무 알림이 자동으로 준비됩니다.</p></div></section>{% if employee %}<p class="workspace-notice">로그인 계정·비밀번호·OTP는 이 화면에서 변경하지 않습니다. 사용 중지·복구는 계정 관리에서 처리하세요.</p>{% endif %}{% if not employee %}<section class="detail" style="margin-bottom:20px"><label for="staff-search">직원 검색</label><input id="staff-search" type="search" placeholder="이름 또는 회사 이메일로 검색" style="width:100%;margin-top:10px" {% if directory_error %}disabled{% endif %}><p>하이웍스에 등록된 직원을 선택하세요. 선택만으로 초대 메일이 발송되지는 않습니다.</p>{% if directory_error %}<p role="alert">{{ directory_error }}</p><a class="button" href="{% url 'employee_new' %}">목록 다시 불러오기</a>{% else %}<p>{{ directory|length }}명 조회 · 등록된 직원은 직원 관리에서 확인할 수 있습니다.</p>{% endif %}</section>{% endif %}<section class="detail"><form method="post" class="task-form">{% csrf_token %}{{ form.as_p }}<div class="workspace-actions" style="display:flex;gap:12px;margin-top:28px"><button class="button primary" {% if directory_error %}disabled{% endif %}>{% if employee %}변경사항 저장{% else %}등록하고 초대 보내기{% endif %}</button><a class="button" href="{% url 'employee_list' %}">취소</a></div></form></section>{% if not employee %}{{ directory|json_script:"hiworks-staff-data" }}<script>
+(()=>{
+ const rows=JSON.parse(document.getElementById('hiworks-staff-data').textContent);
+ const select=document.getElementById('id_hiworks_employee');
+ const search=document.getElementById('staff-search');
+ const options=Array.from(select.options);
+ options.forEach(option=>{const row=rows.find(row=>row.remote_id===option.value);if(row?.state)option.disabled=true;});
+ search.addEventListener('input',()=>{const query=search.value.trim().toLocaleLowerCase();options.forEach(option=>{option.hidden=!!option.value&&!option.text.toLocaleLowerCase().includes(query);});});
+ const fill=()=>{const row=rows.find(row=>row.remote_id===select.value&&!row.state);
+ document.getElementById('id_name').value=row?.name||'';
+ document.getElementById('id_invitation_email').value=row?.email||'';
+ if(row)document.getElementById('id_department').value=row.department_id||'';
+ };
+ select.addEventListener('change',fill);
+ // Keep department choices when redisplaying server-side validation errors.
+ const row=rows.find(row=>row.remote_id===select.value&&!row.state);
+ document.getElementById('id_name').value=row?.name||'';
+ document.getElementById('id_invitation_email').value=row?.email||'';
+})();
+</script>{% endif %}{% endblock %}

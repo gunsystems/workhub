@@ -12,6 +12,8 @@ class StaffUITests(TestCase):
         self.department=Department.objects.create(name='직원화면 테스트')
         self.employee=Employee.objects.create(user=self.member,name='테스트 직원',department=self.department)
         self.client.force_login(self.admin)
+        directory=patch('tasks.hiworks.directory_rows',return_value=[{'remote_id':'100','user_id':'new','name':'신규 직원','email':'new@gunsystems.co.kr','department':self.department.name}])
+        directory.start();self.addCleanup(directory.stop)
 
     def test_native_list_and_forms_keep_workhub_shell(self):
         for url in ['/accounts/employees/','/accounts/employees/new/',f'/accounts/employees/{self.employee.pk}/edit/','/accounts/departments/']:
@@ -25,11 +27,33 @@ class StaffUITests(TestCase):
 
     @patch('accounts.staff_views.invite')
     def test_add_employee_invites_without_creating_login(self, invite):
-        response=self.client.post('/accounts/employees/new/',{'name':'신규 직원','department':self.department.pk,'position':'member','role':'employee','invitation_email':'new@gunsystems.co.kr'})
+        response=self.client.post('/accounts/employees/new/',{'hiworks_employee':'100','name':'위조 이름','department':self.department.pk,'position':'member','role':'employee','invitation_email':'forged@gunsystems.co.kr'})
         self.assertEqual(response.status_code,302)
         employee=Employee.objects.get(name='신규 직원')
         self.assertIsNone(employee.user_id)
         invite.assert_called_once_with(employee,'new@gunsystems.co.kr')
+
+    @patch('accounts.staff_views.invite')
+    def test_registered_or_unknown_employee_cannot_be_invited(self,invite):
+        self.member.email='new@gunsystems.co.kr';self.member.save()
+        for identity in ['100','unknown','']:
+            response=self.client.post('/accounts/employees/new/',{'hiworks_employee':identity,'name':'신규 직원','department':self.department.pk,'position':'member','role':'employee','invitation_email':'new@gunsystems.co.kr'})
+            self.assertEqual(response.status_code,200)
+        self.assertFalse(Employee.objects.filter(name='신규 직원').exists())
+        invite.assert_not_called()
+
+    @patch('accounts.staff_views.invite')
+    def test_directory_failure_blocks_invitation_and_get_does_not_send(self,invite):
+        from django.core.exceptions import ValidationError
+        response=self.client.get('/accounts/employees/new/')
+        self.assertContains(response,'직원 검색')
+        self.assertContains(response,'신규 직원')
+        self.assertEqual(response['Cache-Control'],'no-store')
+        with patch('tasks.hiworks.directory_rows',side_effect=ValidationError('연결 확인 필요')):
+            response=self.client.post('/accounts/employees/new/',{'hiworks_employee':'100','name':'신규 직원','department':self.department.pk,'position':'member','role':'employee','invitation_email':'new@gunsystems.co.kr'})
+        self.assertContains(response,'연결 확인 필요')
+        self.assertFalse(Employee.objects.filter(name='신규 직원').exists())
+        invite.assert_not_called()
 
     def test_regular_employee_cannot_use_admin_operations_or_forge_post(self):
         self.client.force_login(self.member)
