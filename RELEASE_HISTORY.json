@@ -4,11 +4,15 @@
   "releases": [
     {
       "version": "0.9.1",
-      "status": "prepared_local_verified",
+      "status": "live_verified_receipt_not_tested",
       "release_notes": "releases/v0.9.1.md",
       "migrations": [],
       "tests": 20,
-      "real_notice_delivery": "not_sent_no_resend"
+      "real_notice_delivery": "not_sent_no_resend",
+      "source_commit": "871cd822c27c0d96f6ba553a2f2ebed05352315f",
+      "deploy_id": "dep-dborcs15efls73epct7g",
+      "live_at": "2026-11-09T21:03:57+09:00",
+      "health": "ok"
     },
     {
       "version": "0.9.0",
