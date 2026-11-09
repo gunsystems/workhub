@@ -3,8 +3,7 @@ from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
-from django.db.models import Q
+from django.db import transaction, IntegrityError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from tasks.models import Employee, Department
@@ -75,11 +74,17 @@ class StaffForm(EmployeeInviteForm):
         from tasks.hiworks import eligible_auto_employees
         from .lifecycle import account_allowed
         supervisor_ids=[employee.pk for employee in eligible_auto_employees() if account_allowed(employee.user)]
+        from .hiworks_access import fresh_cache
+        from tasks.models import HiworksLink
+        cache=fresh_cache()
+        current={(row['remote_id'],row['email'].lower()) for row in (cache.rows if cache else self.directory)}
+        supervisor_ids += [link.employee_id for link in HiworksLink.objects.select_related('employee__user').filter(employee__is_active=True)
+            if (link.remote_id,link.email.lower()) in current and (not link.employee.user_id or link.employee.user.is_active)]
         self.fields['supervisor'].queryset=Employee.objects.filter(pk__in=supervisor_ids,position__in=['leader','head','executive']).exclude(pk=self.instance.pk).select_related('department').order_by('name','pk')
-        self.fields['supervisor'].help_text='가입·이메일 인증·OTP 설정을 마친 재직 직원 중 팀장·본부장·대표만 표시합니다. 상위자가 아직 가입하지 않았다면 비워 두고 나중에 지정하세요.'
-        if self.instance.user_id:
+        self.fields['supervisor'].help_text='하이웍스에 등록된 재직 직원 중 Workhub 직책이 팀장·본부장·대표인 사람만 표시합니다. 먼저 직원 정보를 등록하면 가입 전에도 상위자로 지정할 수 있습니다.'
+        if self.instance.pk:
             self.fields.pop('invitation_email',None)
-        self.fields['role'].help_text='업무 조회·배정 역할입니다. 계정 운영용 서브 관리자 지정은 관리자 계정에서 처리합니다.'
+        self.fields['role'].help_text='부서 관리자는 위에서 선택한 소속 부서의 업무를 관리합니다. 다른 부서의 관리 권한이나 시스템 관리자 권한은 부여되지 않습니다.'
         self.fields['position'].help_text='대표·본부장은 전사 업무를 조회할 수 있습니다.'
 
     def clean_hiworks_employee(self):
@@ -99,20 +104,20 @@ def employee_list(request):
     ensure_admin(request)
     query=request.GET.get('q','').strip()[:100]
     department=request.GET.get('department','')
-    employees=Employee.objects.select_related('department','user__workhub_access','invitation').order_by('-is_active','name','pk')
-    if query: employees=employees.filter(Q(name__icontains=query)|Q(user__email__icontains=query)|Q(invitation__email__icontains=query))
-    if department.isdigit(): employees=employees.filter(department_id=department)
-    rows=[]
-    for employee in employees[:300]:
-        invitation=getattr(employee,'invitation',None)
-        email=(employee.user.email if employee.user_id else '') or (invitation.email if invitation else '')
-        from django.conf import settings
-        from .hiworks_access import allowed
-        membership = ('하이웍스 등록 확인됨' if allowed(employee.user) else '하이웍스 확인 필요') if settings.WORKHUB_REQUIRE_HIWORKS and employee.user_id and not employee.user.is_superuser else ''
-        rows.append({'employee':employee,'email':email,'state':invitation_state(None,employee),'membership':membership,
-            'can_edit':not (employee.user_id and (employee.user.is_superuser or (employee.user.is_staff and not request.user.is_superuser))),
-            'can_invite':bool(not employee.user_id and employee.is_active and invitation)})
-    return render(request,'accounts/staff_list.html',{'rows':rows,'query':query,'department':department,'departments':Department.objects.all()})
+    from .staff_directory import staff_directory_rows
+    directory=[];directory_error=''
+    try: directory=invitation_directory()
+    except ValidationError as exc: directory_error=' / '.join(exc.messages)
+    rows,unlinked=staff_directory_rows(directory,request.user)
+    if query:
+        value=query.lower()
+        rows=[row for row in rows if value in (row['name']+' '+row['email']+' '+(row['employee'].name if row.get('employee') else '')).lower()]
+    if department.isdigit():
+        rows=[row for row in rows if str(row['employee'].department_id if row.get('employee') else row['department_id'])==department]
+    response=render(request,'accounts/staff_list.html',{'rows':rows,'unlinked':unlinked,'query':query,'department':department,
+        'departments':Department.objects.all(),'directory_error':directory_error,'total':len(directory)})
+    response['Cache-Control']='no-store'
+    return response
 
 
 @login_required
@@ -125,11 +130,23 @@ def employee_edit(request,pk=None):
     if not employee:
         try: directory=invitation_directory()
         except ValidationError as exc: directory_error=' / '.join(exc.messages)
-    form=StaffForm(request.POST if request.method=='POST' else None,instance=employee,user=request.user,directory=directory)
+    selected=request.GET.get('hiworks','')
+    chosen=next((row for row in directory if row['remote_id']==selected and not row['state']),None)
+    initial={'hiworks_employee':selected,'department':chosen['department_id'] if chosen else ''}
+    form=StaffForm(request.POST if request.method=='POST' else None,instance=employee,user=request.user,directory=directory,initial=initial)
     if request.method=='POST' and form.is_valid():
-        # Invitation delivery failures leave a visible employee record for retry, like the original admin.
-        with transaction.atomic(): employee=form.save()
-        email=form.cleaned_data.get('invitation_email')
+        creating=employee is None
+        try:
+            with transaction.atomic():
+                employee=form.save()
+                if creating:
+                    from .staff_directory import save_directory_link
+                    row=next(row for row in directory if row['remote_id']==form.cleaned_data['hiworks_employee'])
+                    save_directory_link(employee,row)
+        except (ValidationError,IntegrityError):
+            messages.error(request,'이미 등록된 직원이거나 연결이 변경되었습니다. 목록을 새로고침해 주세요.')
+            return redirect('employee_list')
+        email=form.cleaned_data.get('invitation_email') if creating and request.POST.get('action')!='register' else None
         if email:
             try: invite(employee,email)
             except ValidationError as exc: messages.error(request,'직원 기록은 저장됐지만 초대 발송을 확인해 주세요: '+' / '.join(exc.messages))
@@ -147,10 +164,12 @@ def resend_invitation(request,pk):
     ensure_admin(request)
     employee=get_object_or_404(Employee,pk=pk)
     invitation=getattr(employee,'invitation',None)
-    if employee.user_id or not invitation: raise PermissionDenied
-    try: invite(employee,invitation.email)
+    link=getattr(employee,'hiworkslink',None)
+    if employee.user_id or not (invitation or link): raise PermissionDenied
+    email=invitation.email if invitation else link.email
+    try: invite(employee,email)
     except ValidationError as exc: messages.error(request,' / '.join(exc.messages))
-    else: messages.success(request,'초대 메일 발송을 접수했습니다. 이전 초대 링크는 사용할 수 없습니다.')
+    else: messages.success(request,'초대 메일 발송을 접수했습니다. 기존 초대가 있었다면 이전 링크는 사용할 수 없습니다.')
     return redirect('employee_list')
 
 

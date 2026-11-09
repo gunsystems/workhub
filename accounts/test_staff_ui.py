@@ -103,3 +103,44 @@ class StaffUITests(TestCase):
         forged_member=StaffForm(data={'name':'직원','department':self.department.pk,'position':'member','role':'employee','supervisor':candidates[3].pk},instance=self.employee,user=self.admin)
         self.assertFalse(forged_member.is_valid())
         self.assertIn('supervisor',forged_member.errors)
+
+    @patch('accounts.staff_views.invite')
+    def test_directory_list_includes_unregistered_people_and_read_does_not_create(self,invite):
+        before=Employee.objects.count()
+        response=self.client.get('/accounts/employees/')
+        self.assertContains(response,'new@gunsystems.co.kr')
+        self.assertContains(response,'미등록')
+        self.assertEqual(Employee.objects.count(),before)
+        invite.assert_not_called()
+
+    @patch('accounts.staff_views.invite')
+    def test_register_information_then_edit_never_sends_invitation(self,invite):
+        from tasks.models import HiworksLink
+        data={'hiworks_employee':'100','department':self.department.pk,'position':'leader','role':'manager','action':'register'}
+        self.assertEqual(self.client.post('/accounts/employees/new/',data).status_code,302)
+        employee=Employee.objects.get(name='신규 직원')
+        link=HiworksLink.objects.get(employee=employee)
+        self.assertEqual(link.remote_id,'100');self.assertFalse(link.notifications_enabled)
+        self.assertIsNone(employee.user_id)
+        data.update(name='Workhub 표시 이름',invitation_email='forged@gunsystems.co.kr')
+        self.assertEqual(self.client.post(f'/accounts/employees/{employee.pk}/edit/',data).status_code,302)
+        employee.refresh_from_db();link.refresh_from_db()
+        self.assertEqual(employee.name,'Workhub 표시 이름')
+        self.assertEqual(link.email,'new@gunsystems.co.kr')
+        invite.assert_not_called()
+        response=self.client.get('/accounts/employees/')
+        self.assertContains(response,'Workhub 표시 이름')
+        self.assertContains(response,'하이웍스 이름: 신규 직원')
+
+    @patch('accounts.staff_views.invite')
+    def test_registered_pending_leader_can_be_supervisor_without_granting_login(self,invite):
+        from .staff_views import StaffForm,invitation_directory
+        from tasks.models import HiworksLink
+        employee=Employee.objects.create(name='신규 직원',department=self.department,position='leader')
+        HiworksLink.objects.create(employee=employee,email='new@gunsystems.co.kr',remote_id='100',user_id='new')
+        form=StaffForm(instance=self.employee,user=self.admin,directory=invitation_directory())
+        self.assertIn(employee,form.fields['supervisor'].queryset)
+        self.assertIsNone(employee.user_id)
+        employee.position='member';employee.save()
+        self.assertNotIn(employee,StaffForm(instance=self.employee,user=self.admin,directory=invitation_directory()).fields['supervisor'].queryset)
+        invite.assert_not_called()
