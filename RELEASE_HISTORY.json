@@ -3,6 +3,14 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.9.1",
+      "status": "prepared_local_verified",
+      "release_notes": "releases/v0.9.1.md",
+      "migrations": [],
+      "tests": 20,
+      "real_notice_delivery": "not_sent_no_resend"
+    },
+    {
       "version": "0.9.0",
       "status": "live_component_verified_external_receipt_pending",
       "release_notes": "releases/v0.9.0.md",

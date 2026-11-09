@@ -86,7 +86,7 @@ def deliver_pending(limit=5):
                 if job.channel=='email':
                     context={'notice':notice,'employee_name':recipient.employee_name,'notice_url':url}
                     deliver('[Workhub 공지] '+notice.title,
-                        f'{recipient.employee_name}님, 회사 공지가 도착했습니다.\n{notice.title}\n\n{notice.body}\n\n공지 확인: {url}',
+                        f'{notice.title}\n작성자: {notice.creator_name}\n\n{notice.body}\n\n공지 확인: {url}',
                         recipient.email,html_body=render_to_string('tasks/email_notice.html',context))
                 else:
                     link=HiworksLink.objects.filter(employee=employee).first()
