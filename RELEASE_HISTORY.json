@@ -4,11 +4,13 @@
   "releases": [
     {
       "version": "0.6.1",
-      "status": "verification_in_progress",
-      "source_commit": null,
-      "deploy_id": null,
+      "status": "live_server_verified_external_pending",
+      "source_commit": "0c44b70308be9f549bc1d9604a276589769e08d2",
+      "deploy_id": "dep-dboktgbl550s73a2pufg",
       "release_notes": "releases/v0.6.1.md",
-      "migrations": []
+      "migrations": [],
+      "live_at": "2026-11-09T13:41:27+09:00",
+      "tests": 40
     },
     {
       "version": "0.6.0",
