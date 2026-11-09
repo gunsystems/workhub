@@ -1,0 +1,34 @@
+{
+  "version": "0.8.0",
+  "source_commit": "46ae258174a76cebde33ce8fd064c4577df45261",
+  "deploy_id": "dep-dboo917f3r2c73bqpvrg",
+  "status": "live",
+  "live_at": "2026-11-09T17:31:12+09:00",
+  "tests": 321,
+  "follow_up_related_tests": 76,
+  "migrations": [
+    "0023_task_start_time",
+    "0024_company_notices"
+  ],
+  "health": {
+    "version": "0.8.0",
+    "commit": "46ae258",
+    "status": "ok"
+  },
+  "production_readonly_component_checks": {
+    "work_form": 200,
+    "date_default_present": true,
+    "time_default_present": true,
+    "required_badges": 9,
+    "notice_form": 200
+  },
+  "preserved_counts": {
+    "tasks": 2,
+    "employees": 2,
+    "access_profiles": 2,
+    "totp_devices": 2
+  },
+  "production_notice_count": 0,
+  "production_notice_delivery_count": 0,
+  "real_notice_receipt": "not_sent_pending_user_test"
+}

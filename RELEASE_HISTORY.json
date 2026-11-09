@@ -4,7 +4,7 @@
   "releases": [
     {
       "version": "0.8.0",
-      "status": "validated_pending_deploy",
+      "status": "live_component_verified_notice_receipt_pending",
       "release_notes": "releases/v0.8.0.md",
       "migrations": [
         "0023_task_start_time",
@@ -13,7 +13,12 @@
       "tests": 321,
       "new_tests": 27,
       "real_notice_delivery": "not_sent_pending_user_test",
-      "backup": "/var/data/backups/workhub-pre-v080-20261109T081817Z.sqlite3"
+      "backup": "/var/data/backups/workhub-pre-v080-20261109T081817Z.sqlite3",
+      "source_commit": "46ae258174a76cebde33ce8fd064c4577df45261",
+      "deploy_id": "dep-dboo917f3r2c73bqpvrg",
+      "live_at": "2026-11-09T17:31:12+09:00",
+      "follow_up_related_tests": 76,
+      "health": "ok"
     },
     {
       "version": "0.7.2",
