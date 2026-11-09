@@ -4,7 +4,7 @@
   "releases": [
     {
       "version": "0.9.0",
-      "status": "prepared_local_verified",
+      "status": "live_component_verified_external_receipt_pending",
       "release_notes": "releases/v0.9.0.md",
       "migrations": [
         "0025_report_type",
@@ -17,7 +17,12 @@
       "backup": "/var/data/backups/workhub-pre-v090-20261109T093454Z.sqlite3",
       "real_assignment_delivery": "not_sent_pending_user_test",
       "storage_integration": "review_only_not_implemented",
-      "training_materials": "deferred_by_user"
+      "training_materials": "deferred_by_user",
+      "source_commit": "ca005fbea2693a8476239592d9ba28ad6dc46e54",
+      "deploy_id": "dep-dbopbbtg1s2s73fuamvg",
+      "live_at": "2026-11-09T18:44:07+09:00",
+      "health": "ok",
+      "account_data_preserved": true
     },
     {
       "version": "0.8.1",

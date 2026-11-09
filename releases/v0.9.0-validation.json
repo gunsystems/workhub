@@ -1,0 +1,68 @@
+{
+  "version": "0.9.0",
+  "source_commit": "ca005fbea2693a8476239592d9ba28ad6dc46e54",
+  "deploy_id": "dep-dbopbbtg1s2s73fuamvg",
+  "live_at": "2026-11-09T18:44:07+09:00",
+  "health": {
+    "version": "0.9.0",
+    "commit": "ca005fb",
+    "status": "ok"
+  },
+  "tests": {
+    "django_suite": 343,
+    "new_django_tests": 22,
+    "focused_follow_up": 21,
+    "javascript_date_scenarios": 4
+  },
+  "migrations": [
+    "0025_report_type",
+    "0026_assignment_channels_and_auto_supervisor"
+  ],
+  "backup": "/var/data/backups/workhub-pre-v090-20261109T093454Z.sqlite3",
+  "backup_integrity": "ok",
+  "counts_before_after": {
+    "tasks_task": [
+      2,
+      2
+    ],
+    "tasks_employee": [
+      2,
+      2
+    ],
+    "tasks_periodreport": [
+      0,
+      0
+    ],
+    "tasks_reportsubmission": [
+      0,
+      0
+    ],
+    "accounts_accessprofile": [
+      2,
+      2
+    ],
+    "otp_totp_totpdevice": [
+      2,
+      2
+    ]
+  },
+  "auth_and_otp_keys_preserved": true,
+  "manual_supervisors_preserved": true,
+  "server_component_render": {
+    "report_new": {
+      "status": 200,
+      "all_report_types": true
+    },
+    "task_new": {
+      "status": 200,
+      "assignment_channels": true
+    }
+  },
+  "scheduler_heartbeat": "2026-11-09T09:45:29.067028Z",
+  "limits": {
+    "real_employee_browser_e2e": "not_performed_in_this_release",
+    "external_assignment_delivery": "pending_user_test_no_test_messages_sent",
+    "document_storage_integration": "review_only_not_implemented",
+    "training_materials": "deferred_by_user"
+  }
+}
