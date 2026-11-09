@@ -74,3 +74,26 @@ class StaffUITests(TestCase):
         self.assertTrue(form.is_valid(),form.errors)
         self.assertEqual(form.cleaned_data['position'],'member')
         self.assertEqual(form.cleaned_data['role'],'employee')
+
+    def test_supervisor_choices_exclude_examples_pending_inactive_and_self(self):
+        from .staff_views import StaffForm
+        from .models import AccessProfile,Invitation
+        from django.utils import timezone
+        from django_otp.plugins.otp_totp.models import TOTPDevice
+        examples=Employee.objects.create(name='예시 직원',department=self.department)
+        candidates=[]
+        for index in range(3):
+            email=f'real{index}@gunsystems.co.kr'
+            user=get_user_model().objects.create_user(f'real{index}',email=email)
+            employee=Employee.objects.create(user=user,name=f'실제 직원{index}',department=self.department)
+            AccessProfile.objects.create(user=user,email=email,verified_at=timezone.now())
+            Invitation.objects.create(employee=employee,email=email,token_digest=str(index),expires_at=timezone.now(),used_at=timezone.now())
+            TOTPDevice.objects.create(user=user,confirmed=index!=1)
+            candidates.append(employee)
+        candidates[2].is_active=False;candidates[2].save()
+        form=StaffForm(instance=self.employee,user=self.admin)
+        self.assertEqual(list(form.fields['supervisor'].queryset.values_list('pk',flat=True)),[candidates[0].pk])
+        self.assertFalse(StaffForm(instance=candidates[0],user=self.admin).fields['supervisor'].queryset.exists())
+        forged=StaffForm(data={'name':'직원','department':self.department.pk,'position':'member','role':'employee','supervisor':examples.pk},instance=self.employee,user=self.admin)
+        self.assertFalse(forged.is_valid())
+        self.assertIn('supervisor',forged.errors)

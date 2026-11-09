@@ -72,7 +72,11 @@ class StaffForm(EmployeeInviteForm):
         if user and not user.is_superuser:
             self.fields['role'].disabled=True
             self.fields['position'].disabled=True
-        self.fields['supervisor'].queryset=Employee.objects.filter(is_active=True).exclude(pk=self.instance.pk)
+        from tasks.hiworks import eligible_auto_employees
+        from .lifecycle import account_allowed
+        supervisor_ids=[employee.pk for employee in eligible_auto_employees() if account_allowed(employee.user)]
+        self.fields['supervisor'].queryset=Employee.objects.filter(pk__in=supervisor_ids).exclude(pk=self.instance.pk).select_related('department').order_by('name','pk')
+        self.fields['supervisor'].help_text='가입·이메일 인증·OTP 설정을 마친 재직 직원만 표시합니다. 상위자가 아직 가입하지 않았다면 비워 두고 나중에 지정하세요.'
         if self.instance.user_id:
             self.fields.pop('invitation_email',None)
         self.fields['role'].help_text='업무 조회·배정 역할입니다. 계정 운영용 서브 관리자 지정은 관리자 계정에서 처리합니다.'
