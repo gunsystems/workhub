@@ -3,6 +3,15 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.9.3",
+      "status": "prepared_local_verified",
+      "release_notes": "releases/v0.9.3.md",
+      "migrations": [],
+      "tests": 22,
+      "hiworks_user_confirmation": "calendar_display_confirmed",
+      "screenshot_privacy": "empty_setup_dialog_only_no_tokens_or_staff_calendar"
+    },
+    {
       "version": "0.9.2",
       "status": "live_verified_local_visual_and_regression",
       "release_notes": "releases/v0.9.2.md",

@@ -11,6 +11,7 @@
 {% elif page_help.visual == 'google' %}<svg class="help-example" viewBox="0 0 548 105" role="img" aria-label="마감일에 종일 일정으로 등록되는 Google 캘린더 예시"><rect x="8" y="6" width="524" height="90" rx="10" fill="#f1f6f2"/><rect x="24" y="21" width="76" height="59" rx="6" fill="#fff" stroke="#cadfce"/><text x="62" y="45" text-anchor="middle" fill="#55755e" font-size="12">마감일</text><text x="62" y="66" text-anchor="middle" fill="#286b53" font-size="14" font-weight="700">종일</text><rect x="118" y="28" width="393" height="42" rx="7" fill="#dcece1"/><text x="132" y="54" fill="#365a43" font-size="13">업무 일정 또는 실제 업무 제목</text></svg>{% endif %}
 </section>
 <section><h3>이렇게 사용하세요</h3><ol>{% for step in page_help.steps %}<li>{{ step }}</li>{% endfor %}</ol></section>
+{% if page_help.title == '하이웍스 일정 연결' %}<section class="page-help-screenshots"><h3>실제 화면으로 연결하기</h3>{% include 'tasks/help/hiworks_subscription.html' %}</section>{% endif %}
 <section class="page-help-notes"><h3>알아두세요</h3><ul>{% for note in page_help.notes %}<li>{{ note }}</li>{% endfor %}</ul></section>
 <div class="page-help-bottom">{% if request.user.is_authenticated %}<a href="{% url 'guide' %}">전체 사용 가이드</a>{% endif %}<button type="button" data-page-help-close>확인</button></div>
 </dialog>
