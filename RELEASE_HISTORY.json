@@ -3,12 +3,22 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.9.8",
+      "status": "pending_deploy",
+      "release_notes": "releases/v0.9.8.md",
+      "migrations": []
+    },
+    {
       "version": "0.9.7",
-      "status": "tested_pending_deploy",
+      "status": "live_verified",
       "release_notes": "releases/v0.9.7.md",
       "migrations": [],
-      "tests": 21,
-      "provider_refresh": "pending"
+      "tests": 41,
+      "provider_refresh": "user_confirmed_title_update_approximately_5_minutes",
+      "source_commit": "fcce1244860bcad1a4a5e21b0e2451c9dadf867f",
+      "deploy_id": "dep-dbosusrl550s73aq4qug",
+      "live_at": "2026-11-09T22:50:39+09:00",
+      "health": "ok"
     },
     {
       "version": "0.9.6",
