@@ -4,9 +4,14 @@
   "releases": [
     {
       "version": "0.9.8",
-      "status": "pending_deploy",
+      "status": "live_verified",
       "release_notes": "releases/v0.9.8.md",
-      "migrations": []
+      "migrations": [],
+      "tests": 2,
+      "source_commit": "1cd4c7acc314aac80fab5dde389a864823ddabf1",
+      "deploy_id": "dep-dbot5apsrm7s73d1iil0",
+      "live_at": "2026-11-09T23:04:27+09:00",
+      "health": "ok"
     },
     {
       "version": "0.9.7",
