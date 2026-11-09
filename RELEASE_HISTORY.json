@@ -3,6 +3,13 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.8.1",
+      "status": "validated_pending_deploy",
+      "release_notes": "releases/v0.8.1.md",
+      "migrations": [],
+      "tests": 2
+    },
+    {
       "version": "0.8.0",
       "status": "live_component_verified_notice_receipt_pending",
       "release_notes": "releases/v0.8.0.md",
