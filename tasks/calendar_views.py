@@ -116,6 +116,8 @@ def export_task(request,pk):
     if not google.official_allowed(request.user,task): raise PermissionDenied
     registered=bool(old and old.detail!='none')
     form=ExportForm(request.POST if request.method=='POST' else None,initial={'detail':old.detail if registered else 'minimal'})
+    if task.activity_start:
+        form.fields['detail'].choices=[('minimal','일시만 등록 · 제목은 업무 일정'),('title','업무 제목과 일시 등록'),('details','업무 제목·일시·설명 등록')]
     if request.method=='POST' and form.is_valid():
         CalendarExport.objects.update_or_create(user=request.user,task=task,defaults={'detail':form.cleaned_data['detail']})
         messages.success(request,'등록 설정을 저장했습니다. Google 계정이 연결돼 있으면 다음 동기화에 반영됩니다.')

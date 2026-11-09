@@ -1,0 +1,383 @@
+{
+  "schema_version": 1,
+  "timezone": "Asia/Seoul",
+  "releases": [
+    {
+      "version": "0.6.0",
+      "status": "verified_pending_deploy",
+      "source_commit": null,
+      "deploy_id": null,
+      "release_notes": "releases/v0.6.0.md",
+      "migrations": [
+        "0018_unified_work_reporting",
+        "0019_report_files_and_linked_work",
+        "0020_default_work_categories",
+        "0021_preserve_auth_deletion_history"
+      ]
+    },
+    {
+      "version": "0.5",
+      "status": "historical_cumulative",
+      "source_commit": "e9f033dcae6688328f5c64ada9b2f0e9084255d8",
+      "deploy_id": "dep-dboid1s9v7es73fcei7g",
+      "notes": "Earlier changes grouped by Git commits; no invented retrospective semantic versions."
+    }
+  ],
+  "commits": [
+    {
+      "sha": "8ea8699dacea2f086c7a7895510e56c8293cb846",
+      "date": "2026-11-09T03:44:31Z",
+      "message": "docs: finalize unified work, recurring reporting and calendar development scope [skip render]"
+    },
+    {
+      "sha": "7664440e625f8d9742b8ad8098d60df59855639a",
+      "date": "2026-11-09T03:37:34Z",
+      "message": "Correct draft visibility guidance to match the existing creator-only access policy"
+    },
+    {
+      "sha": "ad7b066ebd00afc15e17fabf2956fbff2c2a75aa",
+      "date": "2026-11-09T03:28:22Z",
+      "message": "Record official external workflow patterns, Workhub design gaps and prioritized recommendations [skip render]"
+    },
+    {
+      "sha": "a4373ea45c27e1b0bc7f09305ae242bc6c41031b",
+      "date": "2026-11-09T03:11:29Z",
+      "message": "Record requested recurring report updates and official Hiworks calendar subscription findings [skip render]"
+    },
+    {
+      "sha": "e9f033dcae6688328f5c64ada9b2f0e9084255d8",
+      "date": "2026-11-09T01:48:29Z",
+      "message": "Keep work list filters aligned in a responsive bounded grid"
+    },
+    {
+      "sha": "a734c7cb9c30092ff33668ee99b65280765b08f9",
+      "date": "2026-11-09T01:45:54Z",
+      "message": "Unify search inputs, filter selects and toolbar buttons across work lists"
+    },
+    {
+      "sha": "8d555f36020050e54f2ae53f2865f927a92d7046",
+      "date": "2026-11-09T01:43:59Z",
+      "message": "Keep administrator forms left aligned within the standard content width"
+    },
+    {
+      "sha": "3e25c4826eba41e8e595b1a28b9e18102acaf59f",
+      "date": "2026-11-09T01:39:11Z",
+      "message": "Align administrator account content with the shared workspace layout"
+    },
+    {
+      "sha": "5e6fb732b2bd40c605200c7652be15b0c336121e",
+      "date": "2026-11-09T00:53:22Z",
+      "message": "Preserve the existing department when editing employee information"
+    },
+    {
+      "sha": "0351e14d330d0938135935fb1a3486de3783f575",
+      "date": "2026-11-09T00:50:59Z",
+      "message": "Show effective executive business authority consistently across staff forms and employee displays"
+    },
+    {
+      "sha": "f30df86f4de2917774a549dfb0e31f867e00ff18",
+      "date": "2026-11-09T00:43:52Z",
+      "message": "Record verified staff directory release and approved fixture cleanup [skip render]"
+    },
+    {
+      "sha": "f3998644558c9a2aba86c7bd579e6e497524b44e",
+      "date": "2026-11-09T00:39:50Z",
+      "message": "Clarify information-only registration and require explicit review of seed feedback cleanup"
+    },
+    {
+      "sha": "07795c434658832227bd9d2efbc8bac6a478d742",
+      "date": "2026-11-09T00:35:47Z",
+      "message": "Manage Workhub employees from the Hiworks directory with separate registration and invitation actions"
+    },
+    {
+      "sha": "6f61fc3194501317e968cf6ee7d5a9af719d6443",
+      "date": "2026-11-09T00:21:07Z",
+      "message": "Limit direct supervisor choices to team leaders, heads and executives"
+    },
+    {
+      "sha": "5dcf6289489c74cc804870933b63144ca8342963",
+      "date": "2026-11-09T00:19:00Z",
+      "message": "Only offer onboarded active employees as direct supervisors"
+    },
+    {
+      "sha": "c85251c9fe3e1f9ceb4d0fbfd03ef7648f0b2dad",
+      "date": "2026-11-09T00:15:09Z",
+      "message": "Keep employee search compact and match existing form styling"
+    },
+    {
+      "sha": "8635960f6c91ed97b50ed92f881a513bacdf39aa",
+      "date": "2026-11-09T00:12:42Z",
+      "message": "Select verified Hiworks employees when sending staff invitations"
+    },
+    {
+      "sha": "c0d5cba199b441b6a7946c9c266b878d9009d96b",
+      "date": "2026-11-08T23:35:23Z",
+      "message": "Use clearer Korean copy for safe request retry screen"
+    },
+    {
+      "sha": "6a814c8f4aef63a068a26be561d66e0ea1750f77",
+      "date": "2026-11-08T23:05:12Z",
+      "message": "Record verified production Hiworks employee access policy [skip render]"
+    },
+    {
+      "sha": "ebb1d8ea97326d25d58399092cff8f1bcb512765",
+      "date": "2026-11-08T23:01:41Z",
+      "message": "Restrict employee access to recently verified Hiworks membership and enforce OTP on account routes"
+    },
+    {
+      "sha": "b1aba312308805bedab56b21a926bba5454cbb85",
+      "date": "2026-11-08T13:48:37Z",
+      "message": "Record automatic Hiworks linking and native staff UI verification [skip render]"
+    },
+    {
+      "sha": "25883e92d3d5f4fb43a47719686caadef1227408",
+      "date": "2026-11-08T13:44:42Z",
+      "message": "Automatically link verified invited employees to Hiworks and unify employee administration UI"
+    },
+    {
+      "sha": "3381dc691e9c7468134791293492eb2619027c45",
+      "date": "2026-11-08T13:20:37Z",
+      "message": "Record Hiworks matching fix and outbound IP allowlist requirement [skip render]"
+    },
+    {
+      "sha": "0255f5a14123e8181bf916f1e6d548cf19d4cdf7",
+      "date": "2026-11-08T13:14:57Z",
+      "message": "Match Hiworks employees by office mail ID instead of shared contact email"
+    },
+    {
+      "sha": "5046db871745699cd025a4efd1a7d57ce99618e6",
+      "date": "2026-11-08T12:51:15Z",
+      "message": "Record verified priority release and remaining Hiworks secret setup [skip render]"
+    },
+    {
+      "sha": "90db3c1de655ec3d9c340e9d28563da4fa7881a3",
+      "date": "2026-11-08T12:47:06Z",
+      "message": "Strengthen team oversight and calendar views; add reviewed Hiworks staff links and notification outbox"
+    },
+    {
+      "sha": "d528f29a6a04a5581d81e49e2692fb06e6190098",
+      "date": "2026-11-08T12:15:56Z",
+      "message": "Document reference-led roadmap and Hiworks integration review [skip render]"
+    },
+    {
+      "sha": "74ad5da210e386d8d1b1430379b77e3b704e439f",
+      "date": "2026-11-08T11:57:58Z",
+      "message": "Record work status naming and employee identity display [skip render]"
+    },
+    {
+      "sha": "20f4045902b44dfaa42742df94b0a27b205be28e",
+      "date": "2026-11-08T11:53:34Z",
+      "message": "Rename official work to work status and show employee identity in header"
+    },
+    {
+      "sha": "86d363eb50b23e86fd6948a117c82bba6c571864",
+      "date": "2026-11-08T11:47:48Z",
+      "message": "Document company-domain cutover and verified employee login [skip render]"
+    },
+    {
+      "sha": "c4e7c1a176d3f0e6a08094c660f03f8d38d47b65",
+      "date": "2026-11-08T11:43:33Z",
+      "message": "Route legacy Workhub links safely to the company domain"
+    },
+    {
+      "sha": "a45b88358df2c73a1a0ff719967f98ad28f37654",
+      "date": "2026-11-08T11:34:37Z",
+      "message": "Place contextual help at the far right of the page header"
+    },
+    {
+      "sha": "f80e8ef3029bc076c55988f16062a4977bfb2023",
+      "date": "2026-11-08T11:32:23Z",
+      "message": "Record verified visual help and Google registration release [skip render]"
+    },
+    {
+      "sha": "aef9af18e5e5c6a4812fb12ea2ebbe801cb0a9f1",
+      "date": "2026-11-08T11:28:19Z",
+      "message": "Add contextual visual help and clarify per-task Google Calendar registration"
+    },
+    {
+      "sha": "e58f91fd3a2270e6232fde0b1c3c828769997060",
+      "date": "2026-11-08T11:09:32Z",
+      "message": "Preserve white text on primary action links in detail panels"
+    },
+    {
+      "sha": "39b859a2d9df61f57db2777605cd4b88a4f4ec45",
+      "date": "2026-11-08T09:03:37Z",
+      "message": "Record verified administrator layout and balanced branding [skip render]"
+    },
+    {
+      "sha": "cfe7895b0a71a0cb291e5d7930aede36084e0029",
+      "date": "2026-11-08T09:00:43Z",
+      "message": "Align administrator account form and balance Workhub product typography"
+    },
+    {
+      "sha": "dbda218343c3755246d59200e0a67891acbb3343",
+      "date": "2026-11-08T08:55:31Z",
+      "message": "Record verified company and product branding [skip render]"
+    },
+    {
+      "sha": "4f359cb939273413fcbcc84d42bff56dabe46d5f",
+      "date": "2026-11-08T08:53:46Z",
+      "message": "Keep company name prominent and Workhub subtitle compact"
+    },
+    {
+      "sha": "39a2311240db5dc3408a248a59e557a49d1c62fa",
+      "date": "2026-11-08T08:51:38Z",
+      "message": "Add Workhub product subtitle beneath GUNSYSTEMS company wordmark"
+    },
+    {
+      "sha": "6039e91704fdfa6e366adf3b0a2ca221accc6777",
+      "date": "2026-11-08T08:48:34Z",
+      "message": "Record company branding release and DNS certificate dependency [skip render]"
+    },
+    {
+      "sha": "73aa8d4a7e11ed80088ce8ebf90edfdc8ceefee4",
+      "date": "2026-11-08T08:46:35Z",
+      "message": "Replace temporary Workhub mark with GUNSYSTEMS company wordmark"
+    },
+    {
+      "sha": "3575d9814409f7fc9e55ff1c910f05f91ffde54a",
+      "date": "2026-11-08T08:38:44Z",
+      "message": "Use consistent bold priority borders for all personal cards"
+    },
+    {
+      "sha": "6a3a33f130eabacc7fb74f5bfca1390fe476af60",
+      "date": "2026-11-08T08:36:23Z",
+      "message": "Record urgent styling release and pending company DNS verification [skip render]"
+    },
+    {
+      "sha": "0e47fedb2ca6c773417870dbea58a2c4e671823e",
+      "date": "2026-11-08T08:31:32Z",
+      "message": "Highlight urgent personal cards in bold red and prepare company hostname"
+    },
+    {
+      "sha": "9a42de08d447d8415f68cb424e876f046841323a",
+      "date": "2026-11-08T01:35:17Z",
+      "message": "Record verified board settings and footer fix [skip render]"
+    },
+    {
+      "sha": "1a77631d712352cbbe35503b9c58744761a3e077",
+      "date": "2026-11-08T01:32:40Z",
+      "message": "Fix board settings dismissal and align calendar action and footer spacing"
+    },
+    {
+      "sha": "ede083238bf632ddff72d4b3e56872efcabe7749",
+      "date": "2026-11-08T01:27:29Z",
+      "message": "Record verified timed scheduling release and pending OAuth setup [skip render]"
+    },
+    {
+      "sha": "a4e801f71925f7c884ff88083f8166880f493b66",
+      "date": "2026-11-08T01:24:44Z",
+      "message": "Add private tags, timed recurrence and opt-in Google Calendar integration"
+    },
+    {
+      "sha": "a9a291d154c529922c62a09789c49f947203700e",
+      "date": "2026-11-07T15:17:48Z",
+      "message": "Record verified navigation and personal card design release [skip render]"
+    },
+    {
+      "sha": "33e9a5e2d5e8c54b6c561f08ae0388e58ba39f3e",
+      "date": "2026-11-07T15:13:54Z",
+      "message": "Refine laptop navigation spacing and anchor card menus near their trigger\n\nKeep the organization section visible on standard-height screens and open long menus above the trigger when space below is limited. JavaScript syntax check passes."
+    },
+    {
+      "sha": "49a5ea33a1fdb957dd308efef607227871968221",
+      "date": "2026-11-07T15:07:34Z",
+      "message": "Simplify navigation and upgrade personal board cards\n\nGroup navigation with role-aware active links, collapsible organization controls and mobile menu. Add status-colored lists and explicit card priority, compact overflow actions and checklist details. Connect completed-list moves with completion and safe recurrence while preserving existing card data. 155 tests pass."
+    },
+    {
+      "sha": "d0256e1962f24b08842097249a6a8c705b796cec",
+      "date": "2026-11-07T14:27:34Z",
+      "message": "Record verified live v0.5 release and preserved owner access [skip render]"
+    },
+    {
+      "sha": "7b1c9212c3f3b47592552177fe19f4d9036b5611",
+      "date": "2026-11-07T14:23:17Z",
+      "message": "Add official collaboration, explicit approval stages and private personal boards\n\nSupport shared or individual team assignment, sequential and parallel approvals, report recall and resubmission, delegation, handover and audited executive overrides. Separate owner-only personal cards, recurrence, reminders and reviewed promotion from official work and metrics. Preserve legacy workflows and administrator credentials. 147 tests pass, including concurrent approval and additive migration preservation."
+    },
+    {
+      "sha": "d6dc2e2ff3c7e26c2aa0a34d2fe9041ef0ef5ad7",
+      "date": "2026-11-07T13:32:36Z",
+      "message": "Style password reset request, new password and expired-link screens\n\nMatch Workhub authentication cards, green actions and responsive inputs. Clarify reset email request and OTP retention without changing authentication behavior. Existing reset flow test passes."
+    },
+    {
+      "sha": "e6d0014fc8af3d1d8d7c8eab4b2923c78adf4ed2",
+      "date": "2026-11-07T13:25:29Z",
+      "message": "Record live confirmation popup, reset email design and Lee test deletion [skip render]"
+    },
+    {
+      "sha": "14a8f42fa9e646045dc5418f72b20ccf34618ec1",
+      "date": "2026-11-07T13:22:26Z",
+      "message": "Confirm employee deletion in a popup and brand password reset emails\n\nReplace typed identity confirmation with a signed, expiring confirmation bound to the reviewed target and action. Explain protected business history. Send HTML reset emails with named links and preserve OTP. 122 automated tests pass."
+    },
+    {
+      "sha": "5330c996c9728d3157839ddc45b2d0c77b534f04",
+      "date": "2026-11-07T13:11:10Z",
+      "message": "Record live OTP recovery release and Lee test reset [skip render]"
+    },
+    {
+      "sha": "ae60bb47f5370b5e6591368c4d5a2b432890ef4b",
+      "date": "2026-11-07T13:08:19Z",
+      "message": "Replace employee recovery codes with administrator-approved OTP restoration\n\nRequire password login, session-bound company email verification and fresh OTP enrollment after an audited reset. Revoke prior sessions and retire employee backup codes. Separate administrator designation from employee invitations and business roles. Preserve legacy owner access. 117 automated tests pass."
+    },
+    {
+      "sha": "84ab4432ffb3237ae2967b2df6c4d66990002455",
+      "date": "2026-11-07T12:37:05Z",
+      "message": "Record completed test account reset and lifecycle deployment [skip render]"
+    },
+    {
+      "sha": "2ca8e3eb6c817d8ed7eede814468f4597ccaafd1",
+      "date": "2026-11-07T12:33:33Z",
+      "message": "Add employee suspension, reactivation and safe account deletion\n\nRevoke active and pending sessions, block suspended employee authentication and new assignments, clear credentials and invitations on account deletion, and preserve business history. Complete employee deletion requires no business history and explicit identity confirmation. Protect current and superuser accounts. All 93 tests pass."
+    },
+    {
+      "sha": "83eec0d6ffef4b1b798740965e45fe18c8c795d0",
+      "date": "2026-11-07T12:17:40Z",
+      "message": "Improve authentication button layout and explain recovery codes\n\nSeparate primary verification and outlined resend actions with consistent sizing and responsive stacking. Add recovery-code purpose, single-use and safe-storage guidance without changing authentication behavior."
+    },
+    {
+      "sha": "94d162465cf46d182466483a19ef1352ab7d9547",
+      "date": "2026-11-07T12:07:31Z",
+      "message": "Fix HTTPS CSRF failures on Workhub authentication forms\n\nUse same-origin referrer policy to preserve form provenance without leaking invitation URLs externally. Keep CSRF protection enabled, add a safe retry page, and cover secure reverse-proxy requests in regression tests. All 81 tests pass."
+    },
+    {
+      "sha": "0679c97d993aba00999e8cc72b2bab072572a4ab",
+      "date": "2026-11-07T11:59:17Z",
+      "message": "Style Workhub employee invitations with a branded HTML email\n\nAdd mobile-friendly account details, onboarding steps and named activation links without visible raw URLs. Preserve HTML through the Hiworks API and add an admin-only token-free preview. All 76 tests pass."
+    },
+    {
+      "sha": "78776237988809591416f1df399e5fb1386fc603",
+      "date": "2026-11-07T11:43:26Z",
+      "message": "Send Workhub authentication emails through Hiworks Office Token API\n\nUse multipart HTTPS requests with recipient-level success checks, sanitized failures, no redirect or SMTP fallback, and six additional transport tests."
+    },
+    {
+      "sha": "f6ce86c97b967bee2893e2e26ea76d9cddbaf74a",
+      "date": "2026-11-07T11:24:16Z",
+      "message": "Merge pull request #1 from gunsystems/feature/employee-invitation-mfa\n\n직원 이메일 초대·인증 및 OTP 로그인 추가"
+    },
+    {
+      "sha": "cc036d6db9f92a9b37ae255b7dc9a5980d8eefcf",
+      "date": "2026-11-07T10:57:58Z",
+      "message": "Add employee email invitations and mandatory OTP onboarding\n\nImplement session-bound email verification, password setup and reset, TOTP with recovery codes, admin invitation delivery states, and employee-manager workflow tests. Preserve existing accounts and tasks."
+    },
+    {
+      "sha": "7be6e91258b271d2982d3a4481d07c5188dea25d",
+      "date": "2026-11-06T13:38:24Z",
+      "message": "Add work intake, project oversight, assignment acknowledgement and action center"
+    },
+    {
+      "sha": "27bf94245e321946d7b71423c03becbb73be40e9",
+      "date": "2026-11-06T08:17:23Z",
+      "message": "Add personal and management dashboards with review workflow and performance scoring"
+    },
+    {
+      "sha": "077f9ec4db5214ae82d49259b3d740ba6556a5b0",
+      "date": "2026-11-06T07:56:12Z",
+      "message": "Enforce department access and employee roles"
+    },
+    {
+      "sha": "569b9721b37f6af30fd65c950a3f9a4720e487b5",
+      "date": "2026-11-06T07:32:58Z",
+      "message": "Build Workhub calendar and dedicated Render test deployment"
+    }
+  ]
+}

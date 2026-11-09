@@ -12,7 +12,8 @@ def navigation(request):
             item('내 업무','/dashboard/?scope=mine','home',path=='/dashboard/' and request.GET.get('scope')=='mine'),
             item('개인 보드','/work/personal/','board',path.startswith('/work/personal/'))]},
         {'label':'업무 관리','items':[
-            item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/personal/','/work/notifications/','/work/hiworks/')))),
+            item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/personal/','/work/notifications/','/work/hiworks/','/work/reports/','/work/calendar/')))),
+            item('주간 · 기간 보고','/work/reports/','work',path.startswith('/work/reports/')),
             item('프로젝트','/projects/','folder',path.startswith('/projects/')),
             item('업무 접수함','/intake/','inbox',path.startswith('/intake/')),
             item('캘린더','/','calendar',path=='/')]},
@@ -33,4 +34,5 @@ def navigation(request):
         administration.append(item('하이웍스 자동 연동','/work/hiworks/','users',path=='/work/hiworks/'))
     if administration: groups.append({'label':'관리자 전용','items':administration,'collapsible':True,'open':any(i['active'] for i in administration)})
     current=next((i['label'] for group in groups for i in group['items'] if i['active']),'업무 공간')
-    return {'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username()}
+    from .version import VERSION
+    return {'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username()}

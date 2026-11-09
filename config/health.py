@@ -4,10 +4,11 @@ from django.db import DatabaseError
 from tasks.models import Task, Project, WorkRequest, ApprovalStep, PersonalCard,WorkNotification
 from accounts.models import AccessProfile, Invitation
 from tasks.models import HiworksDirectoryCache
+from tasks.version import VERSION
 
 
 def health(request):
-    data = {'version':'0.5','commit':os.getenv('RENDER_GIT_COMMIT','local')[:7]}
+    data = {'version':VERSION,'commit':os.getenv('RENDER_GIT_COMMIT','local')[:7]}
     try:
         Task.objects.first()
         Project.objects.first()
@@ -18,6 +19,8 @@ def health(request):
         PersonalCard.objects.first()
         WorkNotification.objects.first()
         HiworksDirectoryCache.objects.first()
+        from tasks.models import WorkSeries,PeriodReport,CalendarSubscription,ReportFile
+        WorkSeries.objects.first();PeriodReport.objects.first();CalendarSubscription.objects.first();ReportFile.objects.first()
     except DatabaseError:
         return JsonResponse({**data,'status':'database_not_ready'},status=503)
     return JsonResponse({**data,'status':'ok'})

@@ -77,3 +77,9 @@ HIWORKS_NOTIFY_TOKEN = os.getenv('HIWORKS_NOTIFY_TOKEN', '')
 # Company staff access requires a recent authoritative Hiworks directory match.
 # Local development/test fixtures opt in explicitly; production defaults to enforced.
 WORKHUB_REQUIRE_HIWORKS = os.getenv('WORKHUB_REQUIRE_HIWORKS', '0' if DEBUG else '1') == '1'
+MEDIA_ROOT = Path(os.getenv('WORKHUB_UPLOAD_PATH', str(Path(DATABASES['default']['NAME']).resolve().parent / 'private-uploads')))
+FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
+LOGGING = {'version':1,'disable_existing_loggers':False,
+    'filters':{'subscription_tokens':{'()':'config.log_filters.SubscriptionTokenFilter'}},
+    'loggers':{'django.request':{'filters':['subscription_tokens']},'django.server':{'filters':['subscription_tokens']}}}

@@ -121,6 +121,9 @@ def payload(export):
         title,body=task.title,task.description
         url=f'{settings.WORKHUB_BASE_URL}/tasks/{task.pk}/'
         start={'date':task.due_date.isoformat()};end={'date':(task.due_date+timedelta(days=1)).isoformat()}
+        if task.activity_start and task.activity_end:
+            start={'dateTime':task.activity_start.isoformat(),'timeZone':'Asia/Seoul'}
+            end={'dateTime':task.activity_end.isoformat(),'timeZone':'Asia/Seoul'}
         detail=export.detail;reminders={'useDefault':False,'overrides':[]}
     result={'summary':title if detail in ['title','details'] else '업무 일정','start':start,'end':end,
             'visibility':'private','reminders':reminders,'transparency':'transparent'}

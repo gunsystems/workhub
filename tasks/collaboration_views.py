@@ -3,7 +3,7 @@ from django.views.decorators.http import require_POST
 from django.shortcuts import get_object_or_404,render,redirect
 from django.utils import timezone
 from .models import Task, WorkNotification,PersonalReminder
-from .permissions import visible_departments,visible_employees,performing_department,performing_employee,visible_tasks,can_report,can_review,can_edit,is_company_admin
+from .permissions import visible_departments,visible_employees,performing_department,performing_employee,visible_tasks,can_report,can_review,can_edit,is_company_admin,can_override_work
 
 
 def official_detail(request,task):
@@ -11,12 +11,19 @@ def official_detail(request,task):
     from .calendar_views import task_calendar_registered
     steps=list(task.approval_steps.all())
     current=next((s for s in steps if s.decision!='approved'),None)
+    conflicts=[]
+    if task.activity_start and task.activity_end:
+        from django.db.models import Q
+        performers=list(task.participants.values_list('pk',flat=True))+[task.assignee_id]
+        conflicts=visible_tasks(request.user).filter(Q(assignee_id__in=performers)|Q(participants__pk__in=performers),
+            activity_start__lt=task.activity_end,activity_end__gt=task.activity_start).exclude(pk=task.pk).exclude(status__in=['done','cancelled','draft']).distinct()[:10]
     return render(request,'tasks/official_detail.html',{
         'task':task,'steps':steps,'current':current,'assignments':task.assignments.select_related('employee__department'),
+        'conflicts':conflicts,
         'can_edit':can_edit(request.user,task) and task.status not in ['review','done','cancelled'],
         'can_report':can_report(request.user,task),'can_review':can_review(request.user,task),
         'primary':task.assignee.user_id==request.user.pk,'owner':task.creator_id==request.user.pk,
-        'executive':is_company_admin(request.user),'events':task.events.all(),
+        'executive':can_override_work(request.user),'events':task.events.all(),
         'group_tasks':visible_tasks(request.user).filter(group_key=task.group_key) if task.group_key else [],
         'checklist':task.checklist.filter(retired=False),
         'can_export_calendar':official_allowed(request.user,task),'calendar_registered':task_calendar_registered(request.user,task),
@@ -35,7 +42,11 @@ def official_list(request):
     if employee.isdigit(): tasks=tasks.filter(performing_employee(employee)).distinct()
     query=request.GET.get('q','').strip()[:200]
     if query: tasks=tasks.filter(title__icontains=query)
-    return render(request,'tasks/official_list.html',{'tasks':tasks[:200],'departments':visible_departments(request.user),'employees':visible_employees(request.user),'department':department,'employee':employee,'statuses':Task.STATUS,'status':status,'query':query})
+    from .models import WorkCategory
+    category=request.GET.get('category','');mode=request.GET.get('mode','')
+    if category.isdigit():tasks=tasks.filter(category_id=category)
+    if mode in ['report','event']:tasks=tasks.filter(management_mode=mode)
+    return render(request,'tasks/official_list.html',{'tasks':tasks[:200],'categories':WorkCategory.objects.filter(is_active=True),'category':category,'mode':mode,'departments':visible_departments(request.user),'employees':visible_employees(request.user),'department':department,'employee':employee,'statuses':Task.STATUS,'status':status,'query':query})
 
 
 @login_required

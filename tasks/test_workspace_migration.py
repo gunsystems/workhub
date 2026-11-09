@@ -16,7 +16,8 @@ class WorkspaceMigrationTests(TransactionTestCase):
             card=old.get_model('tasks','PersonalCard').objects.create(column=column,title='기존 카드',body='보존 메모',
                 state='active',checklist=[{'text':'기존 체크','done':True}])
         finally:
-            MigrationExecutor(connection).migrate([('tasks','0014_calendarexportpolicy_schedulerlease_and_more')])
+            current_executor=MigrationExecutor(connection)
+            current_executor.migrate(current_executor.loader.graph.leaf_nodes())
         from .models import PersonalCard
         current=PersonalCard.objects.get(pk=card.pk)
         self.assertEqual(current.state,'active')
@@ -40,7 +41,7 @@ class WorkspaceMigrationTests(TransactionTestCase):
             old.get_model('tasks','TaskEvent').objects.create(task=task,author=owner,author_name='기존 관리자',kind='approved',body='보존할 승인 기록')
         finally:
             executor=MigrationExecutor(connection)
-            executor.migrate([('tasks','0014_calendarexportpolicy_schedulerlease_and_more')])
+            executor.migrate(executor.loader.graph.leaf_nodes())
         from django.contrib.auth import get_user_model
         from .models import Task,Employee
         user=get_user_model().objects.get(pk=owner.pk)
@@ -49,5 +50,7 @@ class WorkspaceMigrationTests(TransactionTestCase):
         migrated=Task.objects.get(pk=task.pk)
         self.assertEqual(migrated.status,'done')
         self.assertEqual(migrated.workflow_version,1)
+        self.assertEqual(migrated.management_mode,'report')
+        self.assertIsNone(migrated.activity_start)
         self.assertEqual(migrated.events.get().body,'보존할 승인 기록')
         self.assertEqual(Employee.objects.get(pk=employee.pk).position,'leader')

@@ -12,7 +12,7 @@ from django.utils import timezone
 
 from .models import Task, Employee, Department, TaskParticipation, ApprovalStep, WorkNotification,WorkRequest
 from .forms import TaskForm
-from .permissions import visible_tasks, is_company_admin, profile, can_edit, can_report, can_review,visible_requests,is_manager
+from .permissions import visible_tasks, is_company_admin, profile, can_edit, can_report, can_review,visible_requests,is_manager,can_override_work
 from .workflow import record, snapshot
 
 
@@ -76,6 +76,9 @@ class OfficialTaskForm(TaskForm):
                        .filter(Q(user__isnull=True)|Q(user__is_active=True)).values_list('pk',flat=True))
         if data.get('assignee'): members.add(data['assignee'].pk)
         reviewers = [data.get(f'approver_{n}') for n in range(1,6) if data.get(f'approver_{n}')]
+        if data.get('management_mode') == 'event':
+            data['no_approval'] = True
+            if reviewers: self.add_error('management_mode','간단 일정에는 결재자를 지정하지 않습니다. 보고 업무로 선택하거나 결재자를 비워 주세요.')
         if not data.get('no_approval') and not reviewers:
             self.add_error('approver_1', '결재자를 선택하거나 결재 없이 완료 처리를 명시하세요.')
         if data.get('no_approval') and reviewers:
@@ -181,6 +184,7 @@ def action(request,pk,kind):
             'delegate':'결재 인계 · 대결','handover':'총괄 담당자 인계'}
     if kind not in titles: raise PermissionDenied
     task=get_object_or_404(visible_tasks(request.user),pk=pk,workflow_version=2)
+    if task.management_mode=='event' and kind=='submit': titles['submit']='일정 수행 완료'
     form=ActionForm(request.POST if request.method=='POST' else None,initial={'revision':task.revision})
     form.fields['replacement'].queryset=users().filter(employee__is_active=True)
     if kind!='progress': form.fields.pop('progress')
@@ -218,7 +222,7 @@ def _change(user,pk,kind,data):
         raise ValidationError('다른 변경이 반영되었습니다. 화면을 다시 열어 확인하세요.')
     participant=task.assignments.filter(employee__user=user,employee__is_active=True).first()
     owner=task.creator_id==user.pk
-    executive=is_company_admin(user)
+    executive=can_override_work(user)
     current=task.approval_steps.exclude(decision='approved').first()
     if current and kind in ['review','delegate']:
         current=task.approval_steps.filter(stage=current.stage,approver=user).exclude(decision='approved').first() or current
@@ -277,6 +281,8 @@ def _change(user,pk,kind,data):
         if not executive: raise PermissionDenied
         decision=data.get('decision')
         if decision=='approve':
+            if task.participants.filter(user=user).exists() or task.assignee.user_id==user.pk:
+                raise ValidationError('본인이 수행한 업무는 직권으로 승인할 수 없습니다. 다른 결재자에게 검토를 요청하세요.')
             if task.status!='review': raise ValidationError('완료 보고가 제출된 업무만 직권 승인할 수 있습니다.')
             if task.checklist.filter(required=True,checked=False,retired=False).exists(): raise ValidationError('필수 체크리스트를 완료하세요.')
             task.status='done'; task.progress=100; task.approved_at=timezone.now(); task.completed_at=task.submitted_at
@@ -330,5 +336,8 @@ def _change(user,pk,kind,data):
     task.revision+=1; task.save()
     record(task,user,event,data['body'],{'before':before,'action':kind,'decision':data.get('decision'),
            'round':task.report_round,'step':current.position if current else None})
+    if task.status=='done':
+        from .work_series import completion_followup
+        completion_followup(task)
     notify(task,('대표 직권 처리: ' if kind=='override' else '')+data['body'][:150], external=kind in ['submit','review','override','delegate','handover','cancel'])
     return task

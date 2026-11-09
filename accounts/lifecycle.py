@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.sessions.models import Session
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from tasks.models import Employee, Task, Project, TaskEvent, EmployeeFeedback, WorkRequest, TaskParticipation, ApprovalStep
@@ -37,6 +38,7 @@ def account_allowed(user):
 
 
 def business_counts(employee):
+    from tasks.models import PeriodReport, WorkSeries
     user_id = employee.user_id
     return {
         '담당 업무': Task.objects.filter(assignee=employee).count(),
@@ -48,6 +50,8 @@ def business_counts(employee):
         '공동 수행 업무': TaskParticipation.objects.filter(employee=employee).count(),
         '등록한 업무': Task.objects.filter(creator_id=user_id).count() if user_id else 0,
         '지정된 결재': ApprovalStep.objects.filter(approver_id=user_id).count() if user_id else 0,
+        '작성·검토한 기간 보고': PeriodReport.objects.filter(Q(author_id=user_id)|Q(reviewer_id=user_id)).count() if user_id else 0,
+        '등록한 반복 템플릿': WorkSeries.objects.filter(owner_id=user_id).count() if user_id else 0,
     }
 
 

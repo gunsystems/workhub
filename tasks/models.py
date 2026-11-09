@@ -48,7 +48,26 @@ class Project(models.Model):
     def __str__(self): return self.name
 
 
+class WorkCategory(models.Model):
+    name = models.CharField('업무 종류', max_length=40, unique=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    class Meta:
+        ordering = ['pk']
+    def __str__(self): return self.name
+
+
 class Task(models.Model):
+    category = models.ForeignKey(WorkCategory, on_delete=models.PROTECT, null=True, blank=True, verbose_name='업무 종류')
+    management_mode = models.CharField('관리 방식', max_length=12, default='report', choices=[('report','보고 업무'),('event','간단 일정')])
+    activity_start = models.DateTimeField('실제 수행 시작', null=True, blank=True)
+    activity_end = models.DateTimeField('실제 수행 종료', null=True, blank=True)
+    location = models.CharField('장소 · 접속 안내', max_length=200, blank=True)
+    customer = models.CharField('고객사 · 거래처', max_length=120, blank=True)
+    work_style = models.CharField('근무 형태', max_length=12, blank=True, choices=[('','미지정'),('office','내근'),('outside','외근'),('online','온라인')])
+    estimated_minutes = models.PositiveIntegerField('예상 소요시간 (분)', null=True, blank=True)
+    next_action = models.CharField('다음 조치', max_length=240, blank=True)
+    next_check_date = models.DateField('다음 확인일', null=True, blank=True)
     STATUS = [('draft','초안'),('todo','예정'),('doing','진행 중'),('blocked','보류'),('review','검토 대기'),('done','완료'),('cancelled','취소')]
     workflow_version = models.PositiveSmallIntegerField(default=1, editable=False)
     revision = models.PositiveIntegerField(default=0, editable=False)
@@ -92,6 +111,7 @@ class Task(models.Model):
 
     @property
     def needs_report(self):
+        if self.management_mode == 'event': return False
         today = timezone.localdate()
         last = timezone.localtime(self.last_report_at).date() if self.last_report_at else self.start_date
         if self.assigned_at: last = max(last, timezone.localtime(self.assigned_at).date())
@@ -392,3 +412,83 @@ class HiworksDirectoryCache(models.Model):
     checked_at = models.DateTimeField(null=True)
     attempted_at = models.DateTimeField(null=True)
     error = models.CharField(max_length=240, blank=True)
+
+
+class WorkSeries(models.Model):
+    template_task = models.ForeignKey(Task, on_delete=models.PROTECT, related_name='repeat_templates')
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    template = models.JSONField(default=dict)
+    mode = models.CharField(max_length=12, default='calendar')
+    kind = models.CharField(max_length=20)
+    interval = models.PositiveSmallIntegerField(default=1)
+    weekdays = models.JSONField(default=list)
+    month_day = models.PositiveSmallIntegerField(default=1)
+    week_number = models.SmallIntegerField(default=1)
+    month_end = models.CharField(max_length=8, default='last')
+    starts_at = models.DateTimeField()
+    next_at = models.DateTimeField(null=True)
+    until = models.DateField(null=True, blank=True)
+    max_count = models.PositiveIntegerField(null=True, blank=True)
+    generated_count = models.PositiveIntegerField(default=1)
+    enabled = models.BooleanField(default=True)
+    issue = models.CharField(max_length=200, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+
+class WorkOccurrence(models.Model):
+    series = models.ForeignKey(WorkSeries, on_delete=models.PROTECT, related_name='occurrences')
+    task = models.OneToOneField(Task, on_delete=models.PROTECT, related_name='repeat_occurrence')
+    scheduled_for = models.DateTimeField()
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['series','scheduled_for'], name='unique_work_series_occurrence')]
+
+
+class CalendarSubscription(models.Model):
+    owner = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    token_digest = models.CharField(max_length=64, unique=True)
+    enabled = models.BooleanField(default=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+
+class PeriodReport(models.Model):
+    selected_tasks = models.ManyToManyField(Task, blank=True, related_name='period_reports')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='period_reports')
+    period_start = models.DateField('보고 시작일')
+    period_end = models.DateField('보고 종료일')
+    summary = models.TextField('수행 결과 · 장애 사항 · 다음 계획')
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='period_reviews')
+    state = models.CharField(max_length=12, default='draft', choices=[('draft','작성 중'),('submitted','검토 대기'),('returned','보완 요청'),('approved','승인')])
+    revision = models.PositiveIntegerField(default=0)
+    submitted_at = models.DateTimeField(null=True)
+    current_submission = models.ForeignKey('ReportSubmission', on_delete=models.PROTECT, null=True, related_name='+')
+    source_submissions = models.ManyToManyField('ReportSubmission', blank=True, related_name='aggregated_reports')
+
+
+class ReportSubmission(models.Model):
+    report = models.ForeignKey(PeriodReport, on_delete=models.PROTECT, related_name='submissions')
+    version = models.PositiveIntegerField()
+    snapshot = models.JSONField(default=dict)
+    created_at = models.DateTimeField(default=timezone.now)
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['report','version'], name='unique_report_submission_version')]
+
+
+class ReportReview(models.Model):
+    submission = models.ForeignKey(ReportSubmission, on_delete=models.PROTECT, related_name='reviews')
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    decision = models.CharField(max_length=12)
+    body = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+
+
+def private_report_path(instance, filename):
+    import secrets
+    from pathlib import Path
+    return f'reports/{instance.report_id}/{secrets.token_hex(24)}{Path(filename).suffix.lower()}'
+
+
+class ReportFile(models.Model):
+    report = models.ForeignKey(PeriodReport, on_delete=models.PROTECT, related_name='files')
+    file = models.FileField(upload_to=private_report_path)
+    name = models.CharField(max_length=200)
+    uploaded_at = models.DateTimeField(default=timezone.now)

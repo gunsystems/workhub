@@ -6,7 +6,7 @@ from .permissions import visible_tasks, can_edit, can_review, can_report
 
 
 def snapshot(task):
-    return {name: str(getattr(task,name)) for name in ['title','description','delay_reason','assignee_id','status','progress','importance','priority','start_date','due_date','original_due_date','quality_score','project_id','completion_criteria','report_days','review_days','accepted_at']}
+    return {name: str(getattr(task,name)) for name in ['title','description','delay_reason','assignee_id','status','progress','importance','priority','start_date','due_date','original_due_date','quality_score','project_id','completion_criteria','report_days','review_days','accepted_at','category_id','management_mode','activity_start','activity_end','customer','location','work_style','estimated_minutes','next_action','next_check_date']}
 
 
 def record(task, user, kind, body, extra=None):

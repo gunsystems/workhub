@@ -12,7 +12,7 @@
 .workspace-toolbar :is(input,select,.button):focus-visible{outline:2px solid #80ac91;outline-offset:2px}
 @media(max-width:700px){.workspace-toolbar input:not([type=hidden]):not([type=checkbox]):not([type=radio]){width:100%;flex-basis:100%}.workspace-toolbar select{flex:1 1 150px;min-width:0}.workspace-toolbar .button{flex:0 0 auto}}
 
-.workspace-toolbar.work-list-filters{display:grid;grid-template-columns:minmax(160px,1.3fr) minmax(120px,.8fr) repeat(2,minmax(150px,1fr)) 72px;max-width:900px}
+.workspace-toolbar.work-list-filters{display:grid;grid-template-columns:repeat(3,minmax(150px,1fr));max-width:900px}
 .workspace-toolbar.work-list-filters input:not([type=hidden]):not([type=checkbox]):not([type=radio]),.workspace-toolbar.work-list-filters select,.workspace-toolbar.work-list-filters .button{width:100%;min-width:0}
 @media(max-width:1000px){.workspace-toolbar.work-list-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.workspace-toolbar.work-list-filters input[name=q]{grid-column:1/-1}}
 @media(max-width:480px){.workspace-toolbar.work-list-filters{grid-template-columns:minmax(0,1fr)}}

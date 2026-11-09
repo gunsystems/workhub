@@ -1,6 +1,14 @@
 from django.urls import path
-from . import collaboration,collaboration_views,personal,calendar_views,hiworks_views
+from . import collaboration,collaboration_views,personal,calendar_views,hiworks_views,work_series,subscriptions,reports
 urlpatterns=[
+    path('reports/',reports.report_list,name='period_reports'),
+    path('reports/new/',reports.report_edit,name='period_report_new'),
+    path('reports/<int:pk>/',reports.report_detail,name='period_report_detail'),
+    path('reports/<int:pk>/edit/',reports.report_edit,name='period_report_edit'),
+    path('reports/files/<int:pk>/',reports.report_file,name='period_report_file'),
+    path('calendar/subscription/',subscriptions.settings_view,name='calendar_subscription'),
+    path('calendar/subscription/<str:token>.ics',subscriptions.feed,name='calendar_feed'),
+    path('series/<int:pk>/',work_series.series_view,name='work_series'),
     path('hiworks/',hiworks_views.settings_view,name='hiworks_settings'),
     path('calendar/',calendar_views.settings_view,name='calendar_settings'),
     path('calendar/google/connect/',calendar_views.connect,name='google_calendar_connect'),

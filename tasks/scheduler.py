@@ -40,6 +40,10 @@ def tick(now=None,sync_google=True):
         if not claimed: return {'busy':True}
         created=0
         try:
+            from .models import WorkSeries
+            from .work_series import process_work_rule
+            for pk in WorkSeries.objects.filter(enabled=True,mode='calendar',next_at__lte=now).values_list('pk',flat=True):
+                created+=process_work_rule(pk,now)
             for pk in PersonalSchedule.objects.filter(enabled=True,mode='calendar',next_at__lte=now+timedelta(days=1)).values_list('pk',flat=True):
                 created+=process_rule(pk,now)
             for reminder in PersonalReminder.objects.filter(delivered_at__isnull=True,notify_at__lte=now,card__state='active').select_related('card__column__board__owner'):

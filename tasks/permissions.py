@@ -18,6 +18,12 @@ def can_view_company(user):
     return is_company_admin(user) or bool(employee and employee.position in ['head', 'executive'])
 
 
+def can_override_work(user):
+    """The representative's business authority is independent of account operations."""
+    employee = profile(user)
+    return is_company_admin(user) or bool(employee and employee.position == 'executive')
+
+
 def performing_department(department_id):
     return Q(assignee__department_id=department_id) | Q(participants__department_id=department_id)
 
@@ -48,7 +54,7 @@ def visible_tasks(user):
         team = performing_department(employee.department_id) if employee else Q(pk__in=[])
         tasks = tasks.filter(team | involved) if employee else tasks.none()
     tasks = tasks.exclude(Q(status='draft') & ~Q(creator=user))
-    return Task.objects.filter(pk__in=tasks.values('pk')).select_related('assignee__department','assignee__user','project')
+    return Task.objects.filter(pk__in=tasks.values('pk')).select_related('assignee__department','assignee__user','project','category')
 
 
 def assignable_employees(user):

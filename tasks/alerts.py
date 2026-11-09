@@ -1,14 +1,14 @@
 from django.urls import reverse
 from django.utils import timezone
 from django.db.models import Q
-from .permissions import visible_tasks, visible_requests, can_review, is_manager, profile, is_company_admin
+from .permissions import visible_tasks, visible_requests, can_review, is_manager, profile, is_company_admin,can_view_company
 
 
 def action_alerts(user):
     if not user.is_authenticated or not user.is_active:
         return []
     employee = profile(user)
-    managing = is_manager(user)
+    managing = is_manager(user) or can_view_company(user)
     alerts = []
     seen = set()
     tasks = visible_tasks(user)
@@ -42,6 +42,12 @@ def action_alerts(user):
         add(f'personal:{card.pk}','개인 카드 확인 · 나만 보기',card.title,reverse('personal_card_edit',args=[card.pk]),1)
     for reminder in PersonalReminder.objects.filter(card__column__board__owner=user,card__state='active',delivered_at__isnull=False,read_at__isnull=True).select_related('card'):
         add(f'personal:{reminder.card_id}','개인 일정 알림 · 나만 보기',reminder.card.title,reverse('personal_card_edit',args=[reminder.card_id]),1)
+    from .models import WorkSeries,PeriodReport
+    for rule in WorkSeries.objects.filter(enabled=True,template_task__in=visible_tasks(user)).exclude(issue=''):
+        if managing or rule.owner_id==user.pk:
+            add(f'series:{rule.pk}','정기 업무 인계 · 설정 확인',rule.issue,reverse('work_series',args=[rule.template_task_id]),3)
+    for report in PeriodReport.objects.filter(reviewer=user,state='submitted'):
+        add(f'period-report:{report.pk}','기간 보고 검토 대기',f'{report.period_start}~{report.period_end}',reverse('period_report_detail',args=[report.pk]),2)
     return sorted(alerts,key=lambda a:(-a['level'],a['key']))
 
 
