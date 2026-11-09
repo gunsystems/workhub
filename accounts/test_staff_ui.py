@@ -144,3 +144,18 @@ class StaffUITests(TestCase):
         employee.position='member';employee.save()
         self.assertNotIn(employee,StaffForm(instance=self.employee,user=self.admin,directory=invitation_directory()).fields['supervisor'].queryset)
         invite.assert_not_called()
+
+    def test_effective_business_role_display_follows_position_without_changing_permission_fields(self):
+        from .staff_views import StaffForm
+        for position in ['head','executive']:
+            self.employee.position=position;self.employee.save()
+            self.assertEqual(self.employee.business_role_display,'임원 · 전사 업무 관리')
+            form=StaffForm(data={'name':self.employee.name,'department':self.department.pk,'position':position,'role':'manager'},instance=self.employee,user=self.admin)
+            self.assertTrue(form.is_valid(),form.errors)
+            self.assertTrue(form.fields['role'].disabled)
+            self.assertEqual(form.cleaned_data['role'],'employee')
+            self.assertContains(self.client.get(f'/accounts/employees/{self.employee.pk}/edit/'),'임원 · 전사 업무 관리')
+        self.employee.position='leader';self.employee.role='manager';self.employee.save()
+        self.assertEqual(self.employee.business_role_display,'부서 관리자 · 소속 부서 업무 관리')
+        self.employee.role='employee'
+        self.assertEqual(self.employee.business_role_display,'일반 직원')

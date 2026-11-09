@@ -53,7 +53,7 @@ def invitation_preview(request, employee_id):
     return render(request, 'accounts/email_invitation.html', {
         'employee_name': employee.name,
         'email': invitation.email if invitation else 'employee@gunsystems.co.kr',
-        'department_name': employee.department.name, 'role_name': employee.get_role_display(),
+        'department_name': employee.department.name, 'role_name': employee.business_role_display,
         'activation_url': '#design-preview-only', 'expires_at': timezone.now()+timedelta(days=2),
     })
 

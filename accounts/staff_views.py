@@ -72,6 +72,11 @@ class StaffForm(EmployeeInviteForm):
         if user and not user.is_superuser:
             self.fields['role'].disabled=True
             self.fields['position'].disabled=True
+        self.can_edit_role=not self.fields['role'].disabled
+        self.executive_role=self['position'].value() in ['head','executive']
+        if self.executive_role:
+            self.fields['role'].disabled=True
+        self.fields['role'].choices=[('employee','일반 직원'),('manager','부서 관리자 · 소속 부서 업무 관리')]
         from tasks.hiworks import eligible_auto_employees
         from .lifecycle import account_allowed
         supervisor_ids=[employee.pk for employee in eligible_auto_employees() if account_allowed(employee.user)]

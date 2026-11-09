@@ -15,7 +15,7 @@
 </style>
 <section class="account-panel">
   <h1>직원 계정 관리</h1>
-  <p><strong>{{ employee.name }}</strong> · {{ employee.department }} · {{ employee.get_role_display }}</p>
+  <p><strong>{{ employee.name }}</strong> · {{ employee.department }} · {{ employee.business_role_display }}</p>
   <table><tr><th>회사 이메일</th><td>{{ email|default:'미등록' }}</td></tr><tr><th>상태</th><td>{% if not employee.is_active %}사용 중지{% elif employee.user and not employee.user.is_active %}로그인 중지{% elif employee.user %}계정 연결됨{% else %}계정 미연결{% endif %}</td></tr></table>
   <div class="notice"><strong>퇴사 시에는 사용 중지를 권장합니다.</strong><br>중지하면 기존 로그인 세션도 종료됩니다. 재활성화해도 이전 세션은 복구되지 않으며 다시 로그인해야 합니다.<br>로그인 계정 삭제는 비밀번호·OTP·복구 코드·초대 정보를 삭제하고 직원과 업무 이력을 보존합니다. 직원 완전 삭제는 아래 업무 이력이 모두 0건인 경우에만 가능합니다.</div>
   <h2>보존할 업무 이력</h2>

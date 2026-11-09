@@ -20,6 +20,12 @@ class Employee(models.Model):
     department = models.ForeignKey(Department,on_delete=models.PROTECT,verbose_name='부서')
     def __str__(self): return f'{self.name} · {self.department}'
 
+    @property
+    def business_role_display(self):
+        if self.position in ['head','executive']:
+            return '임원 · 전사 업무 관리'
+        return '부서 관리자 · 소속 부서 업무 관리' if self.role=='manager' else '일반 직원'
+
     def clean(self):
         from django.core.exceptions import ValidationError
         seen={self.pk} if self.pk else set()

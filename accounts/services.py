@@ -75,7 +75,7 @@ def invite(employee, email):
         activation_url = f'{base}/accounts/activate/{token}/'
         html_body = render_to_string('accounts/email_invitation.html', {
             'employee_name': employee.name, 'email': email,
-            'department_name': employee.department.name, 'role_name': employee.get_role_display(),
+            'department_name': employee.department.name, 'role_name': employee.business_role_display,
             'activation_url': activation_url, 'expires_at': invitation.expires_at,
         })
         deliver('[GUNSYSTEMS] Workhub 계정 활성화 안내',
