@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.test import TestCase
 from django.core.management import call_command,CommandError
 from django.contrib.auth import get_user_model
-from tasks.models import Employee,Task,Department
+from tasks.models import Employee,Task,TaskEvent,Department
 
 
 class DemoCleanupTests(TestCase):
@@ -31,3 +31,11 @@ class DemoCleanupTests(TestCase):
         with self.assertRaises(CommandError): call_command('cleanup_seed_demo',apply=True,stdout=StringIO())
         self.assertEqual(Task.objects.count(),9)
         self.assertEqual(Employee.objects.count(),4)
+
+    def test_feedback_requires_explicit_review_option(self):
+        TaskEvent.objects.create(task=Task.objects.first(),kind='feedback',body='예시 테스트',author_name='테스트')
+        with self.assertRaises(CommandError): call_command('cleanup_seed_demo',stdout=StringIO())
+        output=StringIO()
+        call_command('cleanup_seed_demo',include_feedback=True,stdout=output)
+        self.assertIn('"feedback": 1',output.getvalue())
+        self.assertEqual(TaskEvent.objects.count(),1)

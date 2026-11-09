@@ -59,6 +59,7 @@ class StaffForm(EmployeeInviteForm):
             self.fields['hiworks_employee']=forms.ChoiceField(label='하이웍스 직원',choices=choices,
                 widget=DirectorySelect(blocked=[row['remote_id'] for row in self.directory if row['state']]))
             self.fields['department'].help_text='하이웍스 부서와 같은 이름의 부서가 있으면 자동 선택합니다. 선택되지 않으면 Workhub에서 사용할 부서를 지정해 주세요.'
+            self.fields['invitation_email'].help_text='선택한 직원의 하이웍스 회사 이메일입니다. 정보만 등록하면 메일을 보내지 않습니다.'
             self.order_fields(['hiworks_employee','name','invitation_email','department','position','supervisor','role'])
             for field in ['name','invitation_email']:
                 self.fields[field].required=False
