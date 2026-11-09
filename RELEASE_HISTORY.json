@@ -4,12 +4,15 @@
   "releases": [
     {
       "version": "0.7.2",
-      "status": "validated_pending_deploy",
+      "status": "live_component_verified_user_save_pending",
       "release_notes": "releases/v0.7.2.md",
       "migrations": [],
       "user_work_creation_and_email_test": "pending",
       "tests": 294,
-      "new_tests": 7
+      "new_tests": 7,
+      "source_commit": "09ce83fbf7ff9854b53b30fd748846d300a4c230",
+      "deploy_id": "dep-dbonhubl550s73ab14o0",
+      "health": "ok"
     },
     {
       "version": "0.7.1",
