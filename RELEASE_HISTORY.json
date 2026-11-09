@@ -4,7 +4,7 @@
   "releases": [
     {
       "version": "0.7.0",
-      "status": "validated_pending_deploy",
+      "status": "live_server_verified_external_mail_pending",
       "release_notes": "releases/v0.7.0.md",
       "migrations": [
         "0022_mail_outbox_and_system_audit"
@@ -12,7 +12,11 @@
       "external_assignment_mail_test": "pending_user_test",
       "tests": 282,
       "new_tests": 29,
-      "backup": "/var/data/backups/workhub-pre-v070-20261109T070821Z.sqlite3"
+      "backup": "/var/data/backups/workhub-pre-v070-20261109T070821Z.sqlite3",
+      "source_commit": "4e15f2eee154cd3a5c2ae055fcc1e24349e6a612",
+      "deploy_id": "dep-dbon52bl550s73a9on40",
+      "live_at": "2026-11-09T16:14:15+09:00",
+      "health": "ok"
     },
     {
       "version": "0.6.1",

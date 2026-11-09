@@ -1,0 +1,23 @@
+{
+  "version": "0.7.0",
+  "source_commit": "4e15f2eee154cd3a5c2ae055fcc1e24349e6a612",
+  "deploy_id": "dep-dbon52bl550s73a9on40",
+  "status": "live",
+  "tests": 282,
+  "new_tests": 29,
+  "migration": "0022_mail_outbox_and_system_audit",
+  "health": {
+    "version": "0.7.0",
+    "commit": "4e15f2e",
+    "status": "ok"
+  },
+  "preserved_counts": {
+    "tasks": 1,
+    "employees": 2,
+    "access_profiles": 2,
+    "totp_devices": 2
+  },
+  "retroactive_mail_count": 0,
+  "real_assignment_email_received": "not_tested_pending_user",
+  "backup_integrity": "ok"
+}
