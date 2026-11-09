@@ -3,6 +3,12 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.9.10",
+      "status": "pending_deploy",
+      "release_notes": "releases/v0.9.10.md",
+      "migrations": []
+    },
+    {
       "version": "0.9.9",
       "status": "live_verified",
       "release_notes": "releases/v0.9.9.md",

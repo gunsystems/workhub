@@ -60,3 +60,5 @@
 .app-shell .calendar-cancelled-legend{color:#676773}
 .app-shell .task-cancelled-notice{margin:0 0 20px;padding:18px 22px;border:1px solid #d5d5dd;border-left:4px solid #85858f;border-radius:10px;background:#f1f1f4;color:#4f4f60}
 .app-shell .task-cancelled-notice strong{font-size:16px}.app-shell .task-cancelled-notice p{margin:8px 0 0;font-size:13px;line-height:1.8}
+
+.app-shell .calendar .event.cancelled{padding:7px 10px}.app-shell .calendar .event.cancelled .event-cancelled-line{display:block;margin:0;color:#676773;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

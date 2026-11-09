@@ -170,7 +170,7 @@ class UnifiedWorkTests(TestCase):
         for mode in ['month','week','day']:
             response=self.client.get('/',{'view':mode,'date':self.day.isoformat()})
             self.assertContains(response,'class="event cancelled"')
-            self.assertContains(response,'<span class="event-status-cancelled">취소</span>',html=True)
+            self.assertContains(response,f'<span class="event-cancelled-line">취소 - {self.task.title}</span>',html=True)
         response=self.client.get(f'/tasks/{self.task.pk}/')
         self.assertContains(response,'취소된 업무입니다.')
         self.assertNotContains(response,'일정 수행 완료</a>')
