@@ -138,7 +138,8 @@ def employee_edit(request,pk=None):
         except ValidationError as exc: directory_error=' / '.join(exc.messages)
     selected=request.GET.get('hiworks','')
     chosen=next((row for row in directory if row['remote_id']==selected and not row['state']),None)
-    initial={'hiworks_employee':selected,'department':chosen['department_id'] if chosen else ''}
+    initial={'hiworks_employee':selected}
+    if chosen: initial['department']=chosen['department_id']
     form=StaffForm(request.POST if request.method=='POST' else None,instance=employee,user=request.user,directory=directory,initial=initial)
     if request.method=='POST' and form.is_valid():
         creating=employee is None

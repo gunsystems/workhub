@@ -21,6 +21,8 @@ class StaffUITests(TestCase):
             self.assertEqual(response.status_code,200)
             self.assertContains(response,'app-sidebar')
             self.assertContains(response,'관리자 전용')
+            if url.endswith('/edit/'):
+                self.assertEqual(response.context['form']['department'].value(),self.department.pk)
         response=self.client.get('/accounts/employees/')
         self.assertContains(response,'테스트 직원')
         self.assertNotContains(response,'/admin/tasks/employee/')
