@@ -4,10 +4,13 @@
   "releases": [
     {
       "version": "0.8.1",
-      "status": "validated_pending_deploy",
+      "status": "live_verified",
       "release_notes": "releases/v0.8.1.md",
       "migrations": [],
-      "tests": 2
+      "tests": 2,
+      "source_commit": "dbb3cef721c5b3294f1b183e62dbebf4a03aa6ed",
+      "deploy_id": "dep-dboof2h5efls73eh8la0",
+      "health": "ok"
     },
     {
       "version": "0.8.0",
