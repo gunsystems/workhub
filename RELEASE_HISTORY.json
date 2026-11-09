@@ -4,11 +4,16 @@
   "releases": [
     {
       "version": "0.9.6",
-      "status": "prepared_local_verified",
+      "status": "live_verified",
       "release_notes": "releases/v0.9.6.md",
       "migrations": [],
       "capture": "1000x900_lossless_png_native_dpr2",
-      "tests": 2
+      "tests": 2,
+      "source_commit": "dd46c1fb0f161a1d6ab8c18de75767a04d0fc5ad",
+      "deploy_id": "dep-dboshhs9v7es738905q0",
+      "live_at": "2026-11-09T22:22:14+09:00",
+      "health": "ok",
+      "image_asset": "1000x900_verified_live"
     },
     {
       "version": "0.9.5",
