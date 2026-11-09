@@ -8,7 +8,7 @@ from .models import SystemAudit
 _actor = ContextVar('workhub_audit_actor', default=None)
 BUSINESS = {'Task','Department','Employee','Project','WorkCategory','WorkRequest','ChecklistItem',
             'TaskParticipation','ApprovalStep','EmployeeFeedback','PeriodReport','ReportSubmission',
-            'ReportReview','ReportFile','CalendarExportPolicy','WorkSeries','WorkOccurrence'}
+            'ReportReview','ReportFile','CalendarExportPolicy','WorkSeries','WorkOccurrence','Notice'}
 PRIVATE = {'PersonalBoard','PersonalColumn','PersonalCard','PersonalTag','PersonalSchedule'}
 ACCOUNT_FIELDS = {'user_id','employee_id','action','reason','actor_id','actor_name','created_at'}
 

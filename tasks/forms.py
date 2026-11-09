@@ -1,5 +1,7 @@
 from django import forms
 from django.db.models import Q
+from django.utils import timezone
+from zoneinfo import ZoneInfo
 from .models import Task, Employee, Project, WorkRequest, ChecklistItem, WorkCategory
 from .permissions import assignable_employees, is_manager, visible_projects, visible_departments, visible_employees, is_company_admin
 class TaskForm(forms.ModelForm):
@@ -8,6 +10,11 @@ class TaskForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.user = user
+        if not self.is_bound and not self.instance.pk:
+            now = timezone.localtime(timezone.now(), ZoneInfo('Asia/Seoul')).replace(second=0, microsecond=0)
+            if self.initial.get('start_date') is None: self.initial['start_date'] = now.date()
+            if self.initial.get('start_time') is None: self.initial['start_time'] = now.time()
+        self.fields['start_time'].help_text = '한국 시간 기준입니다. 필요한 시작 시간으로 변경할 수 있습니다.'
         self.fields['management_mode'].required = False
         self.fields['category'].queryset = WorkCategory.objects.filter(Q(is_active=True)|Q(pk=self.instance.category_id))
         self.fields['report_days'].required = False
@@ -20,14 +27,15 @@ class TaskForm(forms.ModelForm):
         self.fields['status'].choices = [choice for choice in Task.STATUS if choice[0] in ['todo','doing','blocked']]
         if self.instance.pk and not is_manager(user):
             self.fields['start_date'].disabled = True
+            self.fields['start_time'].disabled = True
             self.fields['due_date'].disabled = True
             self.fields['report_days'].disabled = True
             self.fields['review_days'].disabled = True
 
     class Meta:
         model = Task
-        fields = ['title','description','project','completion_criteria','report_days','review_days','assignee','status','importance','priority','start_date','due_date','category','management_mode','activity_start','activity_end','location','customer','work_style','estimated_minutes','next_action','next_check_date']
-        widgets = {'start_date':forms.DateInput(attrs={'type':'date'}),'due_date':forms.DateInput(attrs={'type':'date'}),'description':forms.Textarea(attrs={'rows':4}),
+        fields = ['title','description','project','completion_criteria','report_days','review_days','assignee','status','importance','priority','start_date','start_time','due_date','category','management_mode','activity_start','activity_end','location','customer','work_style','estimated_minutes','next_action','next_check_date']
+        widgets = {'start_date':forms.DateInput(format='%Y-%m-%d',attrs={'type':'date'}),'start_time':forms.TimeInput(format='%H:%M',attrs={'type':'time','step':'60'}),'due_date':forms.DateInput(attrs={'type':'date'}),'description':forms.Textarea(attrs={'rows':4}),
             'activity_start':forms.DateTimeInput(format='%Y-%m-%dT%H:%M',attrs={'type':'datetime-local'}),
             'activity_end':forms.DateTimeInput(format='%Y-%m-%dT%H:%M',attrs={'type':'datetime-local'}),
             'next_check_date':forms.DateInput(attrs={'type':'date'})}

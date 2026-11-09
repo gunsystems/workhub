@@ -12,12 +12,13 @@ def navigation(request):
             item('내 업무','/dashboard/?scope=mine','home',path=='/dashboard/' and request.GET.get('scope')=='mine'),
             item('개인 보드','/work/personal/','board',path.startswith('/work/personal/'))]},
         {'label':'업무 관리','items':[
-            item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/personal/','/work/notifications/','/work/hiworks/','/work/reports/','/work/calendar/','/work/system-log/')))),
+            item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/personal/','/work/notifications/','/work/hiworks/','/work/reports/','/work/calendar/','/work/system-log/','/work/notices/')))),
             item('주간 · 기간 보고','/work/reports/','work',path.startswith('/work/reports/')),
             item('프로젝트','/projects/','folder',path.startswith('/projects/')),
             item('업무 접수함','/intake/','inbox',path.startswith('/intake/')),
             item('캘린더','/','calendar',path=='/')]},
         {'label':'알림','items':[
+            item('공지사항','/work/notices/','bell',path.startswith('/work/notices/')),
             item('업무 알림','/work/notifications/','bell',path.startswith('/work/notifications/')),
             item('조치 필요','/alerts/','flag',path=='/alerts/',key='alerts')]},
     ]

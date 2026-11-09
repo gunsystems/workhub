@@ -59,4 +59,6 @@ def deliver_pending(limit=10):
             else:
                 mail.state='sent'; mail.sent_at=timezone.now(); mail.result='메일 서버가 발송을 접수했습니다.'
         mail.save(update_fields=['state','result','sent_at'])
-        write('mail_'+mail.state, 'AssignmentMail', mail.pk, '업무 배정 메일', after={'task_id':mail.task_id, 'employee_id':mail.employee_id, 'result':mail.result})
+        write('mail_'+mail.state, 'AssignmentMail', mail.pk, '업무 배정 메일', after={'task_id':mail.task_id,
+            'employee_id':mail.employee_id,'task_title':mail.payload.get('task_title',''),
+            'employee_name':mail.payload.get('employee_name',''),'result':mail.result})

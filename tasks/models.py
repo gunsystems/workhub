@@ -3,6 +3,7 @@ from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
 from django.core.validators import MinValueValidator, MaxValueValidator
+from .notice_models import Notice, NoticeRecipient, NoticeDelivery
 
 
 class SystemAudit(models.Model):
@@ -88,6 +89,7 @@ class WorkCategory(models.Model):
 
 
 class Task(models.Model):
+    start_time = models.TimeField('시작 시간', null=True, blank=True)
     category = models.ForeignKey(WorkCategory, on_delete=models.PROTECT, null=True, blank=True, verbose_name='업무 종류')
     management_mode = models.CharField('관리 방식', max_length=12, default='report', choices=[('report','보고 업무'),('event','간단 일정')])
     activity_start = models.DateTimeField('실제 수행 시작', null=True, blank=True)

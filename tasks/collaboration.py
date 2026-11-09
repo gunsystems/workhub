@@ -55,7 +55,7 @@ class OfficialTaskForm(TaskForm):
         self.fields['observers'].queryset = users()
         self.fields['observers'].label_from_instance = user_name
         self.fields['status'].choices = [('draft','초안'),('todo','예정'),('doing','진행 중'),('blocked','보류')]
-        for name in ['start_date','due_date','report_days','review_days']:
+        for name in ['start_date','start_time','due_date','report_days','review_days']:
             self.fields[name].disabled = False
         for n in range(1,6): self.fields[f'approver_{n}'].queryset = users()
         self.fields['allocation'].initial = 'shared'

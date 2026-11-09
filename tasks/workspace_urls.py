@@ -1,7 +1,12 @@
 from django.urls import path
 from . import collaboration,collaboration_views,personal,calendar_views,hiworks_views,work_series,subscriptions,reports
 from . import audit_views
+from . import notice_views
 urlpatterns=[
+    path('notices/',notice_views.notice_list,name='notice_list'),
+    path('notices/new/',notice_views.notice_edit,name='notice_new'),
+    path('notices/<int:pk>/',notice_views.notice_detail,name='notice_detail'),
+    path('notices/<int:pk>/edit/',notice_views.notice_edit,name='notice_edit'),
     path('system-log/',audit_views.audit_list,name='system_audit'),
     path('reports/',reports.report_list,name='period_reports'),
     path('reports/new/',reports.report_edit,name='period_report_new'),

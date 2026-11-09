@@ -19,9 +19,9 @@ def health(request):
         PersonalCard.objects.first()
         WorkNotification.objects.first()
         HiworksDirectoryCache.objects.first()
-        from tasks.models import WorkSeries,PeriodReport,CalendarSubscription,ReportFile,SystemAudit,AssignmentMail
+        from tasks.models import WorkSeries,PeriodReport,CalendarSubscription,ReportFile,SystemAudit,AssignmentMail,Notice,NoticeDelivery
         WorkSeries.objects.first();PeriodReport.objects.first();CalendarSubscription.objects.first();ReportFile.objects.first()
-        SystemAudit.objects.first();AssignmentMail.objects.first()
+        SystemAudit.objects.first();AssignmentMail.objects.first();Notice.objects.first();NoticeDelivery.objects.first()
     except DatabaseError:
         return JsonResponse({**data,'status':'database_not_ready'},status=503)
     return JsonResponse({**data,'status':'ok'})

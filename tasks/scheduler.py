@@ -43,6 +43,9 @@ def tick(now=None,sync_google=True):
             # Access verification must not wait for recurrence or calendar processing.
             from accounts.hiworks_access import refresh_directory
             refresh_directory()
+            from .notices import publish_due,deliver_pending as deliver_notices
+            publish_due(now)
+            deliver_notices()
             from .models import WorkSeries
             from .work_series import process_work_rule
             for pk in WorkSeries.objects.filter(enabled=True,mode='calendar',next_at__lte=now).values_list('pk',flat=True):

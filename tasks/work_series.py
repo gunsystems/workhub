@@ -34,6 +34,7 @@ class WorkSeriesForm(ScheduleFields):
 
 def template_snapshot(task, offset):
     return {'fields':{n:getattr(task,n) for n in COPY_FIELDS},'due_offset':offset,
+            'start_time':task.start_time.isoformat() if task.start_time else None,
             'duration_seconds':int((task.activity_end-task.activity_start).total_seconds()) if task.activity_start and task.activity_end else None,
             'participants':list(task.participants.values_list('pk',flat=True)),
             'watchers':list(task.watchers.values_list('pk',flat=True)),
@@ -59,7 +60,8 @@ def create_work_occurrence(rule,when):
     if existing: return existing.task,False
     data=rule.template;day=timezone.localtime(when,SEOUL).date()
     fields={**data['fields'],'start_date':day,'due_date':day+timedelta(days=data['due_offset']),
-            'creator':rule.owner,'workflow_version':2,'status':'todo'}
+            'creator':rule.owner,'workflow_version':2,'status':'todo',
+            'start_time':timezone.localtime(when,SEOUL).time() if data.get('start_time') else None}
     if data['duration_seconds']:
         fields.update(activity_start=when,activity_end=when+timedelta(seconds=data['duration_seconds']))
     project_id=fields.get('project_id')
@@ -133,7 +135,7 @@ def series_view(request,pk):
         rule.enabled=False;rule.next_at=None;rule.save(update_fields=['enabled','next_at'])
         record(task,request.user,'changed','이후 반복 생성을 중지했습니다. 기존 회차는 보존됩니다.',{'series_id':rule.pk})
         return redirect('work_series',pk=pk)
-    form=WorkSeriesForm(request.POST if request.method=='POST' else None,initial={'starts_at':task.activity_start or datetime.combine(task.start_date,datetime.min.time(),tzinfo=SEOUL),'due_offset':(task.due_date-task.start_date).days})
+    form=WorkSeriesForm(request.POST if request.method=='POST' else None,initial={'starts_at':task.activity_start or datetime.combine(task.start_date,task.start_time or datetime.min.time(),tzinfo=SEOUL),'due_offset':(task.due_date-task.start_date).days})
     if request.method=='POST' and not rule and form.is_valid():
         if task.status=='draft': form.add_error(None,'업무를 먼저 발행한 뒤 반복을 설정하세요.')
         else:

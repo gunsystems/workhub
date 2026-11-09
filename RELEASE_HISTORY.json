@@ -3,16 +3,31 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.8.0",
+      "status": "validated_pending_deploy",
+      "release_notes": "releases/v0.8.0.md",
+      "migrations": [
+        "0023_task_start_time",
+        "0024_company_notices"
+      ],
+      "tests": 321,
+      "new_tests": 27,
+      "real_notice_delivery": "not_sent_pending_user_test",
+      "backup": "/var/data/backups/workhub-pre-v080-20261109T081817Z.sqlite3"
+    },
+    {
       "version": "0.7.2",
-      "status": "live_component_verified_user_save_pending",
+      "status": "live_user_work_creation_observed_mail_receipt_pending",
       "release_notes": "releases/v0.7.2.md",
       "migrations": [],
-      "user_work_creation_and_email_test": "pending",
       "tests": 294,
       "new_tests": 7,
       "source_commit": "09ce83fbf7ff9854b53b30fd748846d300a4c230",
       "deploy_id": "dep-dbonhubl550s73ab14o0",
-      "health": "ok"
+      "health": "ok",
+      "user_work_creation": "observed_in_user_screenshots_after_release",
+      "assignment_mail_server_acceptance": "observed_in_user_system_log_screenshot",
+      "email_inbox_receipt": "not_confirmed"
     },
     {
       "version": "0.7.1",
