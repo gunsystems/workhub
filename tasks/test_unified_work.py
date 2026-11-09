@@ -91,7 +91,11 @@ class UnifiedWorkTests(TestCase):
         self.assertEqual(CalendarSubscription.objects.get(owner=self.worker).token_digest,hashlib.sha256(token.encode()).hexdigest())
         anonymous=Client();response=anonymous.get('/work/calendar/subscription/'+token+'.ics')
         self.assertEqual(response.status_code,200);self.assertIn(b'BEGIN:VEVENT',response.content);self.assertNotIn(self.task.description.encode(),response.content) if self.task.description else None
-        self.task.status='cancelled';self.task.save();self.assertIn(b'STATUS:CANCELLED',anonymous.get('/work/calendar/subscription/'+token+'.ics').content)
+        self.task.status='cancelled';self.task.save()
+        cancelled=anonymous.get('/work/calendar/subscription/'+token+'.ics').content.decode().replace('\r\n ','')
+        self.assertIn('STATUS:CANCELLED',cancelled)
+        self.assertIn('SUMMARY:[취소] '+self.task.title,cancelled)
+        self.assertIn(f'UID:workhub-task-{self.task.pk}@gunsystems.co.kr',cancelled)
         self.client.post('/work/calendar/subscription/',{'action':'issue'})
         self.assertEqual(anonymous.get('/work/calendar/subscription/'+token+'.ics').status_code,404)
         self.client.post('/work/calendar/subscription/',{'action':'revoke'})
@@ -160,6 +164,20 @@ class UnifiedWorkTests(TestCase):
         for url in ['/work/new/','/work/reports/','/work/reports/new/','/work/calendar/subscription/',f'/work/series/{self.task.pk}/']:
             with self.subTest(url=url):self.assertEqual(self.client.get(url).status_code,200)
         self.assertEqual(Task.objects.count(),before);self.assertFalse(WorkSeries.objects.exists());self.assertFalse(CalendarSubscription.objects.exists())
+
+    def test_cancelled_calendar_and_detail_have_explicit_notice(self):
+        self.task.status='cancelled';self.task.save()
+        for mode in ['month','week','day']:
+            response=self.client.get('/',{'view':mode,'date':self.day.isoformat()})
+            self.assertContains(response,'class="event cancelled"')
+            self.assertContains(response,'<span class="event-status-cancelled">취소</span>',html=True)
+        response=self.client.get(f'/tasks/{self.task.pk}/')
+        self.assertContains(response,'취소된 업무입니다.')
+        self.assertNotContains(response,'일정 수행 완료</a>')
+        self.task.workflow_version=1;self.task.save()
+        self.assertContains(self.client.get(f'/tasks/{self.task.pk}/'),'취소된 업무입니다.')
+        self.task.status='doing';self.task.save()
+        self.assertNotContains(self.client.get(f'/tasks/{self.task.pk}/'),'취소된 업무입니다.')
 
     def test_feed_company_policy_revocation_blocks_existing_token(self):
         token=secrets.token_urlsafe(32);CalendarSubscription.objects.create(owner=self.worker,token_digest=hashlib.sha256(token.encode()).hexdigest())

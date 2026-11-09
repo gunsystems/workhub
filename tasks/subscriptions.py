@@ -13,6 +13,9 @@ from django.db.models import Q,Count,Max
 from .models import CalendarSubscription,CalendarExportPolicy
 from .permissions import visible_tasks,profile,is_company_admin
 
+# Advance when the exported representation changes without a business edit.
+FEED_REPRESENTATION_REVISION=1
+
 
 @login_required
 @never_cache
@@ -73,9 +76,10 @@ def feed(request,token):
         # Legacy edits recorded immutable events without advancing revision.
         # Include that history so existing edits are exported without rewriting
         # business data. Distinct prevents participant joins inflating the count.
-        sequence=task.revision+task.calendar_event_count
+        sequence=task.revision+task.calendar_event_count+FEED_REPRESENTATION_REVISION
         modified=(task.calendar_modified or task.assigned_at or datetime.combine(task.start_date,time(),tzinfo=dt_timezone.utc)).astimezone(dt_timezone.utc).strftime('%Y%m%dT%H%M%SZ')
-        lines+=['BEGIN:VEVENT',f'UID:workhub-task-{task.pk}@gunsystems.co.kr',f'DTSTAMP:{stamp}',f'LAST-MODIFIED:{modified}',f'SEQUENCE:{sequence}', 'SUMMARY:'+escape(task.title)]
+        title=('[취소] ' if task.status=='cancelled' else '')+task.title
+        lines+=['BEGIN:VEVENT',f'UID:workhub-task-{task.pk}@gunsystems.co.kr',f'DTSTAMP:{stamp}',f'LAST-MODIFIED:{modified}',f'SEQUENCE:{sequence}', 'SUMMARY:'+escape(title)]
         if task.activity_start and task.activity_end:
             lines+=['DTSTART:'+task.activity_start.astimezone(dt_timezone.utc).strftime('%Y%m%dT%H%M%SZ'),'DTEND:'+task.activity_end.astimezone(dt_timezone.utc).strftime('%Y%m%dT%H%M%SZ')]
         else:lines+=['DTSTART;VALUE=DATE:'+task.start_date.strftime('%Y%m%d'),'DTEND;VALUE=DATE:'+(task.due_date+timedelta(days=1)).strftime('%Y%m%d')]
