@@ -18,7 +18,7 @@ COPY_FIELDS = ['title','description','completion_criteria','assignee_id','projec
 
 
 class WorkSeriesForm(ScheduleFields):
-    starts_at = forms.DateTimeField(label='첫 회차 수행 시작 · 한국 시간', widget=forms.DateTimeInput(format='%Y-%m-%dT%H:%M',attrs={'type':'datetime-local'}))
+    starts_at = forms.DateTimeField(label='첫 회차 반복 기준 시각 · 한국 시간', help_text='수행 시간이 없는 업무에서는 회차 생성 시각입니다. 실제 수행 시간은 원본 업무에서 설정하세요.', widget=forms.DateTimeInput(format='%Y-%m-%dT%H:%M',attrs={'type':'datetime-local'}))
     due_offset = forms.IntegerField(label='각 회차 마감까지 일수', min_value=0, max_value=366, initial=0)
     def clean(self):
         data = super().clean()
@@ -86,6 +86,7 @@ def process_work_rule(pk,now):
     if not rule.enabled or rule.mode!='calendar' or not rule.next_at or rule.next_at>now: return 0
     if not eligible(rule):
         rule.issue='담당자·결재자 또는 작성자의 사용 자격을 확인하고 인계해 주세요.';rule.save(update_fields=['issue']);return 0
+    rule.issue=''
     count=0
     while rule.next_at and rule.next_at<=now and count<20:
         if rule.max_count and rule.generated_count>=rule.max_count: rule.next_at=None;break
