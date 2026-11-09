@@ -4,16 +4,18 @@
   "releases": [
     {
       "version": "0.6.0",
-      "status": "verified_pending_deploy",
-      "source_commit": null,
-      "deploy_id": null,
+      "status": "live_verified",
+      "source_commit": "0b729a7170118f7ce773a41f6daa89807668184a",
+      "deploy_id": "dep-dbokljpsrm7s73c9d6u0",
       "release_notes": "releases/v0.6.0.md",
       "migrations": [
         "0018_unified_work_reporting",
         "0019_report_files_and_linked_work",
         "0020_default_work_categories",
         "0021_preserve_auth_deletion_history"
-      ]
+      ],
+      "live_at": "2026-11-09T13:24:39+09:00",
+      "tests": 247
     },
     {
       "version": "0.5",
@@ -24,6 +26,16 @@
     }
   ],
   "commits": [
+    {
+      "sha": "0b729a7170118f7ce773a41f6daa89807668184a",
+      "date": "2026-11-09T04:22:57Z",
+      "message": "Clarify timed calendar previews and recurring-work clock; clear resolved recurrence issues"
+    },
+    {
+      "sha": "b0d996f3327e7ede2aee7fb22735e20e78d64acb",
+      "date": "2026-11-09T04:19:19Z",
+      "message": "Release v0.6.0: unify work schedules, recurring occurrences, versioned period reports and private iCal subscriptions"
+    },
     {
       "sha": "8ea8699dacea2f086c7a7895510e56c8293cb846",
       "date": "2026-11-09T03:44:31Z",

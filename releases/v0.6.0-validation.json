@@ -1,0 +1,37 @@
+{
+  "version": "0.6.0",
+  "timezone": "Asia/Seoul",
+  "full_suite": {
+    "tests": 247,
+    "result": "passed",
+    "seconds": 88.891
+  },
+  "follow_up_help_health": {
+    "tests": 9,
+    "result": "passed"
+  },
+  "follow_up_unified_calendar": {
+    "tests": 42,
+    "result": "passed"
+  },
+  "note": "Follow-up checks overlap the full suite; counts must not be added as distinct tests. Password hashing was accelerated only in the test process. Production password hashing was not changed.",
+  "django_check": "passed",
+  "makemigrations_check": "no changes detected",
+  "collectstatic": "passed",
+  "backup_integrity": "ok",
+  "actual_database_restore": "not performed",
+  "production_invitations_or_test_tasks_created": false,
+  "hiworks_personal_subscription_refresh": "not yet verified against a real external subscription",
+  "production": {
+    "status": "ok",
+    "version": "0.6.0",
+    "commit": "0b729a7",
+    "deploy": "dep-dbokljpsrm7s73c9d6u0",
+    "tasks_preserved": 1,
+    "employees_preserved": 1,
+    "operator_active": true,
+    "representative_active": true,
+    "migration_0021": true,
+    "new_reports_series_subscriptions": 0
+  }
+}
