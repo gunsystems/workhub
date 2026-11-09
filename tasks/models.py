@@ -4,6 +4,36 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+
+class SystemAudit(models.Model):
+    """Application history survives deletion of the original object and account."""
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    actor_id_snapshot = models.PositiveBigIntegerField(null=True)
+    actor_name = models.CharField(max_length=150, default='시스템')
+    action = models.CharField(max_length=24, db_index=True)
+    target_type = models.CharField(max_length=80, db_index=True)
+    target_id = models.CharField(max_length=80, blank=True)
+    target_label = models.CharField(max_length=200, blank=True)
+    before = models.JSONField(default=dict)
+    after = models.JSONField(default=dict)
+    class Meta:
+        ordering = ['-created_at', '-pk']
+
+
+class AssignmentMail(models.Model):
+    task = models.ForeignKey('Task', on_delete=models.SET_NULL, null=True)
+    employee = models.ForeignKey('Employee', on_delete=models.SET_NULL, null=True)
+    dedupe_key = models.CharField(max_length=120, unique=True)
+    payload = models.JSONField(default=dict)
+    state = models.CharField(max_length=16, default='pending', db_index=True,
+        choices=[('pending','발송 대기'),('sending','발송 처리 중'),('sent','발송 완료'),('failed','발송 실패'),('skipped','발송 제외'),('unknown','결과 확인 필요')])
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    claimed_until = models.DateTimeField(null=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    sent_at = models.DateTimeField(null=True)
+    result = models.CharField(max_length=160, blank=True)
+
 class Department(models.Model):
     name = models.CharField('부서명', max_length=80, unique=True)
     def __str__(self): return self.name

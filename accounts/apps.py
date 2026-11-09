@@ -6,6 +6,8 @@ class AccountsConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
 
     def ready(self):
+        from tasks.audit import register
+        register()
         # Admin autodiscovery has completed before this app's ready hook.
         from django.contrib import admin
         from django_otp.plugins.otp_totp.models import TOTPDevice

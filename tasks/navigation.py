@@ -12,7 +12,7 @@ def navigation(request):
             item('내 업무','/dashboard/?scope=mine','home',path=='/dashboard/' and request.GET.get('scope')=='mine'),
             item('개인 보드','/work/personal/','board',path.startswith('/work/personal/'))]},
         {'label':'업무 관리','items':[
-            item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/personal/','/work/notifications/','/work/hiworks/','/work/reports/','/work/calendar/')))),
+            item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/personal/','/work/notifications/','/work/hiworks/','/work/reports/','/work/calendar/','/work/system-log/')))),
             item('주간 · 기간 보고','/work/reports/','work',path.startswith('/work/reports/')),
             item('프로젝트','/projects/','folder',path.startswith('/projects/')),
             item('업무 접수함','/intake/','inbox',path.startswith('/intake/')),
@@ -30,6 +30,7 @@ def navigation(request):
     if system_admin(user):
         administration.append(item('직원 관리','/accounts/employees/','users',path.startswith('/accounts/employees/') or path=='/accounts/departments/' or path.startswith('/admin/tasks/employee/')))
     if user.is_superuser:
+        administration.append(item('시스템 로그','/work/system-log/','shield',path=='/work/system-log/'))
         administration.append(item('관리자 계정','/accounts/administrators/','shield',path=='/accounts/administrators/'))
         administration.append(item('하이웍스 자동 연동','/work/hiworks/','users',path=='/work/hiworks/'))
     if administration: groups.append({'label':'관리자 전용','items':administration,'collapsible':True,'open':any(i['active'] for i in administration)})

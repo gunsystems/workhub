@@ -1,6 +1,8 @@
 from django.urls import path
 from . import collaboration,collaboration_views,personal,calendar_views,hiworks_views,work_series,subscriptions,reports
+from . import audit_views
 urlpatterns=[
+    path('system-log/',audit_views.audit_list,name='system_audit'),
     path('reports/',reports.report_list,name='period_reports'),
     path('reports/new/',reports.report_edit,name='period_report_new'),
     path('reports/<int:pk>/',reports.report_detail,name='period_report_detail'),

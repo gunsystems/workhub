@@ -162,8 +162,16 @@ def edit_task(request, task=None):
                 ApprovalStep.objects.bulk_create([ApprovalStep(task=clone,approver=s.approver,approver_name=s.approver_name,position=s.position,stage=s.stage) for s in obj.approval_steps.all()])
                 record(clone,request.user,'created','직원별 개별 배정',{'group_key':key})
                 if clone.status!='draft': notify(clone,'새 업무가 배정되었습니다.')
+                from .assignment_mail import enqueue as enqueue_assignment_mail
+                enqueue_assignment_mail(clone,request.user)
             obj.assignments.exclude(employee_id=obj.assignee_id).delete()
         if obj.status!='draft': notify(obj,'업무가 등록되거나 변경되었습니다. 내용을 확인해 주세요.')
+        from .assignment_mail import enqueue as enqueue_assignment_mail
+        previous_ids={int(row['employee_id']) for row in prior}
+        if before: previous_ids.add(int(before['assignee_id']))
+        current_ids=set(obj.participants.values_list('pk',flat=True)) | {obj.assignee_id}
+        new_ids=current_ids if is_new or (before and before['status']=='draft') else current_ids-previous_ids
+        enqueue_assignment_mail(obj,request.user,new_ids)
         return redirect('task_detail',pk=obj.pk)
     return render(request,'tasks/official_form.html',{'form':form,'task':task})
 
@@ -334,6 +342,9 @@ def _change(user,pk,kind,data):
         data={**data,'body':f'{old} → {task.assignee}\n'+data['body']}; event='handover'
     else: raise ValidationError('지원하지 않는 처리입니다.')
     task.revision+=1; task.save()
+    if kind=='handover':
+        from .assignment_mail import enqueue as enqueue_assignment_mail
+        enqueue_assignment_mail(task,user,{task.assignee_id})
     record(task,user,event,data['body'],{'before':before,'action':kind,'decision':data.get('decision'),
            'round':task.report_round,'step':current.position if current else None})
     if task.status=='done':

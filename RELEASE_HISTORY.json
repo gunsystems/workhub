@@ -3,6 +3,18 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.7.0",
+      "status": "validated_pending_deploy",
+      "release_notes": "releases/v0.7.0.md",
+      "migrations": [
+        "0022_mail_outbox_and_system_audit"
+      ],
+      "external_assignment_mail_test": "pending_user_test",
+      "tests": 282,
+      "new_tests": 29,
+      "backup": "/var/data/backups/workhub-pre-v070-20261109T070821Z.sqlite3"
+    },
+    {
       "version": "0.6.1",
       "status": "live_server_verified_external_pending",
       "source_commit": "0c44b70308be9f549bc1d9604a276589769e08d2",

@@ -1,4 +1,4 @@
-<!doctype html>
+{% load static %}<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
@@ -31,8 +31,8 @@
     small{color:#5e6c7a}.footer{margin-top:24px}
     @media(max-width:480px){main{padding:24px;margin:24px auto}.form-actions{flex-direction:column}.form-actions button{width:100%}.codes{grid-template-columns:1fr}}
   </style>
-</head>
-<body><main><div style="display:flex;justify-content:flex-end;margin-bottom:12px">{% include 'tasks/page_help.html' %}</div>
+{% if request.user.is_authenticated %}<script src="{% static 'tasks/idle.js' %}" defer></script>{% endif %}</head>
+<body {% if request.user.is_authenticated %}data-idle-session{% endif %}><main><div style="display:flex;justify-content:flex-end;margin-bottom:12px">{% include 'tasks/page_help.html' %}</div>
   <div class="brand">GUNSYSTEMS · Workhub</div>
   <h1>{{ title }}</h1>
   {% if notice %}<p class="notice">{{ notice }}</p>{% endif %}
@@ -55,7 +55,7 @@
   <div class="codes">{% for code in codes %}<code>{{ code }}</code>{% endfor %}</div>
   <p class="next-action"><a class="button" href="/dashboard/">업무 시작하기</a></p>
   {% endif %}
-  {% if title == 'Workhub 로그인' %}<p><a href="/accounts/password/reset/">비밀번호를 잊으셨나요?</a></p>{% endif %}
+  {% if title == 'Workhub 로그인' %}{% if request.GET.expired %}<p class="notice">30분 동안 활동이 없어 안전하게 로그아웃되었습니다. 다시 로그인해 주세요.</p>{% endif %}<p><a href="/accounts/password/reset/">비밀번호를 잊으셨나요?</a></p>{% endif %}
   {% if retry_url %}<p class="next-action"><a class="button" href="{{ retry_url }}">다시 시도하기</a></p>{% endif %}
   {% if enrollment_complete %}<p class="next-action"><a class="button" href="/dashboard/">업무 시작하기</a></p>{% endif %}
   <p class="footer"><small>회사 이메일로 이용하는 사내 업무 공간입니다.</small></p>

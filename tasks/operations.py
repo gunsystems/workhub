@@ -101,6 +101,8 @@ def intake_assign(request,pk):
     form.fields['project'].queryset=visible_projects(request.user).filter(department=intake.department)
     if request.method=='POST' and form.is_valid():
         task=form.save()
+        from .assignment_mail import enqueue
+        enqueue(task,request.user,{task.assignee_id})
         intake.task=task
         intake.assigned_at=timezone.now()
         intake.save(update_fields=['task','assigned_at'])

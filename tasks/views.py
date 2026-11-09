@@ -105,6 +105,9 @@ def edit(request,pk=None):
             task.last_report_at = None
         task.save()
         record(task,request.user,'changed' if pk else 'created',form.cleaned_data.get('change_reason') or ('업무 정보 수정' if pk else '업무 등록'),{'before':before})
+        if not before or before['status']=='draft' or before['assignee_id']!=str(task.assignee_id):
+            from .assignment_mail import enqueue
+            enqueue(task,request.user,{task.assignee_id})
         return redirect('task_detail',pk=task.pk)
     return render(request,'tasks/form.html',{'form':form,'task':task})
 

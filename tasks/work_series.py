@@ -77,6 +77,8 @@ def create_work_occurrence(rule,when):
     record(obj,rule.owner,'created','반복 템플릿에서 생성한 독립 회차',{'series_id':rule.pk,'scheduled_for':when.isoformat()})
     from .collaboration import notify
     notify(obj,'정기 업무의 새 회차가 배정되었습니다.')
+    from .assignment_mail import enqueue as enqueue_assignment_mail
+    enqueue_assignment_mail(obj,rule.owner)
     return obj,True
 
 

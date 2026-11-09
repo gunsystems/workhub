@@ -25,7 +25,7 @@ class RequireMFA:
                 from django.contrib.auth import logout
                 logout(request)
                 return redirect('login')
-            authentication_path = request.path.startswith(('/accounts/mfa/', '/accounts/activate/', '/accounts/password/', '/static/')) or request.path in ('/accounts/hiworks/access/', '/logout/', '/login/', '/healthz/')
+            authentication_path = request.path.startswith(('/accounts/session/', '/accounts/mfa/', '/accounts/activate/', '/accounts/password/', '/static/')) or request.path in ('/accounts/hiworks/access/', '/logout/', '/login/', '/healthz/')
             if not authentication_path:
                 from .hiworks_access import allowed
                 if not allowed(request.user):

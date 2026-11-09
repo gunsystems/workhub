@@ -59,6 +59,8 @@ def tick(now=None,sync_google=True):
             refresh_directory()
             sync_automatic_links()
             deliver_pending()
+            from .assignment_mail import deliver_pending as deliver_assignment_mail
+            deliver_assignment_mail()
             return {'created':created}
         finally:
             SchedulerLease.objects.filter(key='personal',token=token).update(expires_at=timezone.now(),heartbeat_at=timezone.now())

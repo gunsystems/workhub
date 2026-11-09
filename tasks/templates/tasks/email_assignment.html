@@ -1,0 +1,17 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workhub 업무 배정 안내</title></head>
+<body style="margin:0;background:#f1f5f3;color:#213e34;font-family:'Malgun Gothic','Apple SD Gothic Neo',Arial,sans-serif">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:32px 16px">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:580px;background:#fff;border:1px solid #dce6df;border-radius:14px;overflow:hidden">
+<tr><td style="background:#163e35;padding:28px 32px;color:#fff"><div style="font-size:22px;font-weight:bold;letter-spacing:1.5px">GUNSYSTEMS</div><div style="font-size:12px;color:#cee0d6;margin-top:7px">Workhub · 업무관리 시스템</div></td></tr>
+<tr><td style="padding:32px"><div style="font-size:12px;font-weight:bold;color:#267357;letter-spacing:1px">업무 배정 안내</div><h1 style="margin:12px 0 22px;font-size:27px;line-height:1.45;letter-spacing:-.7px">새로운 업무가<br>배정되었습니다.</h1>
+<p style="font-size:15px;line-height:1.8;margin:0 0 12px"><strong>{{ employee_name }}님, 안녕하세요.</strong></p><p style="font-size:14px;line-height:1.9;color:#586d63;margin:0 0 24px">{{ assigned_by }}님이 회원님을 아래 업무의 수행자로 지정했습니다.<br>Workhub에서 자세한 내용을 확인해 주세요.</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f8f5;border:1px solid #e0e9e2;border-radius:9px;font-size:14px;line-height:1.8">
+<tr><td style="padding:18px 20px 6px;color:#718379;width:65px;vertical-align:top">업무명</td><td style="padding:18px 20px 6px 0;font-weight:bold;word-break:break-word">{{ task_title }}</td></tr>
+<tr><td style="padding:6px 20px;color:#718379">담당 역할</td><td style="padding:6px 20px 6px 0">{{ assignment_role }}</td></tr>
+<tr><td style="padding:6px 20px;color:#718379">마감일</td><td style="padding:6px 20px 6px 0">{{ due_date|date:'Y년 m월 d일' }}</td></tr>
+<tr><td style="padding:6px 20px 18px;color:#718379">배정자</td><td style="padding:6px 20px 18px 0">{{ assigned_by }}</td></tr></table>
+<p style="font-size:14px;line-height:1.9;color:#586d63;margin:23px 0">업무 내용과 완료 기준을 확인하고 업무를 진행해 주세요.<br>질문이나 진행 상황은 해당 업무에 남길 수 있습니다.</p>
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="background:#246b51;border-radius:8px;text-align:center"><a href="{{ task_url }}" style="display:block;padding:17px;color:#fff;text-decoration:none;font-size:15px;font-weight:bold">배정된 업무 확인하기 &nbsp; →</a></td></tr></table>
+<p style="margin:13px 0 0;text-align:center;font-size:12px;color:#7a8a80;line-height:1.8">회사 계정으로 로그인하면 업무 내용을 확인할 수 있습니다.</p>
+</td></tr><tr><td style="padding:20px 32px;border-top:1px solid #e6ece8;font-size:11px;color:#819087;line-height:1.8">이 메일은 GUNSYSTEMS Workhub에서 자동으로 발송했습니다.<br>메일에 회신하는 대신 업무 시스템에서 의견을 남겨 주세요.</td></tr></table>
+</td></tr></table></body></html>

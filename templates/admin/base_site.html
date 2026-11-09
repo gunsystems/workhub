@@ -1,2 +1,4 @@
 {% extends 'admin/base_site.html' %}
+{% load static %}
+{% block footer %}{{ block.super }}{% if request.user.is_authenticated %}<div data-idle-session hidden>{% csrf_token %}</div><script src="{% static 'tasks/idle.js' %}" defer></script>{% endif %}{% endblock %}
 {% block nav-global %}{{ block.super }}{% include 'tasks/page_help.html' %}{% endblock %}

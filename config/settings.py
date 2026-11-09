@@ -47,6 +47,8 @@ AUTH_PASSWORD_VALIDATORS = [
 INSTALLED_APPS += ['accounts', 'django_otp', 'django_otp.plugins.otp_totp']
 MIDDLEWARE.insert(MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1, 'django_otp.middleware.OTPMiddleware')
 MIDDLEWARE.insert(MIDDLEWARE.index('django_otp.middleware.OTPMiddleware') + 1, 'accounts.middleware.RequireMFA')
+MIDDLEWARE.insert(MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1, 'accounts.idle.IdleTimeout')
+MIDDLEWARE.insert(MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1, 'tasks.audit.AuditContext')
 WORKHUB_EMAIL_DOMAIN = 'gunsystems.co.kr'
 WORKHUB_BASE_URL = os.getenv('WORKHUB_BASE_URL', 'https://gunsystems-workhub-test.onrender.com')
 HIWORKS_OFFICE_TOKEN = os.getenv('HIWORKS_OFFICE_TOKEN', '')

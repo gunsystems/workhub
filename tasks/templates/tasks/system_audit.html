@@ -1,0 +1,15 @@
+{% extends 'tasks/app_shell.html' %}{% block content %}
+<style>
+.audit-filter{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:24px 0}.audit-filter label{display:block;margin-bottom:6px}.audit-filter input,.audit-filter select,.audit-filter button{height:44px;box-sizing:border-box}.audit-panel{background:white;border:1px solid #dfe8e4;border-radius:14px;padding:24px;margin:20px 0;overflow:auto}.audit-table{width:100%;border-collapse:collapse}.audit-table td,.audit-table th{text-align:left;padding:12px;border-bottom:1px solid #e7eeeb;vertical-align:top}.audit-diff{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.audit-diff pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f5f8f6;padding:14px;font-size:12px;max-height:320px;overflow:auto}.audit-note{line-height:1.8;color:#64766e}.audit-heading{margin-top:28px}@media(max-width:700px){.audit-diff{grid-template-columns:1fr}.audit-panel{padding:12px}}
+</style>
+<p class="eyebrow">ADMINISTRATION · 관리자 전용</p><h1>시스템 로그</h1>
+<p class="audit-note">누가 언제 어떤 정보를 생성·변경·삭제했는지 확인합니다. 이 기능 적용 이후의 기록부터 표시됩니다.</p>
+<form class="audit-filter" method="get">{% for field in form %}<div>{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}<button type="submit">조회</button><a href="{% url 'system_audit' %}">초기화</a></form>
+<section class="audit-panel"><table class="audit-table"><thead><tr><th>시각</th><th>처리자</th><th>작업</th><th>대상 · 변경 내용</th></tr></thead><tbody>
+{% for event in page %}<tr><td>{{ event.created_at|date:'Y-m-d H:i:s' }}</td><td>{{ event.actor_name }}</td><td>{{ event.action_label }}</td><td>{{ event.target_label }}<small> · {{ event.target_type }} #{{ event.target_id }}</small><details><summary>변경 전·후 보기</summary><div class="audit-diff"><div><b>변경 전</b><pre>{{ event.before_text }}</pre></div><div><b>변경 후</b><pre>{{ event.after_text }}</pre></div></div></details></td></tr>
+{% empty %}<tr><td colspan="4">조회된 기록이 없습니다.</td></tr>{% endfor %}</tbody></table>
+<p>{% if page.has_previous %}<a href="?{{ query }}&amp;page={{ page.previous_page_number }}">이전</a> · {% endif %}{{ page.number }} / {{ page.paginator.num_pages }}{% if page.has_next %} · <a href="?{{ query }}&amp;page={{ page.next_page_number }}">다음</a>{% endif %}</p></section>
+<h2 class="audit-heading">최근 업무 배정 메일</h2><p class="audit-note">발송 완료는 메일 서버가 접수했다는 뜻입니다. 실제 수신 여부는 직원 메일함에서 확인합니다.</p>
+<section class="audit-panel"><table class="audit-table"><thead><tr><th>예약 시각</th><th>업무</th><th>직원</th><th>상태</th></tr></thead><tbody>{% for mail in mail_rows %}<tr><td>{{ mail.created_at|date:'m-d H:i' }}</td><td>{{ mail.payload.task_title|default:'삭제된 업무' }}</td><td>{{ mail.employee.name|default:'삭제된 직원' }}</td><td>{{ mail.get_state_display }}<br><small>{{ mail.result }}</small></td></tr>{% empty %}<tr><td colspan="4">아직 배정 메일 기록이 없습니다.</td></tr>{% endfor %}</tbody></table></section>
+<p class="audit-note">비밀번호·OTP·인증 토큰과 개인 보드의 내용은 기록하지 않습니다. 개인 항목은 변경 사실만 기록합니다. 로그에서 내용을 직접 복원할 수는 없습니다.</p>
+{% endblock %}

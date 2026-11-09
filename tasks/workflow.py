@@ -10,6 +10,12 @@ def snapshot(task):
 
 
 def record(task, user, kind, body, extra=None):
+    from .audit import write
+    if task.status=='draft':
+        write('work_event','Task',task.pk,'비공개 초안',after={'kind':kind,'private':True},actor=user)
+    else:
+        write('work_event','Task',task.pk,task.title,
+              after={'kind':kind,'body':body,'details':{**snapshot(task),**(extra or {}), 'participants':list(task.assignments.values('employee_id','progress')), 'approval_line':list(task.approval_steps.values('approver_id','stage','decision'))}},actor=user)
     return TaskEvent.objects.create(task=task,author=user,author_name=user.get_username(),kind=kind,body=body,snapshot={**snapshot(task),**(extra or {})})
 
 
