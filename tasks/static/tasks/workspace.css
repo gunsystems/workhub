@@ -2,3 +2,12 @@
 @media(max-width:700px){.work-grid{grid-template-columns:1fr}.personal-column{flex-basis:270px}.workspace-toolbar input{width:100%}}
 
 .workspace-field{margin:14px 0}.workspace-field label{display:block;font-size:14px;font-weight:600;margin:0 0 8px}.workspace-field input:not([type=checkbox]),.workspace-field select,.workspace-field textarea{width:100%;padding:12px;border:1px solid #bdcec3;border-radius:8px;font:inherit;box-sizing:border-box}.task-form summary{cursor:pointer;padding:14px 0;color:#36594b;font-weight:600}.task-form .detail h2{margin-top:0;font-size:19px}.task-form .errorlist{color:#a52c2c}
+
+/* Shared search/filter controls: one baseline, height and spacing. */
+.workspace-toolbar{align-items:center;gap:12px}
+.workspace-toolbar :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]),select,.button){box-sizing:border-box;height:44px;min-height:44px;margin:0;border-radius:8px;font-size:13px;line-height:1.4;border-color:#c9d8cf}
+.workspace-toolbar input:not([type=hidden]):not([type=checkbox]):not([type=radio]){width:220px;max-width:100%;padding:0 14px;background:#fff;color:var(--text)}
+.workspace-toolbar select{padding:0 32px 0 14px;min-width:150px;max-width:100%;background:#fff}
+.workspace-toolbar .button{min-width:72px;padding:0 18px;white-space:nowrap}
+.workspace-toolbar :is(input,select,.button):focus-visible{outline:2px solid #80ac91;outline-offset:2px}
+@media(max-width:700px){.workspace-toolbar input:not([type=hidden]):not([type=checkbox]):not([type=radio]){width:100%;flex-basis:100%}.workspace-toolbar select{flex:1 1 150px;min-width:0}.workspace-toolbar .button{flex:0 0 auto}}
