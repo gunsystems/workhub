@@ -4,11 +4,15 @@
   "releases": [
     {
       "version": "0.7.1",
-      "status": "validated_pending_deploy",
+      "status": "live_server_verified_user_test_pending",
       "release_notes": "releases/v0.7.1.md",
       "migrations": [],
       "tests": 84,
-      "new_tests": 5
+      "new_tests": 5,
+      "source_commit": "868f814d6d503933b32aed542bffbaad6e2be5fa",
+      "deploy_id": "dep-dbonaabm8hqs73ef72u0",
+      "live_at": "2026-11-09T16:25:19+09:00",
+      "health": "ok"
     },
     {
       "version": "0.7.0",
