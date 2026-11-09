@@ -3,6 +3,16 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.9.2",
+      "status": "prepared_local_verified",
+      "release_notes": "releases/v0.9.2.md",
+      "migrations": [],
+      "tests": 39,
+      "compiled_html_templates": 55,
+      "visual_check": "report_list_local_preview_new_test_tab",
+      "data_changes": "none"
+    },
+    {
       "version": "0.9.1",
       "status": "live_verified_receipt_not_tested",
       "release_notes": "releases/v0.9.1.md",

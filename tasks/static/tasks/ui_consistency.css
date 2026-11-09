@@ -1,0 +1,48 @@
+/* Application-wide layout rules. Keep calendar cells and board columns independent. */
+.app-shell main {min-width:0}
+.app-shell .heading {gap:20px;flex-wrap:wrap}
+.app-shell .heading>div:first-child {min-width:0;flex:1 1 280px}
+.app-shell main .button {box-sizing:border-box;min-height:44px;padding:10px 18px;font-size:13px;line-height:1.4;gap:6px}
+.app-shell main .button.primary,.app-shell main .button.primary:visited {color:#fff}
+.app-shell .detail {width:100%;max-width:none;min-height:0}
+.app-shell :is(.calendar-task,.account-panel,.admin-accounts) {width:100%;max-width:none;margin-left:0;margin-right:0}
+.app-shell :is(.detail,.admin-section,.account-panel,.calendar-task-panel,.audit-panel) {border-radius:12px;border-color:var(--line)}
+.app-shell .detail+p {margin-top:16px}
+.app-shell .detail+.detail,.app-shell .task-form>.detail+.detail {margin-top:24px}
+.app-shell .detail>h2 {margin:0 0 18px;font-size:19px;line-height:1.5}
+.app-shell .detail>h3 {margin:24px 0 12px;line-height:1.5}
+.app-shell .detail>p+p {margin-top:8px}
+.app-shell .detail>.workspace-notice {margin:16px 0}
+.app-shell .detail>.workspace-notice:first-child {margin-top:0}
+.app-shell :is(.work-table,.table-scroll) {max-width:100%;overflow-x:auto}
+.app-shell :is(.workspace-toolbar,.filters,.audit-filter) {display:flex;align-items:flex-end;flex-wrap:wrap;gap:16px}
+.app-shell :is(.workspace-toolbar,.audit-filter) {margin:20px 0 24px}
+.app-shell :is(.workspace-toolbar,.filters)>label,.app-shell .audit-filter>div {display:flex;flex-direction:column;gap:8px;min-width:0;margin:0;font-size:12px;font-weight:600;line-height:1.5;color:#64748b}
+.app-shell .audit-filter label {margin:0;font-size:12px;font-weight:600;line-height:1.5}
+.app-shell :is(.workspace-toolbar,.filters,.audit-filter) :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]),select,.button) {box-sizing:border-box;height:44px;min-height:44px;margin:0;border:1px solid #c9d8cf;border-radius:8px;font-size:13px;line-height:1.4;background:#fff;color:var(--text);min-width:0;max-width:100%}
+.app-shell :is(.workspace-toolbar,.filters,.audit-filter) :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]),select) {padding:0 14px;width:100%}
+.app-shell :is(.workspace-toolbar,.filters)>label {flex:0 1 220px}
+.app-shell .audit-filter>div {flex:0 1 190px}
+.app-shell :is(.workspace-toolbar,.filters,.audit-filter) .button {min-width:76px;white-space:nowrap;flex:0 0 auto}
+.app-shell :is(.workspace-toolbar,.filters,.audit-filter) :is(input,select,.button):focus-visible {outline:2px solid #80ac91;outline-offset:2px}
+.app-shell .workspace-toolbar.work-list-filters {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));max-width:none}
+.app-shell .workspace-toolbar.work-list-filters>label {width:100%}
+.app-shell .workspace-toolbar.work-list-filters>.button {justify-self:start;width:auto}
+.app-shell .task-form :is(input:not([type=checkbox]):not([type=radio]):not([type=hidden]):not([type=file]),select:not([multiple])) {min-height:44px}
+.app-shell .task-form :is(input[type=checkbox],input[type=radio]) {width:18px;height:18px;flex:0 0 18px;vertical-align:middle}
+.app-shell .task-form :is(input:not([type=checkbox]):not([type=radio]),select,textarea) {max-width:100%;min-width:0}
+.app-shell .task-form .work-grid {gap:20px 28px}
+.app-shell .task-form .workspace-field {min-width:0}
+.app-shell .task-form>.workspace-actions {margin-bottom:24px}
+.app-shell .work-table td[colspan] {padding:28px 20px;color:#758097;text-align:center;line-height:1.7}
+.app-shell #subscription-url {min-height:44px;padding:12px 14px;border:1px solid #c9d8cf;border-radius:8px;font:inherit;margin:8px 0 12px}
+.app-shell footer {gap:16px;flex-wrap:wrap;clear:both}
+@media(max-width:1000px) {.app-shell .workspace-toolbar.work-list-filters {grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px) {
+ .app-shell .heading {align-items:flex-start;gap:16px}
+ .app-shell .detail {padding:20px}
+ .app-shell :is(.workspace-toolbar,.filters,.audit-filter) {gap:14px}
+ .app-shell :is(.workspace-toolbar,.filters)>label,.app-shell .audit-filter>div {flex:1 1 180px}
+ .app-shell .work-grid,.app-shell .workspace-toolbar.work-list-filters {grid-template-columns:minmax(0,1fr)}
+ .app-shell .workspace-toolbar.work-list-filters>.button {width:100%}
+}
