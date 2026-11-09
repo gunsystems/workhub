@@ -82,10 +82,10 @@ class StaffUITests(TestCase):
         from django_otp.plugins.otp_totp.models import TOTPDevice
         examples=Employee.objects.create(name='예시 직원',department=self.department)
         candidates=[]
-        for index in range(3):
+        for index in range(4):
             email=f'real{index}@gunsystems.co.kr'
             user=get_user_model().objects.create_user(f'real{index}',email=email)
-            employee=Employee.objects.create(user=user,name=f'실제 직원{index}',department=self.department)
+            employee=Employee.objects.create(user=user,name=f'실제 직원{index}',department=self.department,position='leader' if index!=3 else 'member')
             AccessProfile.objects.create(user=user,email=email,verified_at=timezone.now())
             Invitation.objects.create(employee=employee,email=email,token_digest=str(index),expires_at=timezone.now(),used_at=timezone.now())
             TOTPDevice.objects.create(user=user,confirmed=index!=1)
@@ -94,6 +94,12 @@ class StaffUITests(TestCase):
         form=StaffForm(instance=self.employee,user=self.admin)
         self.assertEqual(list(form.fields['supervisor'].queryset.values_list('pk',flat=True)),[candidates[0].pk])
         self.assertFalse(StaffForm(instance=candidates[0],user=self.admin).fields['supervisor'].queryset.exists())
+        for position in ['head','executive']:
+            candidates[0].position=position;candidates[0].save()
+            self.assertEqual(list(StaffForm(instance=self.employee,user=self.admin).fields['supervisor'].queryset.values_list('pk',flat=True)),[candidates[0].pk])
         forged=StaffForm(data={'name':'직원','department':self.department.pk,'position':'member','role':'employee','supervisor':examples.pk},instance=self.employee,user=self.admin)
         self.assertFalse(forged.is_valid())
         self.assertIn('supervisor',forged.errors)
+        forged_member=StaffForm(data={'name':'직원','department':self.department.pk,'position':'member','role':'employee','supervisor':candidates[3].pk},instance=self.employee,user=self.admin)
+        self.assertFalse(forged_member.is_valid())
+        self.assertIn('supervisor',forged_member.errors)
