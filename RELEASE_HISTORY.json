@@ -4,12 +4,17 @@
   "releases": [
     {
       "version": "0.9.3",
-      "status": "prepared_local_verified",
+      "status": "live_verified",
       "release_notes": "releases/v0.9.3.md",
       "migrations": [],
       "tests": 22,
       "hiworks_user_confirmation": "calendar_display_confirmed",
-      "screenshot_privacy": "empty_setup_dialog_only_no_tokens_or_staff_calendar"
+      "screenshot_privacy": "empty_setup_dialog_only_no_tokens_or_staff_calendar",
+      "source_commit": "829af1fda13426979065655417d15a34e654bbbe",
+      "deploy_id": "dep-dbos4iu7bikc73a4eso0",
+      "live_at": "2026-11-09T21:54:29+09:00",
+      "health": "ok",
+      "screenshot_asset": "live_500x450_verified"
     },
     {
       "version": "0.9.2",
