@@ -1,6 +1,6 @@
 """Owner-scoped iCalendar subscriptions. URL tokens are never stored in plaintext."""
 import hashlib,secrets
-from datetime import timedelta, timezone as dt_timezone
+from datetime import datetime,time,timedelta, timezone as dt_timezone
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -9,7 +9,7 @@ from django.shortcuts import render,redirect
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_safe
-from django.db.models import Q
+from django.db.models import Q,Count,Max
 from .models import CalendarSubscription,CalendarExportPolicy
 from .permissions import visible_tasks,profile,is_company_admin
 
@@ -66,11 +66,16 @@ def feed(request,token):
     if access and access.otp_reset_key:raise Http404
     owner=subscription.owner
     today=timezone.localdate()
-    tasks=visible_tasks(owner).filter(Q(assignee__user=owner)|Q(participants__user=owner),due_date__gte=today-timedelta(days=90),start_date__lte=today+timedelta(days=366)).exclude(status='draft').distinct()
+    tasks=visible_tasks(owner).filter(Q(assignee__user=owner)|Q(participants__user=owner),due_date__gte=today-timedelta(days=90),start_date__lte=today+timedelta(days=366)).exclude(status='draft').annotate(calendar_event_count=Count('events',distinct=True),calendar_modified=Max('events__created_at')).distinct()
     lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//GUNSYSTEMS//Workhub//KO','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:Workhub 내 업무','X-WR-TIMEZONE:Asia/Seoul']
     stamp=timezone.now().astimezone(dt_timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     for task in tasks[:2000]:
-        lines+=['BEGIN:VEVENT',f'UID:workhub-task-{task.pk}@gunsystems.co.kr',f'DTSTAMP:{stamp}',f'SEQUENCE:{task.revision}', 'SUMMARY:'+escape(task.title)]
+        # Legacy edits recorded immutable events without advancing revision.
+        # Include that history so existing edits are exported without rewriting
+        # business data. Distinct prevents participant joins inflating the count.
+        sequence=task.revision+task.calendar_event_count
+        modified=(task.calendar_modified or task.assigned_at or datetime.combine(task.start_date,time(),tzinfo=dt_timezone.utc)).astimezone(dt_timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+        lines+=['BEGIN:VEVENT',f'UID:workhub-task-{task.pk}@gunsystems.co.kr',f'DTSTAMP:{stamp}',f'LAST-MODIFIED:{modified}',f'SEQUENCE:{sequence}', 'SUMMARY:'+escape(task.title)]
         if task.activity_start and task.activity_end:
             lines+=['DTSTART:'+task.activity_start.astimezone(dt_timezone.utc).strftime('%Y%m%dT%H%M%SZ'),'DTEND:'+task.activity_end.astimezone(dt_timezone.utc).strftime('%Y%m%dT%H%M%SZ')]
         else:lines+=['DTSTART;VALUE=DATE:'+task.start_date.strftime('%Y%m%d'),'DTEND;VALUE=DATE:'+(task.due_date+timedelta(days=1)).strftime('%Y%m%d')]

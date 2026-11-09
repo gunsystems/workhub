@@ -101,6 +101,32 @@ class UnifiedWorkTests(TestCase):
         Task.objects.create(title='비공개 초안',creator=self.root,assignee=self.emp,status='draft',start_date=self.day,due_date=self.day)
         r=Client().get('/work/calendar/subscription/'+token+'.ics');self.assertNotIn('비공개 초안'.encode(),r.content)
         self.emp.is_active=False;self.emp.save();self.assertEqual(Client().get('/work/calendar/subscription/'+token+'.ics').status_code,404)
+    def test_legacy_title_edit_advances_subscription_version_and_keeps_uid(self):
+        from .workflow import record
+        self.task.workflow_version=1;self.task.save()
+        record(self.task,self.root,'created','기존 업무')
+        token=secrets.token_urlsafe(32)
+        CalendarSubscription.objects.create(owner=self.worker,token_digest=hashlib.sha256(token.encode()).hexdigest())
+        path='/work/calendar/subscription/'+token+'.ics'
+        def event():
+            text=Client().get(path).content.decode().replace('\r\n ','')
+            return dict(line.split(':',1) for line in text.split('\r\n') if ':' in line)
+        before=event()
+        self.assertGreater(int(before['SEQUENCE']),0)
+        self.task.refresh_from_db();self.assertEqual(self.task.revision,0)
+        self.assertEqual(event()['SEQUENCE'],before['SEQUENCE'])
+        response=self.client.post(f'/tasks/{self.task.pk}/edit/',{
+            'title':'변경된 일정 제목','assignee':self.emp.pk,'start_date':self.day,
+            'due_date':self.day,'status':'doing','importance':'normal','priority':3,
+            'management_mode':'event','activity_start':self.start.isoformat(),
+            'activity_end':(self.start+timedelta(hours=1)).isoformat()})
+        self.assertEqual(response.status_code,302)
+        after=event()
+        self.assertEqual(after['UID'],before['UID'])
+        self.assertEqual(after['SUMMARY'],'변경된 일정 제목')
+        self.assertGreater(int(after['SEQUENCE']),int(before['SEQUENCE']))
+        self.assertRegex(after['LAST-MODIFIED'],r'^\d{8}T\d{6}Z$')
+        self.task.refresh_from_db();self.assertEqual(self.task.revision,1)
     def report_data(self,**extra):
         return {'period_start':self.day,'period_end':self.day+timedelta(days=6),'summary':'업무 결과와 다음 계획','reviewer':self.lead.pk,'tasks':[self.task.pk],'revision':0,'action':'submit',**extra}
     def test_report_submission_snapshot_return_resubmit_and_role_enforcement(self):

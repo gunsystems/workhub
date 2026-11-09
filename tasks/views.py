@@ -100,6 +100,7 @@ def edit(request,pk=None):
     if request.method=='POST' and form.is_valid():
         task=form.save(commit=False)
         if not pk:task.creator=request.user
+        if pk:task.revision+=1
         if before and str(task.assignee_id) != before['assignee_id']:
             task.accepted_at = None
             task.assigned_at = timezone.now()
