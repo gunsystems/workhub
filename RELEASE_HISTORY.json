@@ -3,6 +3,14 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.6.1",
+      "status": "verification_in_progress",
+      "source_commit": null,
+      "deploy_id": null,
+      "release_notes": "releases/v0.6.1.md",
+      "migrations": []
+    },
+    {
       "version": "0.6.0",
       "status": "live_verified",
       "source_commit": "0b729a7170118f7ce773a41f6daa89807668184a",

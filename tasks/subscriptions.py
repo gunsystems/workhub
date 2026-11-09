@@ -34,7 +34,9 @@ def settings_view(request):
         return redirect('calendar_subscription')
     url=request.session.pop('calendar_subscription_url','')
     response=render(request,'tasks/calendar_subscription.html',{'subscription':CalendarSubscription.objects.filter(owner=request.user).first(),'subscription_url':url,'export_allowed':allowed})
-    response['Referrer-Policy']='no-referrer'
+    # This HTML page contains CSRF-protected forms, including the shared logout.
+    # Retain same-origin provenance while hiding referrers from external sites.
+    response['Referrer-Policy']='same-origin'
     return response
 
 
