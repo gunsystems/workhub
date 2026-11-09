@@ -40,6 +40,9 @@ def tick(now=None,sync_google=True):
         if not claimed: return {'busy':True}
         created=0
         try:
+            # Access verification must not wait for recurrence or calendar processing.
+            from accounts.hiworks_access import refresh_directory
+            refresh_directory()
             from .models import WorkSeries
             from .work_series import process_work_rule
             for pk in WorkSeries.objects.filter(enabled=True,mode='calendar',next_at__lte=now).values_list('pk',flat=True):
@@ -55,8 +58,6 @@ def tick(now=None,sync_google=True):
                     if account_allowed(connection.user): sync_connection(connection)
                     SchedulerLease.objects.filter(key='personal',token=token).update(expires_at=timezone.now()+timedelta(minutes=5),heartbeat_at=timezone.now())
             from .hiworks import deliver_pending, sync_automatic_links
-            from accounts.hiworks_access import refresh_directory
-            refresh_directory()
             sync_automatic_links()
             deliver_pending()
             from .assignment_mail import deliver_pending as deliver_assignment_mail

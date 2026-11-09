@@ -3,6 +3,15 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.7.2",
+      "status": "validated_pending_deploy",
+      "release_notes": "releases/v0.7.2.md",
+      "migrations": [],
+      "user_work_creation_and_email_test": "pending",
+      "tests": 294,
+      "new_tests": 7
+    },
+    {
       "version": "0.7.1",
       "status": "live_server_verified_user_test_pending",
       "release_notes": "releases/v0.7.1.md",
@@ -12,7 +21,8 @@
       "source_commit": "868f814d6d503933b32aed542bffbaad6e2be5fa",
       "deploy_id": "dep-dbonaabm8hqs73ef72u0",
       "live_at": "2026-11-09T16:25:19+09:00",
-      "health": "ok"
+      "health": "ok",
+      "known_issue": "Membership cache staleness and HTTPS retry 403 followed by GET 405 reported; see v0.7.2."
     },
     {
       "version": "0.7.0",

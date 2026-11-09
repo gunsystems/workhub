@@ -28,11 +28,16 @@ class RequireMFA:
             authentication_path = request.path.startswith(('/accounts/session/', '/accounts/mfa/', '/accounts/activate/', '/accounts/password/', '/static/')) or request.path in ('/accounts/hiworks/access/', '/logout/', '/login/', '/healthz/')
             if not authentication_path:
                 from .hiworks_access import allowed
+                from .hiworks_access import fresh_cache, refresh_directory
+                # Refresh before blocking a verified employee when the background
+                # directory refresh is delayed. This runs before any view transaction.
+                if settings.WORKHUB_REQUIRE_HIWORKS and not request.user.is_superuser and not fresh_cache():
+                    refresh_directory()
                 if not allowed(request.user):
                     from django.shortcuts import render
                     response=render(request, 'accounts/hiworks_required.html', status=403)
                     response['Cache-Control']='no-store'
-                    response['Referrer-Policy']='no-referrer'
+                    response['Referrer-Policy']='same-origin'
                     return response
                 if access and (access.require_mfa or (settings.WORKHUB_REQUIRE_HIWORKS and not request.user.is_superuser)) and not enrolled:
                     return redirect('mfa_setup')
