@@ -8,6 +8,8 @@ class AccountsConfig(AppConfig):
     def ready(self):
         from tasks.audit import register
         register()
+        from tasks.supervisors import register as register_supervisors
+        register_supervisors()
         # Admin autodiscovery has completed before this app's ready hook.
         from django.contrib import admin
         from django_otp.plugins.otp_totp.models import TOTPDevice

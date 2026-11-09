@@ -14,7 +14,7 @@ from .schedules import ScheduleFields, next_run, SEOUL
 from .workflow import record
 
 COPY_FIELDS = ['title','description','completion_criteria','assignee_id','project_id','category_id','management_mode',
-               'importance','priority','report_days','review_days','location','customer','work_style','estimated_minutes']
+               'importance','priority','report_days','review_days','location','customer','work_style','estimated_minutes','assignment_email','assignment_messenger']
 
 
 class WorkSeriesForm(ScheduleFields):
@@ -78,7 +78,7 @@ def create_work_occurrence(rule,when):
     WorkOccurrence.objects.create(series=rule,task=obj,scheduled_for=when)
     record(obj,rule.owner,'created','반복 템플릿에서 생성한 독립 회차',{'series_id':rule.pk,'scheduled_for':when.isoformat()})
     from .collaboration import notify
-    notify(obj,'정기 업무의 새 회차가 배정되었습니다.')
+    notify(obj,'정기 업무의 새 회차가 배정되었습니다.',external=obj.assignment_messenger)
     from .assignment_mail import enqueue as enqueue_assignment_mail
     enqueue_assignment_mail(obj,rule.owner)
     return obj,True

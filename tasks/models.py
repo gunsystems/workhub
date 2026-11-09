@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models,transaction
 from django.conf import settings
 from django.utils import timezone
 from datetime import timedelta
@@ -40,6 +40,7 @@ class Department(models.Model):
     def __str__(self): return self.name
 
 class Employee(models.Model):
+    supervisor_auto = models.BooleanField('직속 상위자 자동 연결',default=True,editable=False)
     POSITION = [('member','팀원'),('leader','팀장'),('head','본부장'),('executive','대표')]
     position = models.CharField('직책', max_length=12, choices=POSITION, default='member')
     supervisor = models.ForeignKey('self', verbose_name='직속 상위자', on_delete=models.SET_NULL, null=True, blank=True)
@@ -50,6 +51,16 @@ class Employee(models.Model):
     is_active = models.BooleanField('재직 · 사용 허용', default=True)
     department = models.ForeignKey(Department,on_delete=models.PROTECT,verbose_name='부서')
     def __str__(self): return f'{self.name} · {self.department}'
+
+    def save(self,*args,**kwargs):
+        fields=kwargs.get('update_fields')
+        if fields is None or 'supervisor' in fields or 'supervisor_id' in fields:
+            previous=type(self).objects.filter(pk=self.pk).values('supervisor_id').first() if self.pk else None
+            if (previous and previous['supervisor_id']!=self.supervisor_id) or (self._state.adding and self.supervisor_id):
+                self.supervisor_auto=self.supervisor_id is None
+                if fields is not None:kwargs['update_fields']=set(fields)|{'supervisor_auto'}
+        with transaction.atomic():
+            super().save(*args,**kwargs)
 
     @property
     def business_role_display(self):
@@ -89,6 +100,8 @@ class WorkCategory(models.Model):
 
 
 class Task(models.Model):
+    assignment_email = models.BooleanField('이메일로 배정 알림',default=True)
+    assignment_messenger = models.BooleanField('하이웍스 메신저로 배정 알림',default=True)
     start_time = models.TimeField('시작 시간', null=True, blank=True)
     category = models.ForeignKey(WorkCategory, on_delete=models.PROTECT, null=True, blank=True, verbose_name='업무 종류')
     management_mode = models.CharField('관리 방식', max_length=12, default='report', choices=[('report','보고 업무'),('event','간단 일정')])
@@ -483,6 +496,8 @@ class CalendarSubscription(models.Model):
 
 
 class PeriodReport(models.Model):
+    REPORT_TYPES=[('daily','일일 보고'),('weekly','주간 보고'),('monthly','월간 보고'),('individual','개별 보고'),('period','기간 보고')]
+    report_type=models.CharField('보고 구분',max_length=12,choices=REPORT_TYPES,default='period')
     selected_tasks = models.ManyToManyField(Task, blank=True, related_name='period_reports')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='period_reports')
     period_start = models.DateField('보고 시작일')

@@ -100,13 +100,15 @@ def intake_assign(request,pk):
     form.fields['assignee'].queryset=form.fields['assignee'].queryset.filter(department=intake.department)
     form.fields['project'].queryset=visible_projects(request.user).filter(department=intake.department)
     if request.method=='POST' and form.is_valid():
-        task=form.save()
+        task=form.save(commit=False);task.creator=request.user;task.save()
         from .assignment_mail import enqueue
         enqueue(task,request.user,{task.assignee_id})
         intake.task=task
         intake.assigned_at=timezone.now()
         intake.save(update_fields=['task','assigned_at'])
         record(task,request.user,'created',f'요청 #{intake.pk}에서 업무 배정',{'request_id':intake.pk})
+        from .collaboration import notify
+        notify(task,'접수된 요청이 새 업무로 배정되었습니다.',external=task.assignment_messenger)
         return redirect('task_detail',pk=task.pk)
     return render(request,'tasks/operation_form.html',{'title':'요청을 업무로 배정','form':form,'hint':f'요청 #{intake.pk} · {intake.department} 담당자를 지정하세요.'})
 

@@ -37,22 +37,35 @@ class ReportForm(forms.ModelForm):
     attachment=forms.FileField(label='첨부 (선택 · 파일당 10MB)',required=False)
     class Meta:
         model=PeriodReport
-        fields=['period_start','period_end','summary','reviewer']
+        fields=['report_type','period_start','period_end','summary','reviewer']
         widgets={'period_start':forms.DateInput(attrs={'type':'date'}),'period_end':forms.DateInput(attrs={'type':'date'}),'summary':forms.Textarea(attrs={'rows':6})}
     def __init__(self,*args,user,**kwargs):
+        # Preserve compatibility with report forms opened before this field existed.
+        if args and args[0] is not None and 'report_type' not in args[0]:
+            data=args[0].copy();data['report_type']=getattr(kwargs.get('instance'),'report_type','period');args=(data,*args[1:])
+        elif kwargs.get('data') is not None and 'report_type' not in kwargs['data']:
+            kwargs['data']=kwargs['data'].copy();kwargs['data']['report_type']=getattr(kwargs.get('instance'),'report_type','period')
         super().__init__(*args,**kwargs);self.user=user
+        self.fields['report_type'].help_text='보고 목적에 맞는 구분을 선택하세요. 개별 보고는 특정 업무·사안에 대한 보고입니다.'
         self.fields['reviewer'].queryset=users().exclude(pk=user.pk)
         self.fields['tasks'].queryset=visible_tasks(user).exclude(status='draft')
         emp=profile(user)
         if can_view_company(user) or (emp and (emp.position=='leader' or emp.role=='manager')):
             self.fields['sources'].queryset=selectable_sources(user)
-        self.fields['sources'].label_from_instance=lambda s:f'{s.report.author.get_username()} · {s.report.period_start}~{s.report.period_end} · 제출 v{s.version}'
+        def source_label(submission):
+            author=submission.report.author
+            name=(getattr(getattr(author,'employee',None),'name',None) or author.get_username()) if author else '삭제된 계정'
+            data=submission.snapshot
+            return f"{name} · {data.get('report_type_label','기간 보고')} · {data.get('period_start',submission.report.period_start)}~{data.get('period_end',submission.report.period_end)} · 제출 v{submission.version}"
+        self.fields['sources'].label_from_instance=source_label
         if self.instance.pk:
             self.initial['revision']=self.instance.revision
             self.initial['sources']=list(self.instance.source_submissions.values_list('pk',flat=True))
             self.initial['tasks']=list(self.instance.selected_tasks.values_list('pk',flat=True))
     def clean(self):
         data=super().clean()
+        if data.get('report_type')=='daily' and data.get('period_start') and data.get('period_end') and data['period_start']!=data['period_end']:
+            self.add_error('period_end','일일 보고는 시작일과 종료일을 같은 날짜로 선택하세요.')
         if data.get('period_start') and data.get('period_end') and (data['period_end']<data['period_start'] or (data['period_end']-data['period_start']).days>366):self.add_error('period_end','보고 기간은 시작일 이후 1년 이내로 지정하세요.')
         if self.instance.pk and data.get('revision')!=self.instance.revision:self.add_error(None,'다른 변경이 반영되었습니다. 다시 열어 주세요.')
         f=data.get('attachment')
@@ -71,12 +84,15 @@ def report_list(request):
         today=timezone.localdate();start=today-timedelta(days=today.weekday())
     end=start+timedelta(days=6)
     qs=visible_reports(request.user).filter(period_start__lte=end,period_end__gte=start)
+    report_type=request.GET.get('report_type','')
+    if report_type in dict(PeriodReport.REPORT_TYPES):qs=qs.filter(report_type=report_type)
+    else:report_type=''
     managing=can_view_company(request.user) or (emp and (emp.position=='leader' or emp.role=='manager'))
     missing=[]
     if managing:
         submitted_ids=qs.filter(state__in=['submitted','approved','returned']).values_list('author_id',flat=True)
         missing=visible_employees(request.user).filter(is_active=True,user__is_active=True).exclude(user__isnull=True).exclude(user_id__in=submitted_ids)
-    return render(request,'tasks/report_list.html',{'reports':qs.order_by('-period_start','-pk')[:100],'start':start,'end':end,'missing':missing,'managing':managing})
+    return render(request,'tasks/report_list.html',{'reports':qs.order_by('-period_start','-pk')[:100],'start':start,'end':end,'missing':missing,'managing':managing,'report_type':report_type,'report_types':PeriodReport.REPORT_TYPES})
 
 
 @login_required
@@ -87,7 +103,7 @@ def report_edit(request,pk=None):
     obj=get_object_or_404(PeriodReport.objects.select_for_update(),pk=pk,author=request.user) if pk else None
     if obj and obj.state in ['submitted','approved']:raise PermissionDenied('제출/승인된 보고는 보완 요청 이후에 수정할 수 있습니다.')
     today=timezone.localdate();start=today-timedelta(days=today.weekday())
-    initial={'period_start':start,'period_end':start+timedelta(days=6),'reviewer':emp.supervisor.user_id if emp and emp.supervisor else None}
+    initial={} if obj else {'report_type':'weekly','period_start':start,'period_end':start+timedelta(days=6),'reviewer':emp.supervisor.user_id if emp and emp.supervisor else None}
     form=ReportForm(request.POST if request.method=='POST' else None,request.FILES or None,instance=obj,user=request.user,initial=initial)
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False);obj.author=request.user;obj.revision+=1;obj.save()
@@ -97,7 +113,7 @@ def report_edit(request,pk=None):
         if f:ReportFile.objects.create(report=obj,file=f,name=Path(f.name).name[:200])
         if request.POST.get('action')=='submit':
             tasks=list(form.cleaned_data['tasks'])
-            snapshot={'summary':obj.summary,'period_start':str(obj.period_start),'period_end':str(obj.period_end),
+            snapshot={'report_type':obj.report_type,'report_type_label':obj.get_report_type_display(),'summary':obj.summary,'period_start':str(obj.period_start),'period_end':str(obj.period_end),
                 'author':request.user.get_username(),'reviewer':obj.reviewer.get_username(),
                 'task_ids':[t.pk for t in tasks],
                 'tasks':[{'id':t.pk,'title':t.title,'status':t.get_status_display(),'progress':t.progress,'due_date':str(t.due_date),'next_action':t.next_action,
@@ -107,7 +123,7 @@ def report_edit(request,pk=None):
             submission=ReportSubmission.objects.create(report=obj,version=obj.revision,snapshot=snapshot)
             obj.current_submission=submission;obj.state='submitted';obj.submitted_at=timezone.now();obj.save(update_fields=['current_submission','state','submitted_at'])
         return redirect('period_report_detail',pk=obj.pk)
-    return render(request,'tasks/report_form.html',{'form':form,'report':obj})
+    return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today})
 
 
 @login_required

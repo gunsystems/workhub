@@ -95,6 +95,7 @@ class OfficialTaskForm(TaskForm):
 
 def notify(task, message, external=True):
     ids = set(task.participants.exclude(user=None).values_list('user_id',flat=True))
+    if task.assignee.user_id:ids.add(task.assignee.user_id)
     ids.update(task.watchers.values_list('pk',flat=True))
     ids.update(task.approval_steps.exclude(approver=None).values_list('approver_id',flat=True))
     if task.creator_id: ids.add(task.creator_id)
@@ -161,11 +162,11 @@ def edit_task(request, task=None):
                 clone.watchers.set(obj.watchers.all())
                 ApprovalStep.objects.bulk_create([ApprovalStep(task=clone,approver=s.approver,approver_name=s.approver_name,position=s.position,stage=s.stage) for s in obj.approval_steps.all()])
                 record(clone,request.user,'created','직원별 개별 배정',{'group_key':key})
-                if clone.status!='draft': notify(clone,'새 업무가 배정되었습니다.')
+                if clone.status!='draft': notify(clone,'새 업무가 배정되었습니다.',external=clone.assignment_messenger)
                 from .assignment_mail import enqueue as enqueue_assignment_mail
                 enqueue_assignment_mail(clone,request.user)
             obj.assignments.exclude(employee_id=obj.assignee_id).delete()
-        if obj.status!='draft': notify(obj,'업무가 등록되거나 변경되었습니다. 내용을 확인해 주세요.')
+        if obj.status!='draft': notify(obj,'업무가 등록되거나 변경되었습니다. 내용을 확인해 주세요.',external=obj.assignment_messenger)
         from .assignment_mail import enqueue as enqueue_assignment_mail
         previous_ids={int(row['employee_id']) for row in prior}
         if before: previous_ids.add(int(before['assignee_id']))
@@ -350,5 +351,5 @@ def _change(user,pk,kind,data):
     if task.status=='done':
         from .work_series import completion_followup
         completion_followup(task)
-    notify(task,('대표 직권 처리: ' if kind=='override' else '')+data['body'][:150], external=kind in ['submit','review','override','delegate','handover','cancel'])
+    notify(task,('대표 직권 처리: ' if kind=='override' else '')+data['body'][:150], external=(task.assignment_messenger if kind=='handover' else kind in ['submit','review','override','delegate','cancel']))
     return task

@@ -87,7 +87,7 @@ class StaffForm(EmployeeInviteForm):
         supervisor_ids += [link.employee_id for link in HiworksLink.objects.select_related('employee__user').filter(employee__is_active=True)
             if (link.remote_id,link.email.lower()) in current and (not link.employee.user_id or link.employee.user.is_active)]
         self.fields['supervisor'].queryset=Employee.objects.filter(pk__in=supervisor_ids,position__in=['leader','head','executive']).exclude(pk=self.instance.pk).select_related('department').order_by('name','pk')
-        self.fields['supervisor'].help_text='하이웍스에 등록된 재직 직원 중 Workhub 직책이 팀장·본부장·대표인 사람만 표시합니다. 먼저 직원 정보를 등록하면 가입 전에도 상위자로 지정할 수 있습니다.'
+        self.fields['supervisor'].help_text='하이웍스에 등록된 재직 직원 중 Workhub 직책이 팀장·본부장·대표인 사람만 표시합니다. 먼저 직원 정보를 등록하면 가입 전에도 상위자로 지정할 수 있습니다. 미지정 시 같은 부서의 팀장을 우선 연결하고, 팀장이 없으면 본부장을 연결합니다. 후보가 여러 명이면 직접 선택하세요.'
         if self.instance.pk:
             self.fields.pop('invitation_email',None)
         self.fields['role'].help_text='부서 관리자는 위에서 선택한 소속 부서의 업무를 관리합니다. 다른 부서의 관리 권한이나 시스템 관리자 권한은 부여되지 않습니다.'

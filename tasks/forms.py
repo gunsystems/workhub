@@ -5,9 +5,21 @@ from zoneinfo import ZoneInfo
 from .models import Task, Employee, Project, WorkRequest, ChecklistItem, WorkCategory
 from .permissions import assignable_employees, is_manager, visible_projects, visible_departments, visible_employees, is_company_admin
 class TaskForm(forms.ModelForm):
+    assignment_channels_present=forms.CharField(required=False,initial='1',widget=forms.HiddenInput)
     new_category = forms.CharField(label='새 업무 종류 (선택)', max_length=40, required=False, help_text='목록에 없는 종류를 추가합니다. 기존 종류와 중복되면 같은 종류를 사용합니다.')
     change_reason = forms.CharField(label='마감일 변경 사유', required=False, widget=forms.Textarea(attrs={'rows':2}), max_length=5000)
     def __init__(self, *args, user=None, **kwargs):
+        # New HTML sends explicit false values for unchecked channel controls.
+        # Older open forms have neither control and retain their previous defaults.
+        def compatible(data):
+            data=data.copy()
+            if data.get('assignment_channels_present'):return data
+            for name in ['assignment_email','assignment_messenger']:
+                if name not in data:data[name]='true' if getattr(kwargs.get('instance'),name,True) else 'false'
+            data['assignment_channels_present']='1'
+            return data
+        if args and args[0] is not None:args=(compatible(args[0]),*args[1:])
+        elif kwargs.get('data') is not None:kwargs['data']=compatible(kwargs['data'])
         super().__init__(*args, **kwargs)
         self.user = user
         if not self.is_bound and not self.instance.pk:
@@ -15,6 +27,8 @@ class TaskForm(forms.ModelForm):
             if self.initial.get('start_date') is None: self.initial['start_date'] = now.date()
             if self.initial.get('start_time') is None: self.initial['start_time'] = now.time()
         self.fields['start_time'].help_text = '한국 시간 기준입니다. 필요한 시작 시간으로 변경할 수 있습니다.'
+        self.fields['assignment_email'].help_text='새 업무·새 담당자 배정 시 회사 이메일로 안내합니다.'
+        self.fields['assignment_messenger'].help_text='하이웍스 연결·업무 알림을 허용한 직원에게 안내합니다. 둘 다 선택할 수 있습니다.'
         self.fields['management_mode'].required = False
         self.fields['category'].queryset = WorkCategory.objects.filter(Q(is_active=True)|Q(pk=self.instance.category_id))
         self.fields['report_days'].required = False
@@ -34,7 +48,7 @@ class TaskForm(forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = ['title','description','project','completion_criteria','report_days','review_days','assignee','status','importance','priority','start_date','start_time','due_date','category','management_mode','activity_start','activity_end','location','customer','work_style','estimated_minutes','next_action','next_check_date']
+        fields = ['title','description','project','completion_criteria','report_days','review_days','assignee','assignment_email','assignment_messenger','status','importance','priority','start_date','start_time','due_date','category','management_mode','activity_start','activity_end','location','customer','work_style','estimated_minutes','next_action','next_check_date']
         widgets = {'start_date':forms.DateInput(format='%Y-%m-%d',attrs={'type':'date'}),'start_time':forms.TimeInput(format='%H:%M',attrs={'type':'time','step':'60'}),'due_date':forms.DateInput(attrs={'type':'date'}),'description':forms.Textarea(attrs={'rows':4}),
             'activity_start':forms.DateTimeInput(format='%Y-%m-%dT%H:%M',attrs={'type':'datetime-local'}),
             'activity_end':forms.DateTimeInput(format='%Y-%m-%dT%H:%M',attrs={'type':'datetime-local'}),

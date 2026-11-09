@@ -84,7 +84,7 @@ def detail(request,pk):
 def edit(request,pk=None):
     if not is_company_admin(request.user) and not profile(request.user):
         return render(request, 'tasks/access_pending.html', status=403)
-    if pk is None and request.method=='GET':
+    if pk is None and (request.method=='GET' or 'allocation' in request.POST):
         from .collaboration import edit_task
         return edit_task(request)
     task=get_object_or_404(visible_tasks(request.user).select_for_update(),pk=pk) if pk else None
@@ -99,6 +99,7 @@ def edit(request,pk=None):
     form=TaskForm(request.POST if request.method == 'POST' else None,instance=task,user=request.user,initial={'project':request.GET.get('project')} if not pk else None)
     if request.method=='POST' and form.is_valid():
         task=form.save(commit=False)
+        if not pk:task.creator=request.user
         if before and str(task.assignee_id) != before['assignee_id']:
             task.accepted_at = None
             task.assigned_at = timezone.now()
@@ -108,6 +109,8 @@ def edit(request,pk=None):
         if not before or before['status']=='draft' or before['assignee_id']!=str(task.assignee_id):
             from .assignment_mail import enqueue
             enqueue(task,request.user,{task.assignee_id})
+            from .collaboration import notify
+            notify(task,'새 업무가 배정되었습니다.',external=task.assignment_messenger)
         return redirect('task_detail',pk=task.pk)
     return render(request,'tasks/form.html',{'form':form,'task':task})
 

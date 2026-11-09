@@ -13,7 +13,7 @@ KEY_LABELS={'task_id':'업무','employee_id':'직원','user_id':'계정','assign
     'result':'처리 결과','kind':'처리 종류','body':'내용','details':'상세 내용','action':'처리',
     'participants':'수행자','approval_line':'결재라인','private':'비공개 항목','task_title':'업무명',
     'employee_name':'직원명','channel':'전달 방법','status':'상태','recipient_count':'대상 직원 수',
-    'progress':'진행률','stage':'결재 단계','decision':'검토 결과','round':'보고 회차','before':'이전 내용','start_date':'시작일','due_date':'마감일','revision':'변경 차수','state':'상태','creator_name':'작성자','audience':'전달 대상','start_time':'시작 시간','timing':'발송 시점'}
+    'progress':'진행률','stage':'결재 단계','decision':'검토 결과','round':'보고 회차','before':'이전 내용','start_date':'시작일','due_date':'마감일','revision':'변경 차수','state':'상태','creator_name':'작성자','audience':'전달 대상','start_time':'시작 시간','timing':'발송 시점','supervisor_id':'직속 상위자','report_type':'보고 구분'}
 
 
 def readable(key,value):
@@ -21,13 +21,13 @@ def readable(key,value):
     if key in ['state','status','진행 상태'] and isinstance(value,str):
         value={'draft':'작성 중','scheduled':'발송 대기','published':'공지 게시','todo':'예정','doing':'진행 중',
                'review':'검토 대기','blocked':'보류','done':'완료','cancelled':'취소','pending':'대기','sent':'발송 접수'}.get(value,value)
-    if key in ['task_id','employee_id','assignee_id','project_id','department_id','user_id','approver_id','creator_id']:
+    if key in ['task_id','employee_id','assignee_id','supervisor_id','project_id','department_id','user_id','approver_id','creator_id']:
         try: pk=int(value)
         except (TypeError,ValueError): return str(value)
         if key=='task_id':
             obj=Task.objects.filter(pk=pk).first()
             return ('비공개 업무' if obj.status=='draft' else obj.title) if obj else '삭제된 업무'
-        if key in ['employee_id','assignee_id']:
+        if key in ['employee_id','assignee_id','supervisor_id']:
             obj=Employee.objects.filter(pk=pk).first();return obj.name if obj else '삭제된 직원'
         if key in ['project_id','department_id']:
             model=Project if key=='project_id' else Department
@@ -45,7 +45,7 @@ def decorate(event):
     event.target_type_label=TYPE_LABELS.get(event.target_type,'개인 항목' if event.target_type.startswith('Personal') else '시스템 항목')
     before=event.before or {};after=event.after or {}
     event.change_rows=[];event.result_rows=[]
-    if event.action=='update' and before and after and not after.get('private'):
+    if event.action in ['update','auto_supervisor'] and before and after and not after.get('private'):
         for key in dict.fromkeys([*before,*after]):
             if before.get(key)!=after.get(key):
                 event.change_rows.append({'label':KEY_LABELS.get(key,key),'before':readable(key,before.get(key)),
