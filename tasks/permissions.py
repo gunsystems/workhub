@@ -104,7 +104,10 @@ def can_report(user, task):
 
 def visible_projects(user):
     from .models import Project
-    return Project.objects.filter(department__in=visible_departments(user)).select_related('owner__user','department')
+    # A project can be owned by one team while other teams perform its work.
+    # Project detail still filters its tasks through visible_tasks(user).
+    return Project.objects.filter(Q(department__in=visible_departments(user)) |
+        Q(tasks__in=visible_tasks(user))).distinct().select_related('owner__user','department')
 
 
 def can_manage_project(user, project):

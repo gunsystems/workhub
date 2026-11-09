@@ -48,8 +48,8 @@ class TaskForm(forms.ModelForm):
         data['report_days'] = data.get('report_days') or self.instance.report_days or 3
         data['review_days'] = data.get('review_days') or self.instance.review_days or 2
         project, assignee = data.get('project'), data.get('assignee')
-        if project and assignee and project.department_id != assignee.department_id:
-            self.add_error('project','프로젝트와 담당자의 부서가 같아야 합니다.')
+        # A project's owning department may delegate work to another team.
+        # Project selection and employee assignment still use their own permission scopes.
         if project and data.get('start_date') and data.get('due_date') and (data['start_date'] < project.start_date or data['due_date'] > project.due_date):
             self.add_error('project','업무 기간은 프로젝트 기간 안에 지정하세요.')
         if self.instance.pk and data.get('due_date') != self.instance.due_date and not data.get('change_reason'):

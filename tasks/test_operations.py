@@ -66,10 +66,10 @@ class OperationsTests(TestCase):
         r=self.client.post(f'/projects/{self.project.pk}/edit/',data)
         self.assertIn('due_date',r.context['form'].errors)
 
-    def test_task_project_department_and_dates_validation(self):
+    def test_cross_department_assignment_keeps_project_dates_validation(self):
         self.client.force_login(self.owner)
         r=self.client.post('/tasks/new/',self.task_data(project=self.foreign_project.pk))
-        self.assertIn('project',r.context['form'].errors)
+        self.assertEqual(r.status_code,302)
         r=self.client.post('/tasks/new/',self.task_data(due_date=(self.today+timedelta(days=30)).isoformat()))
         self.assertIn('project',r.context['form'].errors)
         self.assertEqual(self.client.post('/tasks/new/',self.task_data()).status_code,302)
