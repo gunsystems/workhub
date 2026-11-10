@@ -131,11 +131,12 @@ class RequestFlowTests(TestCase):
 
     def test_pre_upgrade_snapshot_preserves_source_and_contents(self):
         import importlib,sqlite3,tempfile
+        from contextlib import closing
         from pathlib import Path
         module=importlib.import_module('tasks.migrations.0029_work_requests_and_resource_allocation')
         Path('.tmp').mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(dir=Path('.tmp').resolve()) as directory:
             db=Path(directory)/'source.sqlite3';source=sqlite3.connect(db);source.execute('create table sample (value text)');source.execute('insert into sample values (?)',('original',));source.commit();source.close()
             target=module.snapshot_sqlite_database(str(db),Path(directory)/'backups')
-            with sqlite3.connect(target) as backup:self.assertEqual(backup.execute('select value from sample').fetchone()[0],'original');self.assertEqual(backup.execute('PRAGMA integrity_check').fetchone()[0],'ok')
-            with sqlite3.connect(db) as original:self.assertEqual(original.execute('select count(*) from sample').fetchone()[0],1)
+            with closing(sqlite3.connect(target)) as backup:self.assertEqual(backup.execute('select value from sample').fetchone()[0],'original');self.assertEqual(backup.execute('PRAGMA integrity_check').fetchone()[0],'ok')
+            with closing(sqlite3.connect(db)) as original:self.assertEqual(original.execute('select count(*) from sample').fetchone()[0],1)
