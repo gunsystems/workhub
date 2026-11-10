@@ -97,7 +97,8 @@ def policy(request):
 
 
 class ExportForm(forms.Form):
-    detail=forms.ChoiceField(label='Google 캘린더에 무엇을 등록할까요?',widget=forms.RadioSelect,choices=[('minimal','마감일만 등록'),('title','업무 제목도 등록'),('details','업무 제목과 설명까지 등록')])
+    date_mode=forms.ChoiceField(label='등록 날짜',widget=forms.RadioSelect,choices=[('deadline','마감일 · 종일 일정'),('schedule','수행 일정')])
+    detail=forms.ChoiceField(label='표시할 내용',widget=forms.RadioSelect,choices=[('minimal','‘업무 일정’으로 표시'),('title','업무 제목 포함'),('details','업무 제목과 설명 포함')])
 
 
 def task_calendar_registered(user,task):
@@ -115,11 +116,13 @@ def export_task(request,pk):
         return redirect('google_export_task' if google.official_allowed(request.user,task) else 'task_detail',pk=pk)
     if not google.official_allowed(request.user,task): raise PermissionDenied
     registered=bool(old and old.detail!='none')
-    form=ExportForm(request.POST if request.method=='POST' else None,initial={'detail':old.detail if registered else 'minimal'})
-    if task.activity_start:
-        form.fields['detail'].choices=[('minimal','일시만 등록 · 제목은 업무 일정'),('title','업무 제목과 일시 등록'),('details','업무 제목·일시·설명 등록')]
+    date_mode=old.date_mode if old and old.date_mode!='auto' else ('schedule' if task.activity_start and task.activity_end else 'deadline')
+    data=request.POST.copy() if request.method=='POST' else None
+    if data is not None and 'date_mode' not in data:data['date_mode']=date_mode
+    form=ExportForm(data,initial={'detail':old.detail if registered else 'minimal','date_mode':date_mode})
+    form.fields['date_mode'].choices=[('deadline','마감일 · 종일 일정'),('schedule','수행 시작·종료 시간' if task.activity_start and task.activity_end else '업무 기간 · 시작일~마감일 (종일)')]
     if request.method=='POST' and form.is_valid():
-        CalendarExport.objects.update_or_create(user=request.user,task=task,defaults={'detail':form.cleaned_data['detail']})
+        CalendarExport.objects.update_or_create(user=request.user,task=task,defaults={'detail':form.cleaned_data['detail'],'date_mode':form.cleaned_data['date_mode']})
         messages.success(request,'등록 설정을 저장했습니다. Google 계정이 연결돼 있으면 다음 동기화에 반영됩니다.')
         return redirect('google_export_task',pk=pk)
     return render(request,'tasks/calendar_task_form.html',{'form':form,'task':task,'registered':registered,'export':old,

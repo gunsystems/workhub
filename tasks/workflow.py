@@ -11,6 +11,8 @@ def snapshot(task):
 
 def record(task, user, kind, body, extra=None):
     from .audit import write
+    from .schedule_control import observe_schedule
+    extra={**(extra or {}),**observe_schedule(task,kind,extra or {})}
     if task.status=='draft':
         write('work_event','Task',task.pk,'비공개 초안',after={'kind':kind,'private':True},actor=user)
     else:

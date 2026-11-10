@@ -238,8 +238,8 @@ class GoogleCalendarTests(TestCase):
         CalendarExportPolicy.objects.create(pk=1,allow_official=True)
         path=f'/work/calendar/task/{task.pk}/'
         response=self.client.get(path)
-        self.assertContains(response,'마감일만 등록')
-        self.assertContains(response,'업무 제목과 설명까지 등록')
+        self.assertContains(response,'1. 등록 날짜')
+        self.assertContains(response,'업무 제목과 설명 포함')
         self.assertNotContains(response,'이 업무의 Google 일정 제거')
         self.assertEqual(self.client.post(path,{'detail':'none'}).status_code,200)
         self.assertFalse(CalendarExport.objects.filter(task=task).exists())

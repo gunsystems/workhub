@@ -1,0 +1,6 @@
+{% extends 'tasks/base.html' %}{% load static %}{% block content %}<link rel="stylesheet" href="{% static 'tasks/workspace.css' %}">
+<section class="heading"><div><div class="eyebrow">SCHEDULE & DEADLINE</div><h1>{{ title }}</h1>{% if task %}<p>{{ task.title }}</p>{% endif %}</div></section>
+<form method="post" class="task-form detail">{% csrf_token %}{{ form.non_field_errors }}
+{% if policy_page %}<p class="workspace-notice">기본은 사용 안 함입니다. 사용을 켜면 현재 진행 중인 업무에도 오늘부터 알림이 생성됩니다. 내부 알림은 기본 제공하며, 이메일·메신저는 아래에서 별도로 선택합니다. 이메일은 직원별 하루 한 번 요약합니다. 토·일요일 보류를 선택해도 회사 공휴일·개인 휴가는 자동 판정하지 않습니다.</p>{% else %}<p class="workspace-notice">실제 일정과 등록 사유를 기록합니다. 이 기록만으로 업무가 완료되거나 근태·고의성이 확정되지 않습니다. 수정하면 이전 설명은 업무 이력에 남고 관리자 확인을 다시 받습니다.</p>{% endif %}
+{% for field in form %}{% include 'tasks/workspace_field.html' with field=field %}{% endfor %}
+<div class="workspace-actions"><button class="button primary">저장</button><a class="button" href="{% url 'schedule_control' %}">취소</a></div></form>{% endblock %}

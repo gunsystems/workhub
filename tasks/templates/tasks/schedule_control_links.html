@@ -1,0 +1,2 @@
+<div class="workspace-actions"><a class="button" href="{% url 'schedule_control' %}">일정 · 마감 관리</a>{% if can_report %}<a class="button" href="{% url 'schedule_outcome' task.pk %}">실시 결과 · 등록 사유</a>{% endif %}</div>
+{% if task.schedule_registration %}<p class="workspace-notice">{% if task.schedule_registration.late %}<strong>지연 등록된 일정입니다.</strong> {% endif %}최초 등록 {{ task.schedule_registration.registered_at|date:'Y-m-d H:i' }} · 최초 시작일 {{ task.schedule_registration.initial_plan.start_date }} · 최초 마감일 {{ task.schedule_registration.initial_plan.due_date }}</p>{% endif %}

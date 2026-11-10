@@ -202,6 +202,75 @@ class TaskEvent(models.Model):
         ordering = ['-created_at','-pk']
 
 
+class ScheduleRegistration(models.Model):
+    task=models.OneToOneField(Task,on_delete=models.CASCADE,related_name='schedule_registration')
+    registered_at=models.DateTimeField(default=timezone.now)
+    initial_plan=models.JSONField(default=dict)
+    late=models.BooleanField(default=False)
+
+
+class ScheduleOutcome(models.Model):
+    task=models.ForeignKey(Task,on_delete=models.CASCADE,related_name='schedule_outcomes')
+    employee=models.ForeignKey(Employee,on_delete=models.PROTECT)
+    result=models.CharField(max_length=15,choices=[('attended','참석 · 실시 완료'),('absent','불참 · 미실시'),('postponed','연기'),('explanation','등록·변경 사유 설명')])
+    actual_date=models.DateField(null=True,blank=True)
+    reason=models.TextField()
+    updated_at=models.DateTimeField(auto_now=True)
+    reviewer=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,blank=True)
+    review_note=models.TextField(blank=True)
+    reviewed_at=models.DateTimeField(null=True,blank=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['task','employee'],name='one_schedule_outcome_per_employee')]
+
+
+class ScheduleExpectation(models.Model):
+    title=models.CharField(max_length=160)
+    employee=models.ForeignKey(Employee,on_delete=models.PROTECT)
+    creator=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True)
+    register_by=models.DateTimeField()
+    expected_date=models.DateField()
+    task=models.ForeignKey(Task,on_delete=models.SET_NULL,null=True,blank=True)
+    closed_reason=models.TextField(blank=True)
+    created_at=models.DateTimeField(default=timezone.now)
+    class Meta:
+        ordering=['register_by','pk']
+
+
+class DeadlinePolicy(models.Model):
+    enabled=models.BooleanField(default=False)
+    recipient_employee=models.ForeignKey(Employee,on_delete=models.PROTECT,null=True,blank=True)
+    advance_days=models.PositiveSmallIntegerField(default=3,validators=[MinValueValidator(1),MaxValueValidator(30)])
+    send_hour=models.PositiveSmallIntegerField(default=9,validators=[MaxValueValidator(23)])
+    escalation_days=models.PositiveSmallIntegerField(default=3,validators=[MinValueValidator(1),MaxValueValidator(30)])
+    send_email=models.BooleanField(default=False)
+    send_messenger=models.BooleanField(default=False)
+    weekdays_only=models.BooleanField(default=True)
+    activated_at=models.DateTimeField(null=True,blank=True)
+
+
+class DeadlineDelivery(models.Model):
+    task=models.ForeignKey(Task,on_delete=models.CASCADE)
+    user=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
+    dedupe_key=models.CharField(max_length=64,unique=True)
+    kind=models.CharField(max_length=20)
+    phase=models.CharField(max_length=12)
+    due_date=models.DateField()
+    alert_date=models.DateField()
+    baseline=models.CharField(max_length=100)
+    message=models.CharField(max_length=240)
+    notification=models.ForeignKey('WorkNotification',on_delete=models.SET_NULL,null=True)
+    email_state=models.CharField(max_length=12,default='off')
+    messenger_state=models.CharField(max_length=12,default='off')
+    created_at=models.DateTimeField(default=timezone.now)
+    sent_at=models.DateTimeField(null=True,blank=True)
+    @property
+    def email_label(self):
+        return {'off':'사용 안 함','pending':'발송 대기','sending':'발송 처리 중','sent':'발송 서버 접수','unknown':'결과 확인 필요','skipped':'발송 제외'}.get(self.email_state,self.email_state)
+    @property
+    def messenger_label(self):
+        return {'off':'사용 안 함','pending':'발송 대기','queued':'메신저 전송 대기열 접수','skipped':'발송 제외 · 연결 설정 확인'}.get(self.messenger_state,self.messenger_state)
+
+
 class EmployeeFeedback(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='feedbacks')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
@@ -410,6 +479,7 @@ class CalendarExport(models.Model):
     card=models.OneToOneField(PersonalCard,null=True,blank=True,on_delete=models.CASCADE)
     task=models.ForeignKey(Task,null=True,blank=True,on_delete=models.CASCADE)
     detail=models.CharField(max_length=12,default='minimal')
+    date_mode=models.CharField(max_length=12,default='auto')
     event_id=models.CharField(max_length=100,blank=True)
     calendar_id=models.CharField(max_length=255,blank=True)
     payload_digest=models.CharField(max_length=64,blank=True)

@@ -2,7 +2,14 @@ from django.urls import path
 from . import collaboration,collaboration_views,personal,calendar_views,hiworks_views,work_series,subscriptions,reports
 from . import audit_views
 from . import notice_views
+from . import schedule_control
 urlpatterns=[
+    path('schedule-control/',schedule_control.control_view,name='schedule_control'),
+    path('schedule-control/policy/',schedule_control.policy_view,name='deadline_policy'),
+    path('schedule-control/expectations/new/',schedule_control.expectation_new,name='schedule_expectation_new'),
+    path('schedule-control/expectations/<int:pk>/',schedule_control.expectation_resolve,name='schedule_expectation_resolve'),
+    path('schedule-control/outcomes/<int:pk>/review/',schedule_control.review_outcome,name='schedule_outcome_review'),
+    path('schedule-control/task/<int:pk>/',schedule_control.outcome_view,name='schedule_outcome'),
     path('notices/',notice_views.notice_list,name='notice_list'),
     path('notices/new/',notice_views.notice_edit,name='notice_new'),
     path('notices/<int:pk>/',notice_views.notice_detail,name='notice_detail'),

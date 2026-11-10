@@ -7,7 +7,7 @@ from .permissions import assignable_employees, is_manager, visible_projects, vis
 class TaskForm(forms.ModelForm):
     assignment_channels_present=forms.CharField(required=False,initial='1',widget=forms.HiddenInput)
     new_category = forms.CharField(label='새 업무 종류 (선택)', max_length=40, required=False, help_text='목록에 없는 종류를 추가합니다. 기존 종류와 중복되면 같은 종류를 사용합니다.')
-    change_reason = forms.CharField(label='마감일 변경 사유', required=False, widget=forms.Textarea(attrs={'rows':2}), max_length=5000)
+    change_reason = forms.CharField(label='일정·마감 변경 사유', required=False, widget=forms.Textarea(attrs={'rows':2}), max_length=5000)
     def __init__(self, *args, user=None, **kwargs):
         # New HTML sends explicit false values for unchecked channel controls.
         # Older open forms have neither control and retain their previous defaults.
@@ -74,8 +74,9 @@ class TaskForm(forms.ModelForm):
         # Project selection and employee assignment still use their own permission scopes.
         if project and data.get('start_date') and data.get('due_date') and (data['start_date'] < project.start_date or data['due_date'] > project.due_date):
             self.add_error('project','업무 기간은 프로젝트 기간 안에 지정하세요.')
-        if self.instance.pk and data.get('due_date') != self.instance.due_date and not data.get('change_reason'):
-            self.add_error('change_reason','변경된 마감일의 사유를 입력하세요.')
+        changed_schedule=self.instance.pk and any(name in data and data[name]!=getattr(self.instance,name) for name in ['start_date','start_time','due_date','activity_start','activity_end'])
+        if changed_schedule and not (data.get('change_reason') or '').strip():
+            self.add_error('change_reason','일정 또는 마감일을 변경한 사유를 입력하세요.')
         if data.get('start_date') and data.get('due_date') and data['due_date'] < data['start_date']:
             self.add_error('due_date','마감일은 시작일보다 빠를 수 없습니다.')
         return data
