@@ -61,9 +61,11 @@ class AccountSwitchTests(TestCase):
         self.assertNotIn('pending_mfa_user',self.client.session);self.assertContains(self.client.get('/login/'),'이메일 또는 관리자 아이디')
         self.assertEqual(Client(enforce_csrf_checks=True).post('/accounts/mfa/switch/').status_code,403)
     def test_legacy_mixed_session_fails_closed_without_enrolling_old_user(self):
-        self.client.force_login(self.admin);session=self.client.session;session['pending_mfa_user']=self.users[0].pk;session['pending_mfa_at']=time();session.save()
-        self.assertEqual(self.client.get('/accounts/mfa/verify/').url,'/login/')
-        self.assertNotIn('_auth_user_id',self.client.session);self.assertFalse(TOTPDevice.objects.filter(user=self.admin).exists())
+        for path in ['/accounts/mfa/verify/','/accounts/mfa/setup/','/work/']:
+            with self.subTest(path=path):
+                self.client.force_login(self.admin);session=self.client.session;session['pending_mfa_user']=self.users[0].pk;session['pending_mfa_at']=time();session.save()
+                self.assertEqual(self.client.get(path).url,'/login/')
+                self.assertNotIn('_auth_user_id',self.client.session);self.assertFalse(TOTPDevice.objects.filter(user=self.admin).exists())
 
     def test_account_switch_remains_available_during_recovery(self):
         access=self.users[0].workhub_access;access.otp_reset_key='test-reset-required';access.save()
