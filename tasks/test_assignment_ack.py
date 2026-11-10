@@ -58,3 +58,13 @@ class AssignmentAckTests(TestCase):
         self.assertContains(r,'✓ 배정 확인 완료')
         self.assertNotContains(r,'먼저 배정된 업무를 확인')
         self.assertContains(r,'현재 단계: 업무 수행')
+
+    def test_legacy_work_also_requires_explicit_acknowledgement(self):
+        from .workflow import transition
+        task=Task.objects.create(title='기존 방식 업무',assignee=self.emp,start_date=timezone.localdate(),due_date=timezone.localdate())
+        with self.assertRaises(ValidationError):
+            transition(self.worker,task.pk,'progress',{'progress':40,'delay_reason':'','body':'진행'})
+        transition(self.worker,task.pk,'accept',{})
+        task.refresh_from_db();self.assertEqual(task.progress,1)
+        transition(self.worker,task.pk,'progress',{'progress':40,'delay_reason':'','body':'진행'})
+        task.refresh_from_db();self.assertEqual(task.progress,40)

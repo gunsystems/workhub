@@ -50,7 +50,9 @@ def transition(user, pk, action, data):
             raise ValidationError('완료 또는 검토 대기 업무입니다.')
         if task.accepted_at is None:
             task.accepted_at = timezone.now()
-            task.save(update_fields=['accepted_at'])
+            task.progress=max(task.progress,1)
+            if task.status=='todo':task.status='doing'
+            task.save(update_fields=['accepted_at','progress','status'])
             record(task,user,'accepted','배정된 업무를 확인했습니다.')
         return task
     if action == 'feedback':
@@ -79,8 +81,7 @@ def transition(user, pk, action, data):
         if action == 'submit' and task.checklist.filter(required=True,checked=False,retired=False).exists():
             raise ValidationError('필수 체크리스트를 모두 완료한 뒤 완료 보고하세요.')
         if task.accepted_at is None:
-            task.accepted_at = timezone.now()
-            record(task,user,'accepted','담당자 보고로 배정을 확인했습니다.')
+            raise ValidationError('업무 내용과 기한을 확인하고 먼저 배정 확인을 완료하세요.')
         if action == 'progress':
             task.progress = data['progress']
             task.delay_reason = data['delay_reason']
