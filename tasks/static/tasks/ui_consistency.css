@@ -112,3 +112,10 @@
 .app-shell .native-date-control input::-webkit-date-and-time-value{text-align:left;min-width:0;margin:0}
 .app-shell .native-date-control input::-webkit-datetime-edit{min-width:0;padding:0}
 @media(max-width:700px){.app-shell .native-date-control input{font-size:16px!important}.app-shell .workspace-field{max-width:100%;min-width:0}}
+
+/* Keep month text vertically centered even in iOS native month controls. */
+.native-month-control{position:relative}
+.native-month-control .native-month-value{display:none}
+.native-month-control.is-enhanced input[type=month]{opacity:0;position:relative;z-index:1;cursor:pointer}
+.app-shell .native-month-control.is-enhanced .native-month-value{position:absolute;inset:0;display:flex;align-items:center;padding:0 14px;pointer-events:none;color:var(--text);font-size:13px;font-weight:600;line-height:1.4}
+@media(max-width:700px){.app-shell .native-month-control.is-enhanced .native-month-value{font-size:16px}}
