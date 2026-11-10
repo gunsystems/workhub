@@ -1,0 +1,33 @@
+name: Workhub regression tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DEBUG: '1'
+      WORKHUB_REQUIRE_HIWORKS: '0'
+      WORKHUB_SCHEDULER_ENABLED: '0'
+      DJANGO_SETTINGS_MODULE: config.test_settings
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: pip install -r requirements.txt
+      - run: mkdir -p .tmp
+      - run: python manage.py collectstatic --noinput --verbosity 0
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py test --verbosity 1
+      - run: node tasks/test_request_form.cjs

@@ -8,7 +8,7 @@ def action_alerts(user):
     if not user.is_authenticated or not user.is_active:
         return []
     employee = profile(user)
-    managing = is_manager(user) or can_view_company(user)
+    managing = is_manager(user) or can_view_company(user) or bool(employee and employee.position=='leader')
     alerts = []
     seen = set()
     tasks = visible_tasks(user)
@@ -33,9 +33,13 @@ def action_alerts(user):
         if can_review(user,task) and task.status == 'review':
             add(f'review:{task.pk}','검토 기한 초과' if task.review_overdue else '완료 검토 요청',label,url,3 if task.review_overdue else 2)
     if managing:
-        for intake in visible_requests(user).filter(task__isnull=True,closed_at__isnull=True):
+        for intake in visible_requests(user).filter(task__isnull=True,closed_at__isnull=True).exclude(stage='rejected'):
+            from .requests import can_assign
+            if not can_assign(user,intake):continue
             waiting = (timezone.now()-intake.created_at).days >= 2
             add(f'intake:{intake.pk}','미배정 요청 지연' if waiting or intake.overdue else '업무 배정 필요',intake.title,reverse('intake_detail',args=[intake.pk]),3 if waiting or intake.overdue else 2)
+    for intake in visible_requests(user).filter(creator=user,task__status='done',confirmed_at__isnull=True,closed_at__isnull=True):
+        add(f'request-result:{intake.pk}','요청한 업무 결과 확인',intake.title,reverse('intake_detail',args=[intake.pk]),2)
     from .models import PersonalCard,PersonalReminder
     clock=timezone.localtime()
     for card in PersonalCard.objects.filter(column__board__owner=user,state='active').filter(Q(due_date__lt=clock.date())|Q(due_date=clock.date(),due_time__isnull=True)|Q(due_date=clock.date(),due_time__lte=clock.time().replace(tzinfo=None))):

@@ -7,6 +7,7 @@ from .permissions import visible_departments,visible_employees,performing_depart
 
 
 def official_detail(request,task):
+    from .permissions import visible_requests
     from .google_calendar import official_allowed
     from .calendar_views import task_calendar_registered
     steps=list(task.approval_steps.all())
@@ -18,7 +19,7 @@ def official_detail(request,task):
         conflicts=visible_tasks(request.user).filter(Q(assignee_id__in=performers)|Q(participants__pk__in=performers),
             activity_start__lt=task.activity_end,activity_end__gt=task.activity_start).exclude(pk=task.pk).exclude(status__in=['done','cancelled','draft']).distinct()[:10]
     return render(request,'tasks/official_detail.html',{
-        'task':task,'steps':steps,'current':current,'assignments':task.assignments.select_related('employee__department'),
+        'source_request':visible_requests(request.user).filter(task=task).first(),'task':task,'steps':steps,'current':current,'assignments':task.assignments.select_related('employee__department'),
         'conflicts':conflicts,
         'can_edit':can_edit(request.user,task) and task.status not in ['review','done','cancelled'],
         'can_report':can_report(request.user,task),'can_review':can_review(request.user,task),
@@ -53,7 +54,10 @@ def official_list(request):
 def notifications(request):
     items=WorkNotification.objects.filter(user=request.user,task__in=visible_tasks(request.user)).select_related('task')
     personal=PersonalReminder.objects.filter(card__column__board__owner=request.user,delivered_at__isnull=False).select_related('card')
-    return render(request,'tasks/notifications.html',{'notifications':items[:100],'personal_notifications':personal[:100]})
+    from .models import RequestNotification
+    from .permissions import visible_requests
+    notices=RequestNotification.objects.filter(user=request.user,request__in=visible_requests(request.user)).select_related('request','event').order_by('-event__created_at')
+    return render(request,'tasks/notifications.html',{'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
 
 
 @login_required

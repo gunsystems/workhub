@@ -30,6 +30,8 @@ class UserChoice(forms.ModelChoiceField):
 
 
 class OfficialTaskForm(TaskForm):
+    purpose=forms.ChoiceField(choices=[('self','내 업무'),('request','업무 요청')],required=False,widget=forms.HiddenInput)
+    intake_revision=forms.IntegerField(required=False,widget=forms.HiddenInput)
     intake = forms.IntegerField(widget=forms.HiddenInput,required=False)
     teams = forms.ModelMultipleChoiceField(label='함께 수행할 팀', queryset=Department.objects.all(), required=False,
         widget=forms.CheckboxSelectMultiple, help_text='팀원 전체를 공동 수행자로 추가합니다. 팀장·본부장은 개별 선택하세요.')
@@ -46,7 +48,8 @@ class OfficialTaskForm(TaskForm):
             help_text='같은 단계의 결재자는 동시에 검토하고 모두 승인해야 다음 단계로 넘어갑니다.')
     del number
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, request_intake=None, **kwargs):
+        self.request_intake=request_intake
         super().__init__(*args, user=user, **kwargs)
         active = Employee.objects.filter(is_active=True).filter(Q(user__isnull=True)|Q(user__is_active=True)).select_related('department')
         self.fields['assignee'].queryset = active
@@ -59,6 +62,15 @@ class OfficialTaskForm(TaskForm):
             self.fields[name].disabled = False
         for n in range(1,6): self.fields[f'approver_{n}'].queryset = users()
         self.fields['allocation'].initial = 'shared'
+        if request_intake:
+            self.fields['assignee'].queryset=active.filter(department_id=request_intake.department_id)
+            # The requester may link a sales-owned project that the receiving team did not previously see.
+            self.fields['project'].queryset=self.fields['project'].queryset.model.objects.filter(pk=request_intake.project_id)
+            self.fields['project'].disabled=True
+            self.fields['allocation'].disabled=True
+            self.fields['status'].choices=[('todo','예정'),('doing','진행 중')]
+        if self.instance.pk:self.initial['purpose']='request' if self.instance.creation_kind=='request' else 'self'
+
         if self.instance.pk:
             self.fields['teams'].disabled = True
             self.fields['allocation'].disabled = True
@@ -90,7 +102,24 @@ class OfficialTaskForm(TaskForm):
             self.add_error(None, '다른 변경이 반영되었습니다. 화면을 새로 열어 다시 작성하세요.')
         data['member_ids'], data['reviewers'] = members, reviewers
         data['stages']=[data.get(f'stage_{n}') or n for n in range(1,6) if data.get(f'approver_{n}')]
+        if self.request_intake:
+            if (data.get('intake_revision') or 0)!=self.request_intake.revision:self.add_error(None,'요청 내용이 변경되었습니다. 최신 요청을 확인하세요.')
+            if len(members)<self.request_intake.headcount and not (data.get('change_reason') or '').strip():self.add_error('change_reason','요청 인원보다 적게 배정하는 사유를 입력하세요.')
+            if self.request_intake.request_kind!='legacy' and (data.get('start_date')!=self.request_intake.requested_start_date or data.get('due_date')!=self.request_intake.requested_due_date):
+                if not (data.get('change_reason') or '').strip():self.add_error('change_reason','희망 투입 기간과 다르게 배정하는 사유를 입력하세요.')
         return data
+
+
+def request_workload(user,intake,form):
+    start=form.cleaned_data.get('start_date') if hasattr(form,'cleaned_data') else None
+    end=form.cleaned_data.get('due_date') if hasattr(form,'cleaned_data') else None
+    start=start or intake.requested_start_date or timezone.localdate();end=end or intake.requested_due_date
+    employees=Employee.objects.filter(department_id=intake.department_id,is_active=True).select_related('user')
+    rows=[]
+    for emp in employees:
+        tasks=visible_tasks(user).filter(Q(assignee=emp)|Q(participants=emp),start_date__lte=end,due_date__gte=start).exclude(status__in=['done','cancelled','draft']).distinct()
+        rows.append({'employee':emp,'count':tasks.count(),'tasks':list(tasks[:4])})
+    return rows[:100]
 
 
 def notify(task, message, external=True):
@@ -107,31 +136,45 @@ def notify(task, message, external=True):
 
 @login_required
 @transaction.atomic
-def edit_task(request, task=None):
+def edit_task(request, task=None, intake_override=None):
     if not is_company_admin(request.user) and not profile(request.user): raise PermissionDenied
     if task and (not can_edit(request.user,task) or task.status in ['review','done','cancelled']): raise PermissionDenied
     before = snapshot(task) if task else None
-    initial={'project':request.GET.get('project')}
-    intake_id=request.POST.get('intake') if request.method=='POST' else request.GET.get('intake')
+    purpose=request.POST.get('purpose',request.GET.get('purpose','self'))
+    if purpose not in ['self','request']:purpose='self'
+    initial={'project':request.GET.get('project'),'purpose':purpose}
+    if purpose=='self' and profile(request.user):initial['assignee']=profile(request.user).pk
+    intake_id=intake_override.pk if intake_override else (request.POST.get('intake') if request.method=='POST' else request.GET.get('intake'))
     intake=None
     if intake_id:
         if not str(intake_id).isdigit(): raise Http404
-        if not is_manager(request.user) or task: raise PermissionDenied
+        if task: raise PermissionDenied
         intake=get_object_or_404(visible_requests(request.user).select_for_update(),pk=intake_id)
         if intake.task_id: return redirect('task_detail',pk=intake.task_id)
-        if intake.closed_at: raise PermissionDenied
+        from .requests import can_assign
+        if not can_assign(request.user,intake):raise PermissionDenied
+        if intake.closed_at or intake.stage=='rejected': raise PermissionDenied
         initial.update(intake=intake.pk,title=intake.title,description=intake.description,completion_criteria=intake.description,
-                       due_date=intake.requested_due_date,start_date=timezone.localdate(),project=intake.project_id)
-    form = OfficialTaskForm(request.POST if request.method=='POST' else None, instance=task, user=request.user,initial=initial)
+                       due_date=intake.requested_due_date,start_date=intake.requested_start_date or timezone.localdate(),project=intake.project_id,
+                       customer=intake.customer,location=intake.location,intake_revision=intake.revision,purpose='request')
+    form = OfficialTaskForm(request.POST if request.method=='POST' else None, instance=task, user=request.user,initial=initial,request_intake=intake)
     if request.method=='POST' and form.is_valid():
+        if intake:
+            from .requests import claim
+            try:claim(intake,form.cleaned_data.get('intake_revision') or 0)
+            except ValidationError as exc:
+                form.add_error(None,exc)
+                return render(request,'tasks/official_form.html',{'form':form,'task':task,'intake':intake})
         obj = form.save(commit=False)
         is_new = not obj.pk
         obj.workflow_version = 2
-        if is_new: obj.creator = request.user
+        if is_new:
+            obj.creator = request.user
+            obj.creation_kind='cooperation' if intake else form.cleaned_data.get('purpose') or 'self'
         obj.revision += 1
         obj.save()
         if intake:
-            intake.task=obj; intake.assigned_at=timezone.now(); intake.save(update_fields=['task','assigned_at'])
+            intake.task=obj; intake.assigned_at=timezone.now(); intake.save(update_fields=['task','assigned_at','revision'])
         members = form.cleaned_data['member_ids']
         # Preserve removed participants' progress in the immutable event before detaching them.
         prior = list(obj.assignments.values('employee_id','progress','accepted_at','completed_at'))
@@ -140,6 +183,11 @@ def edit_task(request, task=None):
         for pk in members: TaskParticipation.objects.get_or_create(task=obj,employee_id=pk)
         obj.watchers.set(form.cleaned_data['observers'])
         if intake and intake.creator_id: obj.watchers.add(intake.creator_id)
+        if intake:
+            from .models import RequestAllocation
+            from .requests import event
+            for member in members:RequestAllocation.objects.create(request=intake,employee_id=member,role='총괄 담당' if member==obj.assignee_id else '수행 담당',start_date=obj.start_date,end_date=obj.due_date)
+            event(intake,request.user,'인력 배정','수행 업무로 연결했습니다.',{'participants':list(members),'start':str(obj.start_date),'end':str(obj.due_date)})
         old_line = list(obj.approval_steps.values('approver_name','position','stage','decision'))
         obj.approval_steps.all().delete()
         ApprovalStep.objects.bulk_create([ApprovalStep(task=obj,approver=u,approver_name=user_name(u),position=n,stage=form.cleaned_data['stages'][n-1])
@@ -174,7 +222,7 @@ def edit_task(request, task=None):
         new_ids=current_ids if is_new or (before and before['status']=='draft') else current_ids-previous_ids
         enqueue_assignment_mail(obj,request.user,new_ids)
         return redirect('task_detail',pk=obj.pk)
-    return render(request,'tasks/official_form.html',{'form':form,'task':task})
+    return render(request,'tasks/official_form.html',{'form':form,'task':task,'intake':intake,'workload':request_workload(request.user,intake,form) if intake else []})
 
 
 class ActionForm(forms.Form):

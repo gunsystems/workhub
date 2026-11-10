@@ -89,7 +89,7 @@ class OperationsTests(TestCase):
     def test_request_cannot_be_created_for_foreign_department_or_project(self):
         data={'title':'무단','description':'내용','department':self.sales.pk,'project':self.foreign_project.pk,'requested_due_date':self.today.isoformat()}
         r=self.client.post('/intake/new/',data)
-        self.assertIn('department',r.context['form'].errors)
+        self.assertNotIn('department',r.context['form'].errors)
         self.assertIn('project',r.context['form'].errors)
         self.assertFalse(WorkRequest.objects.exists())
 

@@ -18,7 +18,16 @@ def record(task, user, kind, body, extra=None):
     else:
         write('work_event','Task',task.pk,task.title,
               after={'kind':kind,'body':body,'details':{**snapshot(task),**(extra or {}), 'participants':list(task.assignments.values('employee_id','progress')), 'approval_line':list(task.approval_steps.values('approver_id','stage','decision'))}},actor=user)
-    return TaskEvent.objects.create(task=task,author=user,author_name=user.get_username(),kind=kind,body=body,snapshot={**snapshot(task),**(extra or {})})
+    result=TaskEvent.objects.create(task=task,author=user,author_name=user.get_username(),kind=kind,body=body,snapshot={**snapshot(task),**(extra or {})})
+    if task.status!='done':
+        from .models import WorkRequest
+        intake=WorkRequest.objects.filter(task=task,confirmed_at__isnull=False).first()
+        if intake:
+            from .requests import event
+            previous={'confirmed_at':str(intake.confirmed_at),'confirmation_note':intake.confirmation_note}
+            intake.confirmed_at=None;intake.confirmation_note='';intake.revision+=1;intake.save(update_fields=['confirmed_at','confirmation_note','revision'])
+            event(intake,user,'결과 확인 재요청','수행 업무가 다시 진행되어 기존 결과 확인을 해제했습니다.',previous)
+    return result
 
 
 @transaction.atomic
