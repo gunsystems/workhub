@@ -6,7 +6,7 @@ from datetime import timedelta
 import qrcode
 import django_otp
 from django import forms
-from django.contrib.auth import authenticate, get_user_model, login, update_session_auth_hash
+from django.contrib.auth import authenticate, get_user_model, login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import SetPasswordForm, PasswordResetForm
 from django.contrib.auth.views import PasswordResetView, PasswordResetConfirmView
@@ -18,6 +18,7 @@ from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_post_parameters
+from django.views.decorators.http import require_POST
 from django_otp.plugins.otp_totp.models import TOTPDevice
 from .models import Invitation, AccessProfile, RecoveryCode, OTPResetChallenge
 from .services import digest, deliver, allow
@@ -132,6 +133,10 @@ class ConfirmResetPassword(PasswordResetConfirmView):
 @never_cache
 @sensitive_post_parameters('password')
 def sign_in(request):
+    # A new password submission begins a new authentication attempt. Keeping a
+    # previous authenticated user here makes pending MFA resolve to that user.
+    if request.method=='POST':
+        logout(request)
     if request.method == 'GET' and not request.user.is_authenticated and request.session.get('pending_mfa_user') and pending_user(request):
         return redirect('mfa_verify')
     form = LoginForm(request.POST or None)
@@ -261,11 +266,18 @@ def activate(request, token):
 
 
 def pending_user(request):
+    pending_id=request.session.get('pending_mfa_user')
     if request.user.is_authenticated:
+        if pending_id is not None and str(pending_id)!=str(request.user.pk):
+            # Fail closed for mixed sessions already created by an older version.
+            logout(request)
+            return None
         return request.user if account_allowed(request.user) else None
-    stamp = request.session.get('pending_mfa_at', 0)
-    if timezone.now().timestamp()-stamp > 300:
+    try:age=timezone.now().timestamp()-float(request.session.get('pending_mfa_at',0))
+    except (TypeError,ValueError):age=301
+    if not 0<=age<=300:
         request.session.pop('pending_mfa_user', None)
+        request.session.pop('pending_mfa_at', None)
         return None
     user = get_user_model().objects.filter(pk=request.session.get('pending_mfa_user'), is_active=True).first()
     return user if account_allowed(user) else None
@@ -308,7 +320,14 @@ def mfa_verify(request):
             request.session.pop('pending_mfa_at', None)
             return redirect('dashboard')
         form.add_error('code', 'OTP가 올바르지 않습니다. 잠시 후 다시 시도하세요.')
-    return page(request, '2차 인증', form, notice='인증 앱의 6자리 OTP를 입력하세요. 휴대폰을 분실했거나 OTP를 사용할 수 없다면 회사 관리자에게 OTP 초기화를 요청하세요.')
+    return page(request, '2차 인증', form, auth_identity=user.email or user.get_username(), switch_account=True, notice='인증 앱의 기존 6자리 OTP를 입력하세요. 새 QR 등록은 필요하지 않습니다. 휴대폰을 분실했거나 OTP를 사용할 수 없다면 회사 관리자에게 OTP 초기화를 요청하세요.')
+
+
+@require_POST
+@never_cache
+def switch_account(request):
+    logout(request)
+    return redirect('login')
 
 
 @login_required
@@ -351,7 +370,7 @@ def mfa_setup(request):
         form.add_error('code', 'OTP가 올바르지 않거나 시도 한도를 초과했습니다.')
     buffer = io.BytesIO()
     qrcode.make(device.config_url).save(buffer, format='PNG')
-    return page(request, 'OTP 등록', form, qr=base64.b64encode(buffer.getvalue()).decode(),
+    return page(request, 'OTP 등록', form, switch_account=True, auth_identity=request.user.email or request.user.get_username(), qr=base64.b64encode(buffer.getvalue()).decode(),
                 notice='Google Authenticator 등 인증 앱으로 QR코드를 스캔하고 6자리 코드를 입력하세요.')
 
 

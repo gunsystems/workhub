@@ -35,6 +35,7 @@
 <body {% if request.user.is_authenticated %}data-idle-session{% endif %}><main><div style="display:flex;justify-content:flex-end;margin-bottom:12px">{% include 'tasks/page_help.html' %}</div>
   <div class="brand">GUNSYSTEMS · Workhub</div>
   <h1>{{ title }}</h1>
+  {% if auth_identity %}<p class="notice">인증할 계정: <strong>{{ auth_identity }}</strong></p>{% endif %}
   {% if notice %}<p class="notice">{{ notice }}</p>{% endif %}
   {% if qr %}<img src="data:image/png;base64,{{ qr }}" alt="인증 앱 등록 QR코드">{% endif %}
   {% if form %}
@@ -47,6 +48,7 @@
     </div>
   </form>
   {% endif %}
+  {% if switch_account %}<form method="post" action="{% url 'switch_account' %}" class="next-action">{% csrf_token %}<button type="submit" style="background:white;color:#236c59;border-color:#b8cdc4;width:100%">다른 계정으로 로그인</button></form>{% endif %}
   {% if codes %}
   <div class="recovery-help">
     <p><strong>복구 코드는 언제 사용하나요?</strong><br>휴대폰 분실·교체 등으로 인증 앱의 OTP를 사용할 수 없을 때, 로그인 과정에서 OTP 대신 입력합니다. 비밀번호는 함께 필요합니다.</p>
