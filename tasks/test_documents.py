@@ -90,6 +90,17 @@ class DocumentTests(TestCase):
         with patch('tasks.drive_storage.DriveClient.upload',side_effect=RepositoryError('연결 오류')):
             r=self.client.post('/intake/new/',{**data,'title':'실패 요청','attachment':self.file()})
         self.assertEqual(r.status_code,200);self.assertFalse(WorkRequest.objects.filter(title='실패 요청').exists())
+
+    def test_direct_request_file_upload_and_failure_rolls_back_task(self):
+        self.client.force_login(self.root)
+        data={'purpose':'request','title':'소개자료 확인','assignee':self.emp.pk,'start_date':self.day,'due_date':self.day,
+              'importance':'normal','priority':3,'status':'todo','allocation':'shared','revision':0,'no_approval':'on','assignment_channels_present':'1'}
+        with patch('tasks.drive_storage.DriveClient.upload',return_value='drive/direct1'):
+            r=self.client.post('/work/new/',{**data,'attachment':self.file()})
+        self.assertEqual(r.status_code,302);task=Task.objects.get(title='소개자료 확인');self.assertEqual(task.documents.count(),1)
+        with patch('tasks.drive_storage.DriveClient.upload',side_effect=RepositoryError('연결 오류')):
+            r=self.client.post('/work/new/',{**data,'title':'실패직접요청','attachment':self.file()})
+        self.assertEqual(r.status_code,200);self.assertFalse(Task.objects.filter(title='실패직접요청').exists())
     def test_report_new_file_routes_to_drive_and_read_checks_report_acl(self):
         report=PeriodReport.objects.create(author=self.user,reviewer=self.root,period_start=self.day,period_end=self.day,summary='보고')
         with patch('tasks.drive_storage.DriveClient.upload',return_value='drive/report1') as upload:
@@ -97,6 +108,19 @@ class DocumentTests(TestCase):
         upload.assert_called_once();self.assertEqual(f.file.name,'drive/report1')
         self.client.force_login(self.other)
         self.assertEqual(self.client.get(f'/work/reports/files/{f.pk}/').status_code,404)
+
+    def test_individual_allocation_reuses_one_upload_with_separate_task_acl(self):
+        self.client.force_login(self.root);other_emp=Employee.objects.get(user=self.other)
+        data={'purpose':'request','title':'개별 자료 검토','assignee':self.emp.pk,'collaborators':[other_emp.pk],
+              'start_date':self.day,'due_date':self.day,'importance':'normal','priority':3,'status':'todo',
+              'allocation':'individual','revision':0,'no_approval':'on','assignment_channels_present':'1','attachment':self.file()}
+        with patch('tasks.drive_storage.DriveClient.upload',return_value='drive/shared-reference') as upload:
+            self.assertEqual(self.client.post('/work/new/',data).status_code,302)
+        upload.assert_called_once();docs=list(WorkDocument.objects.filter(name='소개자료.pdf'))
+        self.assertEqual(len(docs),2);self.assertEqual({d.file.name for d in docs},{'drive/shared-reference'})
+        self.client.force_login(self.other)
+        first=next(d for d in docs if d.task.assignee_id==self.emp.pk)
+        self.assertEqual(self.client.get(f'/work/documents/{first.pk}/download/').status_code,404)
     def test_admin_connection_check_and_staff_denial(self):
         self.assertEqual(self.client.get('/work/documents/storage/').status_code,403)
         self.client.force_login(self.root)
