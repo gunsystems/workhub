@@ -25,7 +25,8 @@ class WorkflowTests(TestCase):
     def action(self, action, data, task=None):
         obj=task or self.task
         obj.refresh_from_db()
-        if action in ['progress','submit'] and not obj.accepted_at and obj.assignee.user_id==int(self.client.session.get('_auth_user_id',0)):
+        valid_payload=bool(data.get('body','').strip()) and (action=='submit' or (str(data.get('progress','')).isdigit() and 0<=int(data['progress'])<=99))
+        if action in ['progress','submit'] and valid_payload and not obj.accepted_at and obj.assignee.user_id==int(self.client.session.get('_auth_user_id',0)):
             self.client.post(f'/tasks/{obj.pk}/accept/')
         return self.client.post(f'/tasks/{(task or self.task).pk}/actions/{action}/',data)
 
