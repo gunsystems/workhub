@@ -84,8 +84,8 @@ class RequestForm(forms.ModelForm):
         active=Employee.objects.filter(is_active=True,user__is_active=True).select_related('department','user')
         self.fields['coordinator'].queryset=active
         self.fields['preferred_employee'].queryset=active
-        self.fields['coordinator'].widget=TeamEmployeeSelect()
-        self.fields['preferred_employee'].widget=TeamEmployeeSelect()
+        self.fields['coordinator'].widget=TeamEmployeeSelect(choices=self.fields['coordinator'].choices)
+        self.fields['preferred_employee'].widget=TeamEmployeeSelect(choices=self.fields['preferred_employee'].choices)
         self.fields['headcount'].required=False
         self.fields['request_kind'].required=False
         self.fields['coordinator'].help_text='팀장 공석 시 지정할 접수 대행자입니다. 선택한 팀의 직원만 지정할 수 있습니다.'

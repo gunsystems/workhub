@@ -140,3 +140,11 @@ class RequestFlowTests(TestCase):
             target=module.snapshot_sqlite_database(str(db),Path(directory)/'backups')
             with closing(sqlite3.connect(target)) as backup:self.assertEqual(backup.execute('select value from sample').fetchone()[0],'original');self.assertEqual(backup.execute('PRAGMA integrity_check').fetchone()[0],'ok')
             with closing(sqlite3.connect(db)) as original:self.assertEqual(original.execute('select count(*) from sample').fetchone()[0],1)
+
+    def test_team_select_widgets_render_real_employee_options(self):
+        import re
+        response=self.client.get('/intake/new/');html=response.content.decode()
+        for name in ['coordinator','preferred_employee']:
+            select=re.search(r'<select[^>]*id="id_'+name+r'"[^>]*>(.*?)</select>',html,re.S).group(1)
+            self.assertIn('value="'+str(self.emp['helper'].pk)+'"',select)
+            self.assertIn('data-team="'+str(self.tech.pk)+'"',select)
