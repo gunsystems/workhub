@@ -12,6 +12,9 @@ def official_detail(request,task):
     from .calendar_views import task_calendar_registered
     steps=list(task.approval_steps.select_related('approver__employee__department'))
     current=next((s for s in steps if s.decision!='approved'),None)
+    my_assignment=task.assignments.filter(employee__user=request.user,employee__is_active=True).first()
+    assignment_count=task.assignments.count()
+    pending_performers=task.assignments.filter(completed_at__isnull=True).exclude(employee__user=request.user).exists()
     conflicts=[]
     if task.activity_start and task.activity_end:
         from django.db.models import Q
@@ -21,6 +24,7 @@ def official_detail(request,task):
     return render(request,'tasks/official_detail.html',{
         'source_request':visible_requests(request.user).filter(task=task).first(),'task':task,'steps':steps,'current':current,'assignments':task.assignments.select_related('employee__department'),
         'conflicts':conflicts,
+        'my_assignment':my_assignment,'assignment_count':assignment_count,'pending_performers':pending_performers,
         'can_edit':can_edit(request.user,task) and task.status not in ['review','done','cancelled'],
         'can_report':can_report(request.user,task),'can_review':can_review(request.user,task),
         'primary':task.assignee.user_id==request.user.pk,'owner':task.creator_id==request.user.pk,

@@ -151,12 +151,14 @@ class OperationsTests(TestCase):
     def test_required_checklist_gates_completion_and_records_action(self):
         item=ChecklistItem.objects.create(task=self.task,title='결과물 확인',required=True)
         optional=ChecklistItem.objects.create(task=self.task,title='선택 확인',required=False)
+        self.assertEqual(self.client.post(f'/tasks/{self.task.pk}/accept/').status_code,302)
         submit=f'/tasks/{self.task.pk}/actions/submit/'
         r=self.client.post(submit,{'body':'완료했습니다'})
         self.assertTrue(r.context['form'].non_field_errors())
         self.task.refresh_from_db()
-        self.assertEqual(self.task.status,'todo')
-        self.assertFalse(self.task.events.exists())
+        self.assertEqual(self.task.status,'doing')
+        self.assertFalse(self.task.events.exclude(kind='accepted').exists())
+        self.assertIn('필수 체크리스트',str(r.context['form'].non_field_errors()))
         self.assertEqual(self.client.post(f'/tasks/{self.task.pk}/checklist/{item.pk}/',{'action':'check'}).status_code,302)
         self.assertEqual(self.client.post(submit,{'body':'필수 결과물 완료'}).status_code,302)
         self.assertEqual(self.client.post(f'/tasks/{self.task.pk}/checklist/{item.pk}/',{'action':'uncheck'}).status_code,403)
