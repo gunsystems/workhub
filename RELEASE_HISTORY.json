@@ -4,7 +4,7 @@
   "releases": [
     {
       "version": "0.10.0",
-      "status": "tested_pending_deploy",
+      "status": "live_verified",
       "release_notes": "releases/v0.10.0.md",
       "test_guide": "releases/v0.10.0-test-guide.md",
       "tests": 364,
@@ -12,7 +12,14 @@
         "0027_calendarexport_date_mode",
         "0028_schedule_compliance_and_deadline_notifications"
       ],
-      "backup": "/var/data/backups/workhub-pre-v0100-20261110T061650Z.sqlite3"
+      "backup": "/var/data/backups/workhub-pre-v0100-20261110T061650Z.sqlite3",
+      "source_commit": "3dd66ae3e220b0a5eb8453d38ac053e8cfa39e45",
+      "deploy_id": "dep-dbpbloff3r2c73fmn9d0",
+      "live_at": "2026-11-10T15:35:04+09:00",
+      "health": "ok",
+      "linux_isolated_tests": 41,
+      "deadline_policy_enabled": false,
+      "external_test_messages_sent": false
     },
     {
       "version": "0.9.11",
