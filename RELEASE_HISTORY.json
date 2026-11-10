@@ -4,13 +4,16 @@
   "releases": [
     {
       "version": "0.12.6",
-      "status": "deployment_pending",
+      "status": "live_ui_verification_pending_login",
       "release_notes": "releases/v0.12.6.md",
       "migrations": [],
       "tests": 431,
-      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42911567000",
-      "source_commit": "1492e041a54d0417a9299f1ad752badf28c72453",
-      "browser_verification": "Actual iOS verification pending; deployment UI timed out twice; live remains 0.12.5."
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42912709405",
+      "source_commit": "446b83a7633bfca838f90523e33e536d6ee38476",
+      "browser_verification": "Public health confirms 0.12.6 / 446b83a. Authenticated UI and actual iOS verification pending.",
+      "deploy_id": "dep-dbppgvifngtc7382jvrg",
+      "live_at": "2026-11-11T07:20:42+09:00",
+      "health": "ok"
     },
     {
       "version": "0.12.5",
