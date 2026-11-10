@@ -4,11 +4,18 @@
   "releases": [
     {
       "version": "0.11.1",
-      "status": "in_validation",
+      "status": "live_verified",
       "release_notes": "releases/v0.11.1.md",
       "migrations": [],
       "regression_tests": 58,
-      "reproduced_before_fix": true
+      "reproduced_before_fix": true,
+      "tests": 397,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42781174017",
+      "source_commit": "e49a3bf8218c38d006b6f18f5449195e99741d43",
+      "deploy_id": "dep-dbpd6f6c6qcc73abfqt0",
+      "live_at": "2026-11-10T17:19:15+09:00",
+      "health": "ok",
+      "credentials_or_devices_reset": false
     },
     {
       "version": "0.11.0",
