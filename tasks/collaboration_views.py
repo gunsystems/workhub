@@ -35,8 +35,11 @@ def official_detail(request,task):
 def official_list(request):
     status=request.GET.get('status','')
     tasks=visible_tasks(request.user)
-    if status in dict(Task.STATUS): tasks=tasks.filter(status=status)
-    else: tasks=tasks.exclude(status__in=['done','cancelled'])
+    if status == 'all': pass
+    elif status in dict(Task.STATUS): tasks=tasks.filter(status=status)
+    else:
+        status=''
+        tasks=tasks.exclude(status__in=['done','cancelled'])
     department=request.GET.get('department','')
     employee=request.GET.get('employee','')
     if department.isdigit(): tasks=tasks.filter(performing_department(department)).distinct()
