@@ -3,6 +3,7 @@ import uuid
 from functools import wraps
 from time import sleep
 from django import forms
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied,ValidationError
@@ -65,7 +66,7 @@ class TeamEmployeeSelect(forms.Select):
 
 
 class RequestForm(forms.ModelForm):
-    attachment=forms.FileField(label='참고 파일 첨부 · 최대 20MB',required=False)
+    attachment=forms.FileField(widget=forms.ClearableFileInput(attrs={'data-upload-limit':'20971520','accept':'.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.zip'}),label='참고 파일 첨부 · 최대 20MB',required=False)
     submission=forms.UUIDField(required=False,widget=forms.HiddenInput)
     revision=forms.IntegerField(required=False,widget=forms.HiddenInput)
     change_reason=forms.CharField(label="변경 사유",required=False,max_length=5000,widget=forms.Textarea(attrs={"rows":3}))
@@ -168,6 +169,7 @@ def intake_new(request):
             transaction.set_rollback(True)
             return response
         event(obj,request.user,'요청 등록','지원 팀에 업무협조를 요청했습니다.')
+        if form.cleaned_data.get('attachment'):messages.success(request,'참고 파일 업로드가 완료되었습니다.',extra_tags='upload-success')
         return redirect('intake_detail',pk=obj.pk)
     return render(request,'tasks/request_form.html',{'title':'업무협조 요청','form':form,'request_form':True})
 
@@ -191,6 +193,7 @@ def intake_edit(request,pk):
                 transaction.set_rollback(True)
                 return response
             event(obj,request.user,'요청 내용 변경',form.cleaned_data['change_reason'],{'before':before})
+            if form.cleaned_data.get('attachment'):messages.success(request,'참고 파일 업로드가 완료되었습니다.',extra_tags='upload-success')
             return redirect('intake_detail',pk=pk)
     return render(request,'tasks/request_form.html',{'form':form,'intake':obj,'request_form':True,'title':'요청 내용 수정 · 보완'})
 

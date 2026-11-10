@@ -2,6 +2,7 @@
 from datetime import date,timedelta
 from pathlib import Path
 from django import forms
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied,ValidationError
@@ -35,7 +36,7 @@ class ReportForm(forms.ModelForm):
     reviewer=UserChoice(label='보고받을 사람',queryset=get_user_model().objects.none())
     tasks=forms.ModelMultipleChoiceField(label='관련 업무 · 기존 기록 연결',queryset=Task.objects.none(),required=False,widget=forms.CheckboxSelectMultiple)
     sources=forms.ModelMultipleChoiceField(label='취합할 직원 보고 · 제출 버전 선택',queryset=ReportSubmission.objects.none(),required=False,widget=forms.CheckboxSelectMultiple)
-    attachment=forms.FileField(label='첨부 (선택 · 파일당 10MB)',required=False)
+    attachment=forms.FileField(widget=forms.ClearableFileInput(attrs={'data-upload-limit':'10485760','accept':'.pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg'}),label='첨부 (선택 · 파일당 10MB)',required=False)
     class Meta:
         model=PeriodReport
         fields=['report_type','period_start','period_end','summary','reviewer']
@@ -130,6 +131,7 @@ def report_edit(request,pk=None):
                 'files':list(obj.files.values('pk','name'))}
             submission=ReportSubmission.objects.create(report=obj,version=obj.revision,snapshot=snapshot)
             obj.current_submission=submission;obj.state='submitted';obj.submitted_at=timezone.now();obj.save(update_fields=['current_submission','state','submitted_at'])
+        if f:messages.success(request,'보고서 첨부파일 업로드가 완료되었습니다.',extra_tags='upload-success')
         return redirect('period_report_detail',pk=obj.pk)
     return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today})
 

@@ -27,9 +27,10 @@ def observe_schedule(task,kind,extra):
     current={key:str(getattr(task,key)) for key in PLAN_FIELDS}
     if kind=='created' or before.get('status')=='draft':
         now=timezone.now();local=timezone.localtime(now,SEOUL)
-        late=(task.activity_start<now-timedelta(minutes=5) if task.activity_start else
-              task.start_date<local.date() or (task.start_time is not None and
-              task.start_date==local.date() and datetime.combine(task.start_date,task.start_time,tzinfo=SEOUL)<local-timedelta(minutes=5)))
+        # Generic start_time defaults to the time the form was opened. Time spent
+        # writing a task is not evidence of late registration. Explicit activity
+        # times (meetings/visits) retain their separate five-minute tolerance.
+        late=(task.activity_start<now-timedelta(minutes=5) if task.activity_start else task.start_date<local.date())
         ScheduleRegistration.objects.get_or_create(task=task,defaults={'registered_at':now,'initial_plan':current,'late':late})
     changes={k:{'before':before[k],'after':current[k],'label':{'start_date':'시작일','start_time':'시작 시간','due_date':'마감일','activity_start':'수행 시작','activity_end':'수행 종료'}[k]} for k in PLAN_FIELDS if k in before and before[k]!=current[k]}
     if changes:

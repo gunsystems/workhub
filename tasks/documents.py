@@ -32,7 +32,7 @@ class DocumentForm(forms.Form):
     name = forms.CharField(label='자료 이름', max_length=200, required=False,
         help_text='파일을 올리는 경우 비워 두면 파일 이름을 사용합니다.')
     kind = forms.ChoiceField(label='자료 구분', choices=WorkDocument._meta.get_field('kind').choices)
-    file = forms.FileField(label='파일 첨부 · 최대 20MB', required=False, validators=[validate_file])
+    file = forms.FileField(widget=forms.ClearableFileInput(attrs={'data-upload-limit':'20971520','accept':'.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.zip'}),label='파일 첨부 · 최대 20MB', required=False, validators=[validate_file])
     link = forms.URLField(label='외부 자료 링크', max_length=2000, required=False,
         help_text='큰 파일은 회사 공유 링크로 등록할 수 있습니다. 외부 저장소 열람 권한은 별도로 필요합니다.')
 
@@ -109,7 +109,7 @@ def document_add(request, kind, pk):
             except RepositoryError as exc:
                 form.add_error(None,str(exc))
             else:
-                messages.success(request,'업무자료를 등록했습니다.')
+                messages.success(request,'파일 업로드가 완료되었습니다.' if form.cleaned_data.get('file') else '자료 링크를 등록했습니다.',extra_tags='upload-success')
                 return redirect(parent_url(kind,obj)+'#work-documents')
     return render(request,'tasks/document_form.html',{'form':form,'parent':obj,'back_url':parent_url(kind,obj)})
 
