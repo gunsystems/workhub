@@ -8,3 +8,5 @@ staticfiles/
 .tmp/
 private-uploads/
 backups/
+workhub-drive*.json
+gunsystems-workhub-*.json

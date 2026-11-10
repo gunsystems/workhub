@@ -4,3 +4,5 @@ whitenoise==6.12.0
 django-otp==1.7.5
 qrcode[pil]==8.2
 cryptography==50.0.2
+google-auth==2.62.0
+requests==2.34.2

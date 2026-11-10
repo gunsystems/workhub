@@ -13,6 +13,7 @@ from django.utils import timezone
 from .models import PeriodReport,ReportSubmission,ReportReview,ReportFile,Task,Employee
 from .permissions import profile,can_view_company,visible_tasks,visible_employees
 from .collaboration import UserChoice,users
+from .drive_storage import RepositoryError
 
 
 def visible_reports(user):
@@ -110,7 +111,14 @@ def report_edit(request,pk=None):
         obj.source_submissions.set(form.cleaned_data['sources'])
         obj.selected_tasks.set(form.cleaned_data['tasks'])
         f=form.cleaned_data.get('attachment')
-        if f:ReportFile.objects.create(report=obj,file=f,name=Path(f.name).name[:200])
+        if f:
+            try:
+                with transaction.atomic():ReportFile.objects.create(report=obj,file=f,name=Path(f.name).name[:200])
+            except RepositoryError as exc:
+                form.add_error('attachment',str(exc))
+                response=render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today})
+                transaction.set_rollback(True)
+                return response
         if request.POST.get('action')=='submit':
             tasks=list(form.cleaned_data['tasks'])
             snapshot={'report_type':obj.report_type,'report_type_label':obj.get_report_type_display(),'summary':obj.summary,'period_start':str(obj.period_start),'period_end':str(obj.period_end),
@@ -148,5 +156,6 @@ def report_file(request,pk):
     obj=get_object_or_404(ReportFile.objects.select_related('report'),pk=pk,report__in=visible_reports(request.user))
     try:response=FileResponse(obj.file.open('rb'),as_attachment=True,filename=obj.name,content_type='application/octet-stream')
     except FileNotFoundError:raise Http404
+    except RepositoryError:return render(request,'tasks/document_error.html',status=503)
     response['Cache-Control']='private, no-store';response['X-Content-Type-Options']='nosniff'
     return response

@@ -1,4 +1,4 @@
-{% extends 'tasks/base.html' %}{% load static %}{% block content %}
+{% extends 'tasks/base.html' %}{% load work_documents %}{% load static %}{% block content %}
 <link rel="stylesheet" href="{% static 'tasks/workspace.css' %}">
 <section class="heading"><div><div class="eyebrow">WORK OVERVIEW</div><h1>{{ task.title }}</h1><p>{{ task.get_status_display }} · 총괄 {{ task.assignee }} · {{ task.progress }}%</p></div>{% if can_edit %}<a class="button primary" href="{% url 'task_edit' task.pk %}">업무 수정 · 결재라인 설정</a>{% endif %}</section>
 {% include 'tasks/cancelled_notice.html' %}{% include 'tasks/request_source.html' %}{% include 'tasks/schedule_control_links.html' %}
@@ -26,4 +26,4 @@
 </section>
 {% if group_tasks %}<section class="detail"><h3>함께 배정된 개별 업무</h3>{% for other in group_tasks %}<p><a href="{% url 'task_detail' other.pk %}">{{ other.assignee }} · {{ other.get_status_display }}</a></p>{% endfor %}</section>{% endif %}
 <section class="detail timeline"><h3>보고 · 결재 · 정정 이력</h3>{% for event in events %}<article class="timeline-item"><b>{{ event.get_kind_display }}</b> · {{ event.author_name }} <small>{{ event.created_at|date:'Y-m-d H:i' }}</small><p>{{ event.body|linebreaksbr }}</p>{% if event.snapshot.round %}<small>{{ event.snapshot.round }}회차 {% if event.snapshot.step %}· {{ event.snapshot.step }}차 결재{% endif %}</small>{% endif %}</article>{% empty %}<p>아직 기록이 없습니다.</p>{% endfor %}</section>
-{% endblock %}
+{% work_documents 'task' task %}{% endblock %}

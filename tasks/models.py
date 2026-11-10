@@ -665,3 +665,5 @@ class ReportFile(models.Model):
     file = models.FileField(upload_to=private_report_path)
     name = models.CharField(max_length=200)
     uploaded_at = models.DateTimeField(default=timezone.now)
+
+from .document_models import WorkDocument

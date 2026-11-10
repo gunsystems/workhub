@@ -65,6 +65,7 @@ class TeamEmployeeSelect(forms.Select):
 
 
 class RequestForm(forms.ModelForm):
+    attachment=forms.FileField(label='참고 파일 첨부 · 최대 20MB',required=False)
     submission=forms.UUIDField(required=False,widget=forms.HiddenInput)
     revision=forms.IntegerField(required=False,widget=forms.HiddenInput)
     change_reason=forms.CharField(label="변경 사유",required=False,max_length=5000,widget=forms.Textarea(attrs={"rows":3}))
@@ -91,10 +92,17 @@ class RequestForm(forms.ModelForm):
         self.fields['coordinator'].help_text='팀장 공석 시 지정할 접수 대행자입니다. 선택한 팀의 직원만 지정할 수 있습니다.'
         self.fields['preferred_employee'].help_text='희망 인원이며 확정 배정이 아닙니다. 최종 담당자는 수신 팀에서 정합니다.'
         self.fields['resource_url'].help_text='회사 공유 자료 링크를 입력하세요. 해당 저장소의 열람 권한은 별도로 부여해야 합니다.'
+        self.fields['attachment'].help_text='소개자료·요청서 등을 함께 전달할 수 있습니다. 추가 자료는 등록 후 업무자료에서 관리하세요.'
         self.fields['requested_due_date'].help_text='배정 회신 기한과 실제 수행 마감일을 구분합니다.'
         self.initial.setdefault('request_kind','cooperation');self.initial.setdefault('requested_start_date',timezone.localdate())
     def clean(self):
         d=super().clean();d['request_kind']=d.get('request_kind') or 'cooperation';d['headcount']=d['headcount'] if d.get('headcount') is not None else 1
+        if d.get('attachment'):
+            from .documents import validate_file
+            from .drive_storage import configured
+            try:validate_file(d['attachment'])
+            except ValidationError as exc:self.add_error('attachment',exc)
+            if not configured():self.add_error('attachment','자료 저장소 연결 후 파일을 첨부할 수 있습니다.')
         team=d.get('department');coord=d.get('coordinator');pref=d.get('preferred_employee')
         for field,emp in [('coordinator',coord),('preferred_employee',pref)]:
             if emp and team and emp.department_id!=team.pk:self.add_error(field,'선택한 지원 팀 소속 직원을 지정하세요.')
@@ -147,7 +155,7 @@ def intake_list(request):
 @transaction.atomic
 def intake_new(request):
     if not can_view_company(request.user) and not profile(request.user):raise PermissionDenied
-    form=RequestForm(request.POST if request.method=='POST' else None,user=request.user)
+    form=RequestForm(request.POST if request.method=='POST' else None,request.FILES or None,user=request.user)
     if request.method=='POST' and form.is_valid():
         key=form.cleaned_data.get('submission')
         existing=WorkRequest.objects.filter(submission_key=key).first() if key else None
@@ -155,6 +163,10 @@ def intake_new(request):
             if existing.creator_id!=request.user.pk:raise PermissionDenied
             return redirect('intake_detail',pk=existing.pk)
         obj=form.save(commit=False);obj.submission_key=key;emp=profile(request.user);obj.creator=request.user;obj.creator_name=emp.name if emp else request.user.get_username();obj.source_department=emp.department if emp else None;obj.save()
+        if not attach_reference(request,form,obj):
+            response=render(request,'tasks/request_form.html',{'title':'업무협조 요청','form':form,'request_form':True})
+            transaction.set_rollback(True)
+            return response
         event(obj,request.user,'요청 등록','지원 팀에 업무협조를 요청했습니다.')
         return redirect('intake_detail',pk=obj.pk)
     return render(request,'tasks/request_form.html',{'title':'업무협조 요청','form':form,'request_form':True})
@@ -167,15 +179,31 @@ def intake_edit(request,pk):
     obj=get_object_or_404(visible_requests(request.user).select_for_update(),pk=pk)
     if obj.creator_id!=request.user.pk or obj.task_id or obj.closed_at or obj.stage=='rejected':raise PermissionDenied
     before={str(obj._meta.get_field(f).verbose_name):str(getattr(obj,f[:-3] if f.endswith('_id') else f)) for f in ['title','description','project_id','customer','solution','requested_start_date','requested_due_date','response_due_date','headcount','preferred_employee_id','location','resource_url']}
-    form=RequestForm(request.POST if request.method=='POST' else None,user=request.user,instance=obj)
+    form=RequestForm(request.POST if request.method=='POST' else None,request.FILES or None,user=request.user,instance=obj)
     if request.method=='POST' and form.is_valid():
         try:claim(obj,form.cleaned_data.get('revision') or 0)
         except ValidationError as exc:form.add_error(None,exc)
         else:
             if obj.stage=='needs_info':obj.stage='received'
-            form.save();event(obj,request.user,'요청 내용 변경',form.cleaned_data['change_reason'],{'before':before})
+            form.save()
+            if not attach_reference(request,form,obj):
+                response=render(request,'tasks/request_form.html',{'form':form,'intake':obj,'request_form':True,'title':'요청 내용 수정 · 보완'})
+                transaction.set_rollback(True)
+                return response
+            event(obj,request.user,'요청 내용 변경',form.cleaned_data['change_reason'],{'before':before})
             return redirect('intake_detail',pk=pk)
     return render(request,'tasks/request_form.html',{'form':form,'intake':obj,'request_form':True,'title':'요청 내용 수정 · 보완'})
+
+
+def attach_reference(request,form,obj):
+    f=form.cleaned_data.get('attachment')
+    if not f:return True
+    from .documents import add_document
+    from .drive_storage import RepositoryError
+    try:add_document(request.user,'request',obj,{'file':f,'kind':'reference'})
+    except RepositoryError as exc:
+        form.add_error('attachment',str(exc));return False
+    return True
 
 
 @login_required
