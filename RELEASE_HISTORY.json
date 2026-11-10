@@ -3,6 +3,19 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.12.3",
+      "status": "live_verified",
+      "release_notes": "releases/v0.12.3.md",
+      "migrations": [],
+      "tests": 430,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42802497740",
+      "source_commit": "f42f548e9337d0df79d105978b0d27b7f68723b2",
+      "deploy_id": "dep-dbpffrajnfac7399mbvg",
+      "live_at": "2026-11-10T19:55:42+09:00",
+      "all_status_selected_verified": true,
+      "completed_and_cancelled_rows_verified": true
+    },
+    {
       "version": "0.12.2",
       "status": "live_verified",
       "release_notes": "releases/v0.12.2.md",
