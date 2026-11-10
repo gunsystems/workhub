@@ -15,3 +15,11 @@
 /* Urgent work needs a clear visual distinction from amber high-priority work. */
 .personal-card.priority-urgent{border-left:6px solid #ff0000}.badge-urgent{background:#fff0f0;color:#c60000}.key-urgent{background:#ff0000;height:5px;width:17px}
 .personal-card{border-left-width:6px}.key-line{height:5px;width:17px}
+
+/* A column title and count must not shrink around the settings disclosure. */
+.personal-column .column-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.personal-column .column-heading h2{min-width:0;white-space:nowrap;overflow-wrap:normal;flex-wrap:nowrap;justify-content:flex-start}
+.column-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.personal-column .column-heading .column-count{flex:0 0 auto}
+.personal-column .column-settings{width:auto;min-width:0;max-width:none;margin:0;padding:0}
+.personal-column .column-settings>summary{display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0}

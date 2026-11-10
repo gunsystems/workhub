@@ -103,3 +103,12 @@
  .app-shell .timeline-item{padding:16px 0}
  input[type=date]::-webkit-date-and-time-value,input[type=month]::-webkit-date-and-time-value{text-align:left;min-width:0}
 }
+
+/* Bound native iOS date widgets by their parent instead of intrinsic edit width. */
+.app-shell .native-date-control{display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;overflow:hidden;border:1px solid #c9d8cf;border-radius:8px;background:#fff}
+.app-shell .native-date-control:focus-within{outline:2px solid #80ac91;outline-offset:2px}
+.app-shell .native-date-control input:is([type=date],[type=time],[type=month],[type=datetime-local]){display:block;box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;inline-size:100%!important;min-inline-size:0!important;max-inline-size:100%!important;height:44px;min-height:44px;margin:0!important;border:0!important;border-radius:inherit;padding:10px 14px;-webkit-appearance:none;appearance:none;background:transparent;line-height:1.4;text-align:left}
+.app-shell .native-date-control input:focus-visible{outline:none}
+.app-shell .native-date-control input::-webkit-date-and-time-value{text-align:left;min-width:0;margin:0}
+.app-shell .native-date-control input::-webkit-datetime-edit{min-width:0;padding:0}
+@media(max-width:700px){.app-shell .native-date-control input{font-size:16px!important}.app-shell .workspace-field{max-width:100%;min-width:0}}
