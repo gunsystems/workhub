@@ -1,0 +1,3 @@
+(()=>{const form=document.getElementById('google-export-form');if(!form)return;
+function preview(){const date=form.querySelector('[name=date_mode]:checked')?.value||'deadline';const detail=form.querySelector('[name=detail]:checked')?.value||'minimal';document.getElementById('google-preview-title').textContent=detail==='minimal'?'업무 일정':form.dataset.title;document.getElementById('google-preview-date').textContent=date==='schedule'?form.dataset.schedule:form.dataset.deadline;document.getElementById('google-preview-detail').textContent=detail==='details'?'업무 설명 + Workhub 바로가기':detail==='title'?'Workhub 바로가기':'업무 제목·설명 비공개';}
+form.addEventListener('change',preview);preview();})();

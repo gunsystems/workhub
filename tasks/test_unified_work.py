@@ -179,6 +179,32 @@ class UnifiedWorkTests(TestCase):
         self.task.status='doing';self.task.save()
         self.assertNotContains(self.client.get(f'/tasks/{self.task.pk}/'),'취소된 업무입니다.')
 
+    def test_google_export_separates_dates_and_content_and_preserves_legacy(self):
+        self.client.force_login(self.worker)
+        path=f'/work/calendar/task/{self.task.pk}/'
+        response=self.client.get(path)
+        self.assertContains(response,'1. 등록 날짜')
+        self.assertContains(response,'2. 표시할 내용')
+        for mode in ['deadline','schedule']:
+            for detail in ['minimal','title','details']:
+                response=self.client.post(path,{'date_mode':mode,'detail':detail})
+                self.assertEqual(response.status_code,302)
+                export=CalendarExport.objects.get(user=self.worker,task=self.task)
+                data=payload(export)
+                self.assertEqual(data['summary'],'업무 일정' if detail=='minimal' else self.task.title)
+                self.assertEqual('dateTime' in data['start'],mode=='schedule')
+        export.date_mode='auto';export.save()
+        self.assertIn('dateTime',payload(export)['start'])
+        self.task.activity_start=None;self.task.activity_end=None
+        self.task.start_date=self.day-timedelta(days=3);self.task.save()
+        export.task=self.task
+        self.assertEqual(payload(export)['start']['date'],self.day.isoformat())
+        export.date_mode='schedule'
+        self.assertEqual(payload(export)['start']['date'],self.task.start_date.isoformat())
+        self.assertEqual(payload(export)['end']['date'],(self.day+timedelta(days=1)).isoformat())
+        self.assertEqual(self.client.post(path,{'detail':'title'}).status_code,302)
+        self.assertEqual(self.client.post(path,{'detail':'title','date_mode':'invalid'}).status_code,200)
+
     def test_feed_company_policy_revocation_blocks_existing_token(self):
         token=secrets.token_urlsafe(32);CalendarSubscription.objects.create(owner=self.worker,token_digest=hashlib.sha256(token.encode()).hexdigest())
         CalendarExportPolicy.objects.filter(pk=1).update(allow_official=False)

@@ -410,6 +410,7 @@ class CalendarExport(models.Model):
     card=models.OneToOneField(PersonalCard,null=True,blank=True,on_delete=models.CASCADE)
     task=models.ForeignKey(Task,null=True,blank=True,on_delete=models.CASCADE)
     detail=models.CharField(max_length=12,default='minimal')
+    date_mode=models.CharField(max_length=12,default='auto')
     event_id=models.CharField(max_length=100,blank=True)
     calendar_id=models.CharField(max_length=255,blank=True)
     payload_digest=models.CharField(max_length=64,blank=True)

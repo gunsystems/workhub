@@ -3,6 +3,17 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.9.11",
+      "status": "tested_pending_deploy",
+      "release_notes": "releases/v0.9.11.md",
+      "migrations": [
+        "0027_calendarexport_date_mode"
+      ],
+      "deployment_blocker": "browser_connection_timeout",
+      "tests": 47,
+      "preview_js": "passed"
+    },
+    {
       "version": "0.9.10",
       "status": "live_verified",
       "release_notes": "releases/v0.9.10.md",
