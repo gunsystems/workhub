@@ -3,6 +3,20 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.12.7",
+      "status": "live_ui_verification_pending_login",
+      "release_notes": "releases/v0.12.7.md",
+      "migrations": [],
+      "tests": 431,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42916551289",
+      "source_commit": "6c8fbae63d1e64fa468aecf25ec396cd8001c5a0",
+      "deploy_id": "dep-dbppr7qfngtc7383k260",
+      "live_at": "2026-11-11T07:42:39+09:00",
+      "health": "ok",
+      "month_display_initial_change_empty_native_value_checks": "passed",
+      "browser_verification": "Version and health verified; actual iOS visual check pending."
+    },
+    {
       "version": "0.12.6",
       "status": "live_ui_verification_pending_login",
       "release_notes": "releases/v0.12.6.md",
