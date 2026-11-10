@@ -1,6 +1,7 @@
 """Explicit official-work participants and sequential approvals; legacy work is unchanged."""
 import secrets
 from django import forms
+from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction,OperationalError
@@ -30,7 +31,7 @@ class UserChoice(forms.ModelChoiceField):
 
 
 class OfficialTaskForm(TaskForm):
-    attachment=forms.FileField(label='참고 파일 첨부 · 최대 20MB',required=False,
+    attachment=forms.FileField(widget=forms.ClearableFileInput(attrs={'data-upload-limit':'20971520','accept':'.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.zip'}),label='참고 파일 첨부 · 최대 20MB',required=False,
         help_text='소개자료·업무 요청서 등을 함께 등록합니다. 추가 자료는 업무 상세에서 관리하세요.')
     purpose=forms.ChoiceField(choices=[('self','내 업무'),('request','업무 요청')],required=False,widget=forms.HiddenInput)
     intake_revision=forms.IntegerField(required=False,widget=forms.HiddenInput)
@@ -246,6 +247,7 @@ def edit_task(request, task=None, intake_override=None):
         current_ids=set(obj.participants.values_list('pk',flat=True)) | {obj.assignee_id}
         new_ids=current_ids if is_new or (before and before['status']=='draft') else current_ids-previous_ids
         enqueue_assignment_mail(obj,request.user,new_ids)
+        if reference:messages.success(request,'참고 파일 업로드가 완료되었습니다.',extra_tags='upload-success')
         return redirect('task_detail',pk=obj.pk)
     return render(request,'tasks/official_form.html',{'form':form,'task':task,'intake':intake,'workload':request_workload(request.user,intake,form) if intake else []})
 
