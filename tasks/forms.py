@@ -30,6 +30,7 @@ class TaskForm(forms.ModelForm):
         self.fields['assignment_email'].help_text='새 업무·새 담당자 배정 시 회사 이메일로 안내합니다.'
         self.fields['assignment_messenger'].help_text='하이웍스 연결·업무 알림을 허용한 직원에게 안내합니다. 둘 다 선택할 수 있습니다.'
         self.fields['management_mode'].required = False
+        self.fields['category'].empty_label = '업무 종류 선택'
         self.fields['category'].queryset = WorkCategory.objects.filter(Q(is_active=True)|Q(pk=self.instance.category_id))
         self.fields['report_days'].required = False
         self.fields['review_days'].required = False
