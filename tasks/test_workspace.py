@@ -40,6 +40,10 @@ class WorkspaceTests(TestCase):
 
     def act(self,user,task,kind,**data):
         task.refresh_from_db()
+        participant=task.assignments.filter(employee__user=user).first()
+        if kind in ['progress','finish','submit'] and task.status in ['todo','doing','blocked'] and participant and not participant.accepted_at:
+            change(user,task.pk,'accept',{'revision':task.revision,'body':'업무 내용과 기한 확인'})
+            task.refresh_from_db()
         return change(user,task.pk,kind,{'revision':task.revision,'body':'기록된 처리 사유',**data})
 
     def form_data(self,**extra):

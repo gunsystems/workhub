@@ -33,6 +33,10 @@ class UnifiedWorkTests(TestCase):
         return {'title':'교육','assignee':self.emp.pk,'start_date':self.day,'due_date':self.day,'status':'todo','importance':'normal','priority':3,'allocation':'shared','revision':0,'management_mode':'event',**extra}
     def act(self,user,kind,**extra):
         self.task.refresh_from_db()
+        participant=self.task.assignments.filter(employee__user=user).first()
+        if kind in ['progress','finish','submit'] and self.task.status in ['todo','doing','blocked'] and participant and not participant.accepted_at:
+            change(user,self.task.pk,'accept',{'revision':self.task.revision,'body':'업무 내용과 기한 확인'})
+            self.task.refresh_from_db()
         return change(user,self.task.pk,kind,{'body':'사유 기록','revision':self.task.revision,**extra})
     def test_representative_override_is_not_account_administration(self):
         ApprovalStep.objects.create(task=self.task,approver=self.lead,approver_name='팀장',position=1)

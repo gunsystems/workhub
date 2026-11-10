@@ -165,7 +165,17 @@ class Task(models.Model):
 
     @property
     def awaiting_acceptance(self):
-        return self.accepted_at is None and self.status in ['todo','doing','blocked']
+        if self.status not in ['todo','doing','blocked']: return False
+        if self.workflow_version == 2:
+            return any(item.accepted_at is None for item in self.assignments.all())
+        return self.accepted_at is None
+
+    @property
+    def acceptance_wait_since(self):
+        if self.workflow_version == 2:
+            pending=[item.assigned_at for item in self.assignments.all() if item.accepted_at is None]
+            return min(pending) if pending else None
+        return self.assigned_at if self.awaiting_acceptance else None
 
     @property
     def review_overdue(self):
@@ -372,6 +382,7 @@ class ChecklistItem(models.Model):
 
 
 class TaskParticipation(models.Model):
+    assigned_at = models.DateTimeField(default=timezone.now, editable=False)
     task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='assignments')
     employee = models.ForeignKey(Employee, on_delete=models.PROTECT)
     accepted_at = models.DateTimeField(null=True)

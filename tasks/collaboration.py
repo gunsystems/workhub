@@ -216,6 +216,7 @@ def edit_task(request, task=None, intake_override=None):
                                          for n,u in enumerate(form.cleaned_data['reviewers'],1)])
         if task and before['assignee_id'] != str(obj.assignee_id):
             obj.accepted_at=None; obj.assigned_at=timezone.now(); obj.save(update_fields=['accepted_at','assigned_at'])
+            obj.assignments.filter(employee=obj.assignee).update(accepted_at=None,progress=0,completed_at=None,assigned_at=obj.assigned_at)
         record(obj,request.user,'created' if is_new else 'changed',form.cleaned_data.get('change_reason') or '업무 등록 · 참여자 및 결재라인 설정',
                {'before':before,'previous_participation':prior,'previous_approval_line':old_line,
                 'participants':list(members),'approval_line':[user_name(u) for u in form.cleaned_data['reviewers']]})
@@ -263,12 +264,12 @@ class ActionForm(forms.Form):
 
 @login_required
 def action(request,pk,kind):
-    titles={'accept':'배정 확인','progress':'진행 보고','finish':'내 수행 완료','submit':'완료 보고 제출','review':'결재 검토',
+    titles={'accept':'배정 확인','progress':'진행 보고','finish':'업무 수행 완료','submit':'완료 보고 제출','review':'결재 검토',
             'comment':'질문 · 의견','override':'대표 직권 처리','cancel':'업무 취소','recall':'완료 보고 회수',
             'delegate':'결재 인계 · 대결','handover':'총괄 담당자 인계'}
     if kind not in titles: raise PermissionDenied
     task=get_object_or_404(visible_tasks(request.user),pk=pk,workflow_version=2)
-    if task.management_mode=='event' and kind=='submit': titles['submit']='일정 수행 완료'
+    if kind=='submit': titles['submit']='완료 보고 제출' if task.approval_steps.exists() else '업무 완료'
     form=ActionForm(request.POST if request.method=='POST' else None,initial={'revision':task.revision})
     form.fields['replacement'].queryset=users().filter(employee__is_active=True)
     if kind!='progress': form.fields.pop('progress')
@@ -318,8 +319,14 @@ def _change(user,pk,kind,data):
     elif kind in ['accept','progress','finish','submit']:
         if not participant: raise PermissionDenied
         if not active: raise ValidationError('진행 가능한 업무만 수행·보고할 수 있습니다.')
-        if not participant.accepted_at: participant.accepted_at=timezone.now()
-        if kind=='accept': event='accepted'
+        if kind == 'accept':
+            if participant.accepted_at: raise ValidationError('이미 배정 확인한 업무입니다.')
+            participant.accepted_at=timezone.now()
+            participant.progress=max(participant.progress,1)
+            event='accepted'
+        elif not participant.accepted_at:
+            raise ValidationError('업무 내용과 기한을 확인하고 먼저 배정 확인을 완료하세요.')
+        if kind=='accept': pass
         elif kind=='progress':
             if data.get('progress') is None: raise ValidationError('진행률을 입력하세요.')
             participant.progress=data['progress']; participant.completed_at=None; event='progress'
@@ -329,7 +336,7 @@ def _change(user,pk,kind,data):
             if task.assignee.user_id!=user.pk: raise PermissionDenied
             if task.status=='blocked': raise ValidationError('보류 중인 업무는 업무 책임자가 보류를 해제한 뒤 완료 보고하세요.')
             if task.assignments.exclude(pk=participant.pk).filter(completed_at__isnull=True).exists():
-                raise ValidationError('공동 수행자 모두가 내 수행 완료를 처리한 후 취합 보고하세요.')
+                raise ValidationError('공동 수행자 모두가 업무 수행 완료를 처리한 후 완료 보고를 제출하세요.')
             if task.checklist.filter(required=True,checked=False,retired=False).exists(): raise ValidationError('필수 체크리스트를 완료하세요.')
             participant.progress=100; participant.completed_at=timezone.now()
             task.approval_steps.update(decision='pending',decided_at=None)
@@ -340,10 +347,11 @@ def _change(user,pk,kind,data):
             event='submitted'
         participant.save()
         task.progress=round(sum(task.assignments.values_list('progress',flat=True))/task.assignments.count())
+        if task.assignments.filter(accepted_at__isnull=False).exists(): task.progress=max(task.progress,1)
         if active and task.status not in ['review','done']:
             task.status='blocked' if task.status=='blocked' else 'doing'
             task.progress=min(task.progress,99)
-        task.last_report_at=timezone.now()
+        if kind != 'accept': task.last_report_at=timezone.now()
         if task.assignee.user_id==user.pk: task.accepted_at=participant.accepted_at
     elif kind=='review':
         if not can_review(user,task): raise PermissionDenied
@@ -413,7 +421,7 @@ def _change(user,pk,kind,data):
         if replacement.employee.pk==task.assignee_id: raise ValidationError('현재 담당자와 다른 직원을 선택하세요.')
         if task.approval_steps.filter(approver=replacement).exists(): raise ValidationError('결재자에게 수행 업무를 인계할 수 없습니다.')
         old=task.assignee; task.assignee=replacement.employee; task.accepted_at=None; task.assigned_at=timezone.now()
-        TaskParticipation.objects.get_or_create(task=task,employee=task.assignee)
+        TaskParticipation.objects.update_or_create(task=task,employee=task.assignee,defaults={'accepted_at':None,'progress':0,'completed_at':None,'assigned_at':task.assigned_at})
         task.assignments.filter(employee=old).delete()
         data={**data,'body':f'{old} → {task.assignee}\n'+data['body']}; event='handover'
     else: raise ValidationError('지원하지 않는 처리입니다.')

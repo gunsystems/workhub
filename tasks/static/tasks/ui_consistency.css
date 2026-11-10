@@ -119,3 +119,16 @@
 .native-month-control.is-enhanced input[type=month]{opacity:0;position:relative;z-index:1;cursor:pointer}
 .app-shell .native-month-control.is-enhanced .native-month-value{position:absolute;inset:0;display:flex;align-items:center;padding:0 14px;pointer-events:none;color:var(--text);font-size:13px;font-weight:600;line-height:1.4}
 @media(max-width:700px){.app-shell .native-month-control.is-enhanced .native-month-value{font-size:16px}}
+
+.app-shell .assignment-callout{padding:18px 20px;margin:0 0 24px;border:1px solid #e6c36f;border-left:5px solid #bd8b23;border-radius:9px;background:#fff9e9;color:#705313}
+.app-shell .assignment-callout p{margin:8px 0;color:#775f2d;font-size:13px}
+.app-shell .assignment-callout .button{margin-top:8px}
+.app-shell .assignment-wait{display:block;margin-top:6px;color:#94631e;font-size:12px;line-height:1.7}
+.app-shell main .button:disabled{cursor:default;background:#f0f3f2;color:#738079;border-color:#dce3df;box-shadow:none}
+
+.app-shell .assignment-guide{margin:0 0 24px;padding:16px 18px;background:#f5f8fc;border:1px solid #e1e8f0;border-radius:9px}
+.app-shell .assignment-guide h3{margin:0 0 12px;font-size:14px}
+.app-shell .assignment-guide ol{display:flex;gap:8px 18px;flex-wrap:wrap;list-style:none;padding:0;margin:0;counter-reset:flow}
+.app-shell .assignment-guide li{counter-increment:flow;margin:0;font-size:12px;color:#53677b}
+.app-shell .assignment-guide li:before{content:counter(flow) ' · ';font-weight:700;color:#326f59}
+.app-shell .assignment-guide p{font-size:13px;line-height:1.8;margin-top:12px;color:#52677c}

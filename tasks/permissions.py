@@ -54,7 +54,7 @@ def visible_tasks(user):
         team = performing_department(employee.department_id) if employee else Q(pk__in=[])
         tasks = tasks.filter(team | involved) if employee else tasks.none()
     tasks = tasks.exclude(Q(status='draft') & ~Q(creator=user))
-    return Task.objects.filter(pk__in=tasks.values('pk')).select_related('assignee__department','assignee__user','project','category')
+    return Task.objects.filter(pk__in=tasks.values('pk')).select_related('assignee__department','assignee__user','project','category').prefetch_related('assignments')
 
 
 def assignable_employees(user):
