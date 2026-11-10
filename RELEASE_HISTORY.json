@@ -3,6 +3,16 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.12.6",
+      "status": "deployment_pending",
+      "release_notes": "releases/v0.12.6.md",
+      "migrations": [],
+      "tests": 431,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42911567000",
+      "source_commit": "1492e041a54d0417a9299f1ad752badf28c72453",
+      "browser_verification": "Actual iOS verification pending; deployment UI timed out twice; live remains 0.12.5."
+    },
+    {
       "version": "0.12.5",
       "status": "live_ui_verification_pending_login",
       "release_notes": "releases/v0.12.5.md",
