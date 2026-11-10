@@ -4,13 +4,31 @@
   "releases": [
     {
       "version": "0.11.0",
-      "status": "in_validation",
+      "status": "live_verified",
       "release_notes": "releases/v0.11.0.md",
       "test_guide": "releases/v0.11.0-test-guide.md",
       "references": "releases/v0.11.0-references.md",
       "migrations": [
         "0029_work_requests_and_resource_allocation"
-      ]
+      ],
+      "tests": 388,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42778224779",
+      "source_commit": "5653f5d9aa6e4edd7d2657670a931df729b23f88",
+      "initial_deploy_id": "dep-dbpcnldbedkc738cnf40",
+      "initial_runtime_commit": "82425ee5abf3ccf5b57c9a031cfca0fc9b10503f",
+      "backup": "/var/data/backups/workhub-pre-v0110-20261110T074720571457Z.sqlite3",
+      "backup_integrity": "ok",
+      "health": "ok",
+      "external_test_messages_sent": false,
+      "deploy_id": "dep-dbpcqe142hec73c9o9i0",
+      "live_at": "2026-11-10T16:53:25+09:00",
+      "browser_checked": [
+        "administrator_login",
+        "register_choices",
+        "cooperation_form",
+        "conditional_support_required_fields"
+      ],
+      "css_followup": "verified"
     },
     {
       "version": "0.10.0",
