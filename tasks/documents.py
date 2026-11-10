@@ -109,7 +109,7 @@ def document_add(request, kind, pk):
             except RepositoryError as exc:
                 form.add_error(None,str(exc))
             else:
-                messages.success(request,'파일 업로드가 완료되었습니다.' if form.cleaned_data.get('file') else '자료 링크를 등록했습니다.',extra_tags='upload-success')
+                messages.success(request,'파일 업로드가 완료되었습니다.' if form.cleaned_data.get('file') else '자료 링크를 등록했습니다.',extra_tags='upload-success document-upload')
                 return redirect(parent_url(kind,obj)+'#work-documents')
     return render(request,'tasks/document_form.html',{'form':form,'parent':obj,'back_url':parent_url(kind,obj)})
 

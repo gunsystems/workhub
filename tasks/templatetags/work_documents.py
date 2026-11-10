@@ -14,4 +14,4 @@ def work_documents(context,kind,obj):
         from tasks.permissions import visible_requests
         sources=WorkDocument.objects.filter(work_request__in=visible_requests(request.user).filter(task=obj),archived_at__isnull=True)
     return {'documents':documents,'source_documents':sources,'kind':kind,'parent':obj,
-        'can_add_document':can_add(request.user,kind,obj),'request':request}
+        'can_add_document':can_add(request.user,kind,obj),'request':request,'messages':context.get('messages',[])}

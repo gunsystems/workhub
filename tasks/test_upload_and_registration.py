@@ -56,3 +56,4 @@ class UploadRegistrationTests(TestCase):
         with override_settings(GOOGLE_DRIVE_CREDENTIALS_FILE='example',GOOGLE_DRIVE_SHARED_DRIVE_ID='drive'),patch('tasks.drive_storage.DriveClient.__init__',return_value=None),patch('tasks.drive_storage.DriveClient.upload',return_value='drive/probe'):
             r=self.client.post(f'/work/documents/task/{self.task.pk}/add/',{'kind':'reference','file':SimpleUploadedFile('guide.txt',b'example')},follow=True)
         self.assertContains(r,'파일 업로드가 완료되었습니다.');self.assertContains(r,'role="status"')
+        html=r.content.decode();self.assertLess(html.index('id="work-documents"'),html.index('파일 업로드가 완료되었습니다.'))
