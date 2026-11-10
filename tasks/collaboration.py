@@ -270,7 +270,7 @@ def action(request,pk,kind):
     if kind not in titles: raise PermissionDenied
     task=get_object_or_404(visible_tasks(request.user),pk=pk,workflow_version=2)
     if kind=='submit': titles['submit']='완료 보고 제출' if task.approval_steps.exists() else '업무 완료'
-    form=ActionForm(request.POST if request.method=='POST' else None,initial={'revision':task.revision})
+    form=ActionForm(request.POST if request.method=='POST' else None,initial={'revision':task.revision,**({'body':'업무 내용과 기한을 확인했습니다.'} if kind=='accept' else {})})
     form.fields['replacement'].queryset=users().filter(employee__is_active=True)
     if kind!='progress': form.fields.pop('progress')
     if kind not in ['review','override']: form.fields.pop('quality_score')
@@ -281,7 +281,7 @@ def action(request,pk,kind):
         try: change(request.user,pk,kind,form.cleaned_data)
         except ValidationError as exc: form.add_error(None,exc)
         else: return redirect('task_detail',pk=pk)
-    return render(request,'tasks/action.html',{'task':task,'form':form,'title':titles[kind]})
+    return render(request,'tasks/action.html',{'task':task,'form':form,'title':titles[kind],'hint':'업무 내용과 기한을 확인한 뒤 저장하세요. 배정 확인 후 진행률이 최소 1%로 표시되고 진행 보고·완료 처리가 가능합니다.' if kind=='accept' else ''})
 
 
 def change(user,pk,kind,data):
