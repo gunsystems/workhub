@@ -10,6 +10,11 @@ class RequireMFA:
 
     def __call__(self, request):
         if request.user.is_authenticated:
+            pending_id=request.session.get('pending_mfa_user')
+            if pending_id is not None and str(pending_id)!=str(request.user.pk):
+                from django.contrib.auth import logout
+                logout(request)
+                return redirect('login')
             if not local_account_allowed(request.user):
                 from django.contrib.auth import logout
                 logout(request)
