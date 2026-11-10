@@ -10,7 +10,7 @@ def official_detail(request,task):
     from .permissions import visible_requests
     from .google_calendar import official_allowed
     from .calendar_views import task_calendar_registered
-    steps=list(task.approval_steps.all())
+    steps=list(task.approval_steps.select_related('approver__employee__department'))
     current=next((s for s in steps if s.decision!='approved'),None)
     conflicts=[]
     if task.activity_start and task.activity_end:
@@ -24,7 +24,7 @@ def official_detail(request,task):
         'can_edit':can_edit(request.user,task) and task.status not in ['review','done','cancelled'],
         'can_report':can_report(request.user,task),'can_review':can_review(request.user,task),
         'primary':task.assignee.user_id==request.user.pk,'owner':task.creator_id==request.user.pk,
-        'executive':can_override_work(request.user),'events':task.events.all(),
+        'executive':can_override_work(request.user),'events':task.events.select_related('author__employee__department'),
         'group_tasks':visible_tasks(request.user).filter(group_key=task.group_key) if task.group_key else [],
         'checklist':task.checklist.filter(retired=False),
         'can_export_calendar':official_allowed(request.user,task),'calendar_registered':task_calendar_registered(request.user,task),

@@ -62,3 +62,44 @@
 .app-shell .task-cancelled-notice strong{font-size:16px}.app-shell .task-cancelled-notice p{margin:8px 0 0;font-size:13px;line-height:1.8}
 
 .app-shell .calendar .event.cancelled{padding:7px 10px}.app-shell .calendar .event.cancelled .event-cancelled-line{display:block;margin:0;color:#676773;font-size:12px;font-weight:600;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Shared mobile controls: flex-basis must never become a field's vertical height. */
+.app-shell :is(.workspace-toolbar,.filters,.audit-filter) label> :is(input,select){flex:0 0 auto;width:100%;min-width:0;max-width:100%}
+.app-shell :is(.workspace-toolbar,.filters,.audit-filter) input:is([type=date],[type=month],[type=time],[type=datetime-local]){display:block;box-sizing:border-box;min-inline-size:0;max-inline-size:100%;text-align:left}
+.app-shell .heading>.workspace-actions{margin-top:0}
+.app-shell .schedule-summary{margin:0 0 20px;padding:16px 20px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.app-shell .schedule-meta{display:flex;gap:16px 28px;flex-wrap:wrap;margin:0;padding:0}
+.app-shell .schedule-meta>div{display:flex;align-items:baseline;gap:8px;min-width:0}
+.app-shell .schedule-meta dt{font-size:12px;color:#6c7d8e}.app-shell .schedule-meta dd{margin:0;font-size:13px;color:#33485a}
+.app-shell .schedule-summary .workspace-actions{margin-top:14px}
+.app-shell .schedule-late-note{margin:12px 0 0;color:#a34934;font-size:12px}
+.app-shell .task-monitor-note{margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid var(--line);font-size:12px;line-height:1.8;color:#65788a}
+.app-shell .detail .approval-line{padding:0;gap:12px;margin:12px 0 24px;list-style:none}
+.app-shell .approval-line li{position:relative;display:flex;flex-direction:column;gap:6px;min-width:0;flex:0 1 250px;box-sizing:border-box;margin:0;padding:14px 16px;background:#f7faf8;border:1px solid #dce7e1;border-radius:8px;line-height:1.6;overflow-wrap:anywhere}
+.app-shell .approval-stage{font-size:11px;font-weight:700;color:#286b54}
+.app-shell .approval-line strong{font-size:13px;color:#334a40}
+.app-shell .approval-state{font-size:12px;color:#718174}
+.app-shell .approval-empty{display:flex;gap:8px 16px;flex-wrap:wrap;padding:14px 16px;background:#f1f6f3;border-radius:8px;color:#3b6050;font-size:13px;line-height:1.7}
+.app-shell .approval-empty span{color:#647a6e}
+.app-shell .timeline-item{min-width:0;overflow-wrap:anywhere}
+.app-shell .timeline-item .event-time{display:block;float:none;margin-top:7px;color:#7f8da0;font-size:12px;line-height:1.6}
+.app-shell .document-panel .section-heading{padding:0}
+@media(max-width:700px){
+ .app-shell :is(.filters,.audit-filter){display:grid;grid-template-columns:minmax(0,1fr);align-items:end}
+ .app-shell :is(.filters,.audit-filter)>label,.app-shell .audit-filter>div{width:100%;min-width:0;flex:none}
+ .app-shell :is(.workspace-toolbar,.filters,.audit-filter) :is(input:not([type=hidden]):not([type=checkbox]):not([type=radio]),select){flex:0 0 auto;height:44px;min-height:44px;font-size:16px;box-sizing:border-box}
+ .app-shell .filters>.button,.app-shell .audit-filter>.button{width:100%;min-height:44px}
+ .app-shell .filters>.reset{justify-self:start;padding:8px 0}
+ .app-shell .heading .workspace-actions{display:flex;gap:10px;flex-wrap:wrap}
+ .app-shell .workspace-actions{gap:10px}
+ .app-shell .workspace-actions>.button{max-width:100%;white-space:normal;text-align:center}
+ .app-shell .schedule-summary{padding:14px 16px}
+ .app-shell .schedule-meta{display:grid;gap:8px}
+ .app-shell .schedule-meta>div{display:grid;grid-template-columns:48px minmax(0,1fr)}
+ .app-shell .approval-line{flex-direction:column}
+ .app-shell .approval-line li{flex:none;width:100%}
+ .app-shell .approval-line li+li:before{content:'↓';position:absolute;top:-17px;left:20px;font-size:12px;color:#748d7f}
+ .app-shell .document-panel .section-heading{gap:14px;margin-bottom:16px}
+ .app-shell .timeline-item{padding:16px 0}
+ input[type=date]::-webkit-date-and-time-value,input[type=month]::-webkit-date-and-time-value{text-align:left;min-width:0}
+}

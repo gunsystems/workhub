@@ -71,7 +71,7 @@ def detail(request,pk):
         from .collaboration_views import official_detail
         return official_detail(request,task)
     sensitive = is_company_admin(request.user) or can_review(request.user,task) or task.assignee.user_id == request.user.pk
-    events = task.events.all()
+    events = task.events.select_related('author__employee__department')
     if not sensitive:
         events = events.exclude(kind__in=['approved','feedback','returned'])
     from .google_calendar import official_allowed
