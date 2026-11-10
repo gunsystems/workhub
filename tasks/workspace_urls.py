@@ -2,8 +2,9 @@ from django.urls import path
 from . import collaboration,collaboration_views,personal,calendar_views,hiworks_views,work_series,subscriptions,reports
 from . import audit_views
 from . import notice_views
-from . import schedule_control
+from . import schedule_control,requests as work_requests
 urlpatterns=[
+    path('register/',work_requests.register,name='work_register'),
     path('schedule-control/',schedule_control.control_view,name='schedule_control'),
     path('schedule-control/policy/',schedule_control.policy_view,name='deadline_policy'),
     path('schedule-control/expectations/new/',schedule_control.expectation_new,name='schedule_expectation_new'),

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from tasks import views, operations
+from tasks import views, operations, requests as work_requests
 from .health import health
 from accounts.views import sign_in
 urlpatterns = [path('work/',include('tasks.workspace_urls')),path('admin/login/',sign_in),path('accounts/',include('accounts.urls')),path('guide/',operations.guide,name='guide'),path('healthz/',health,name='health'),
@@ -9,11 +9,15 @@ path('projects/',operations.projects,name='projects'),
 path('projects/new/',operations.project_edit,name='project_new'),
 path('projects/<int:pk>/',operations.project_detail,name='project_detail'),
 path('projects/<int:pk>/edit/',operations.project_edit,name='project_edit'),
-path('intake/',operations.intake_list,name='intake_list'),
-path('intake/new/',operations.intake_new,name='intake_new'),
-path('intake/<int:pk>/',operations.intake_detail,name='intake_detail'),
-path('intake/<int:pk>/assign/',operations.intake_assign,name='intake_assign'),
-path('intake/<int:pk>/close/',operations.intake_close,name='intake_close'),
+path('intake/',work_requests.intake_list,name='intake_list'),
+path('intake/new/',work_requests.intake_new,name='intake_new'),
+path('intake/<int:pk>/',work_requests.intake_detail,name='intake_detail'),
+path('intake/<int:pk>/assign/',work_requests.intake_assign,name='intake_assign'),
+path('intake/<int:pk>/action/<str:action>/',work_requests.request_action,name='request_action'),
+path('intake/<int:pk>/staffing/',work_requests.staffing_edit,name='request_staffing'),
+path('intake/notifications/<int:pk>/read/',work_requests.read_notification,name='read_request_notification'),
+path('intake/<int:pk>/edit/',work_requests.intake_edit,name='intake_edit'),
+path('intake/<int:pk>/close/',work_requests.intake_close,name='intake_close'),
 path('alerts/',operations.alerts,name='alerts'),
 path('tasks/<int:pk>/accept/',operations.accept,name='task_accept'),
 path('tasks/<int:pk>/checklist/new/',operations.checklist_add,name='checklist_add'),

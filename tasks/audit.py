@@ -9,7 +9,7 @@ _actor = ContextVar('workhub_audit_actor', default=None)
 BUSINESS = {'Task','Department','Employee','Project','WorkCategory','WorkRequest','ChecklistItem',
             'TaskParticipation','ApprovalStep','EmployeeFeedback','PeriodReport','ReportSubmission',
             'ReportReview','ReportFile','CalendarExportPolicy','WorkSeries','WorkOccurrence','Notice',
-            'ScheduleExpectation','ScheduleOutcome','DeadlinePolicy'}
+            'ScheduleExpectation','ScheduleOutcome','DeadlinePolicy','RequestEvent','RequestAllocation'}
 PRIVATE = {'PersonalBoard','PersonalColumn','PersonalCard','PersonalTag','PersonalSchedule'}
 ACCOUNT_FIELDS = {'user_id','employee_id','action','reason','actor_id','actor_name','created_at'}
 
@@ -51,6 +51,7 @@ def values(obj):
         if field.get_internal_type() in ['DateTimeField','DateField','TimeField']:
             value=value.isoformat() if value else None
         elif field.get_internal_type() == 'FileField': value=bool(value)
+        elif field.get_internal_type() == 'UUIDField':value=str(value) if value else None
         result[str(field.verbose_name) if not field.is_relation else field.attname]=value
     return result
 

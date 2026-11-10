@@ -116,5 +116,11 @@ def can_manage_project(user, project):
 
 def visible_requests(user):
     from .models import WorkRequest
-    requests = WorkRequest.objects.filter(department__in=visible_departments(user)).select_related('department','project','task')
-    return requests if is_manager(user) else requests.filter(creator=user)
+    requests=WorkRequest.objects.all()
+    if not can_view_company(user):
+        emp=profile(user)
+        if not emp:return requests.none()
+        involved=Q(creator=user)|Q(coordinator__user=user)|Q(task__assignee__user=user)|Q(task__participants__user=user)
+        if emp.role=='manager' or emp.position=='leader':involved|=Q(department_id=emp.department_id)
+        requests=requests.filter(involved)
+    return WorkRequest.objects.filter(pk__in=requests.values('pk')).select_related('department','source_department','coordinator__user','preferred_employee','creator','project','task')

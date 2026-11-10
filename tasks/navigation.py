@@ -36,7 +36,8 @@ def navigation(request):
         administration.append(item('하이웍스 자동 연동','/work/hiworks/','users',path=='/work/hiworks/'))
     if administration: groups.append({'label':'관리자 전용','items':administration,'collapsible':True,'open':any(i['active'] for i in administration)})
     current=next((i['label'] for group in groups for i in group['items'] if i['active']),'업무 공간')
-    if path=='/work/calendar/subscription/': current='하이웍스 일정 연결'
+    if path=='/work/register/': current='업무 등록'
+    elif path=='/work/calendar/subscription/': current='하이웍스 일정 연결'
     elif path=='/work/calendar/': current='Google Calendar 연결'
     from .version import VERSION
     return {'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username()}

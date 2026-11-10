@@ -100,6 +100,7 @@ class WorkCategory(models.Model):
 
 
 class Task(models.Model):
+    creation_kind = models.CharField("등록 구분",max_length=12,default="self",choices=[("self","내 업무"),("request","업무 요청"),("cooperation","업무협조 요청")])
     assignment_email = models.BooleanField('이메일로 배정 알림',default=True)
     assignment_messenger = models.BooleanField('하이웍스 메신저로 배정 알림',default=True)
     start_time = models.TimeField('시작 시간', null=True, blank=True)
@@ -282,6 +283,24 @@ class EmployeeFeedback(models.Model):
 
 
 class WorkRequest(models.Model):
+    submission_key=models.UUIDField(null=True,blank=True,unique=True,editable=False)
+    parent_request=models.ForeignKey('self',on_delete=models.SET_NULL,null=True,blank=True,related_name='followups')
+    request_kind = models.CharField('요청 구분',max_length=16,default='legacy',choices=[('legacy','기존 요청'),('cooperation','업무협조 요청'),('support','엔지니어 지원 요청')])
+    source_department = models.ForeignKey(Department,on_delete=models.PROTECT,null=True,blank=True,related_name='sent_requests',verbose_name='요청 부서')
+    coordinator = models.ForeignKey(Employee,on_delete=models.SET_NULL,null=True,blank=True,related_name='coordinated_requests',verbose_name='접수 책임자 · 대행자')
+    stage = models.CharField('접수 상태',max_length=16,default='pending',choices=[('pending','접수 대기'),('received','접수 확인'),('negotiating','협의 중'),('needs_info','보완 요청'),('rejected','지원 불가')])
+    customer = models.CharField('고객사',max_length=120,blank=True)
+    solution = models.CharField('지원 솔루션 · 필요 기술',max_length=240,blank=True)
+    requested_start_date = models.DateField('희망 투입 시작일',null=True,blank=True)
+    response_due_date = models.DateField('배정 회신 기한',null=True,blank=True)
+    headcount = models.PositiveSmallIntegerField('필요 인원',default=1,validators=[MinValueValidator(1),MaxValueValidator(100)])
+    preferred_employee = models.ForeignKey(Employee,on_delete=models.SET_NULL,null=True,blank=True,related_name='preferred_requests',verbose_name='희망 담당자')
+    location = models.CharField('작업 장소 · 접속 안내',max_length=200,blank=True)
+    resource_url = models.URLField('참고 자료 링크',max_length=1000,blank=True)
+    revision = models.PositiveIntegerField(default=0,editable=False)
+    confirmed_at = models.DateTimeField(null=True,blank=True)
+    confirmation_note = models.TextField(blank=True)
+
     title = models.CharField('요청명', max_length=160)
     description = models.TextField('요청 내용 · 완료 조건')
     department = models.ForeignKey(Department, on_delete=models.PROTECT, verbose_name='처리 부서')
@@ -298,10 +317,47 @@ class WorkRequest(models.Model):
         ordering = ['created_at','pk']
     @property
     def state(self):
-        return '배정 완료' if self.task_id else ('취소' if self.closed_at else '배정 대기')
+        if self.closed_at:return '취소'
+        if self.task_id:
+            if self.request_kind=='legacy':return '배정 완료'
+            if self.task.status=='cancelled':return '수행 업무 취소'
+            if self.task.status=='done':return '결과 확인 완료' if self.confirmed_at else '요청자 결과 확인 대기'
+            return '배정 완료 · '+self.task.get_status_display()
+        return '배정 대기' if self.request_kind=='legacy' and self.stage=='pending' else self.get_stage_display()
     @property
     def overdue(self):
-        return not self.task_id and not self.closed_at and self.requested_due_date < timezone.localdate()
+        return not self.task_id and not self.closed_at and self.stage!='rejected' and (self.response_due_date or self.requested_due_date) < timezone.localdate()
+
+
+class RequestEvent(models.Model):
+    request = models.ForeignKey(WorkRequest,on_delete=models.CASCADE,related_name='events')
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True)
+    actor_name = models.CharField(max_length=150)
+    action = models.CharField(max_length=40)
+    body = models.TextField()
+    snapshot = models.JSONField(default=dict)
+    created_at = models.DateTimeField(default=timezone.now)
+    class Meta:
+        ordering=['created_at','pk']
+
+
+class RequestNotification(models.Model):
+    request = models.ForeignKey(WorkRequest,on_delete=models.CASCADE,related_name='notifications')
+    event = models.ForeignKey(RequestEvent,on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.CASCADE)
+    read_at = models.DateTimeField(null=True)
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['event','user'],name='request_event_recipient')]
+
+
+class RequestAllocation(models.Model):
+    request = models.ForeignKey(WorkRequest,on_delete=models.CASCADE,related_name='staffing')
+    employee = models.ForeignKey(Employee,on_delete=models.PROTECT)
+    role = models.CharField('담당 역할',max_length=120,blank=True)
+    start_date = models.DateField('투입 시작일')
+    end_date = models.DateField('투입 종료일')
+    class Meta:
+        constraints=[models.UniqueConstraint(fields=['request','employee'],name='request_staffing_employee'),models.CheckConstraint(condition=models.Q(end_date__gte=models.F('start_date')),name='request_staffing_dates')]
 
 
 class ChecklistItem(models.Model):
