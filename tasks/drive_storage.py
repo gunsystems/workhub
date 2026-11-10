@@ -34,16 +34,26 @@ class DriveClient:
         try:
             from google.oauth2 import service_account
             from google.auth.transport.requests import AuthorizedSession
-            with open(settings.GOOGLE_DRIVE_CREDENTIALS_FILE, encoding='utf-8') as source:
+        except ImportError:
+            raise RepositoryError('서버 인증 라이브러리가 준비되지 않았습니다. 관리자에게 문의하세요.') from None
+        try:
+            with open(settings.GOOGLE_DRIVE_CREDENTIALS_FILE.strip(), encoding='utf-8-sig') as source:
                 info = json.load(source)
-            # Credential files are administrator supplied, but endpoints still stay fixed.
-            if info.get('type') != 'service_account' or info.get('token_uri') != 'https://oauth2.googleapis.com/token':
-                raise ValueError('Unexpected credential type or endpoint')
+        except FileNotFoundError:
+            raise RepositoryError('Render Secret Files에 workhub-drive.json 파일이 있는지 확인해 주세요. 환경변수의 파일 경로와 파일명이 일치해야 합니다.') from None
+        except (ValueError, UnicodeError):
+            raise RepositoryError('인증 JSON 형식이 올바르지 않습니다. 다운로드한 JSON 파일의 전체 내용을 Secret File에 저장해 주세요.') from None
+        except OSError:
+            raise RepositoryError('서버에서 인증 파일을 읽지 못했습니다. Secret File 설정을 확인해 주세요.') from None
+        # Credential files are administrator supplied, but endpoints still stay fixed.
+        if not isinstance(info,dict) or info.get('type') != 'service_account' or info.get('token_uri') != 'https://oauth2.googleapis.com/token':
+            raise RepositoryError('서비스 계정 JSON 키 파일인지 확인해 주세요. OAuth 클라이언트 파일이나 키 ID만으로는 연결할 수 없습니다.')
+        try:
             credentials = service_account.Credentials.from_service_account_info(
                 info, scopes=['https://www.googleapis.com/auth/drive'])
             self.session = AuthorizedSession(credentials, refresh_timeout=15)
         except Exception:
-            raise RepositoryError('자료 저장소 인증 설정을 확인해 주세요.') from None
+            raise RepositoryError('인증 JSON의 필수 항목 또는 비밀키 형식이 올바르지 않습니다. 원본 JSON 전체를 다시 저장해 주세요.') from None
         self.drive_id = settings.GOOGLE_DRIVE_SHARED_DRIVE_ID
 
     def request(self, method, path, **kwargs):
@@ -60,12 +70,17 @@ class DriveClient:
             raise RepositoryError('자료 저장소 응답을 받지 못했습니다. 잠시 후 다시 시도해 주세요.') from None
 
     def check(self):
+        # A My Drive folder is not a supported company repository. Check the
+        # shared-drive resource itself, then its root's upload capability.
+        with self.request('GET', 'drive/v3/drives/' + self.drive_id,
+                params={'fields':'id,name'}) as response:
+            drive=response_json(response)
         with self.request('GET', 'drive/v3/files/' + self.drive_id,
                 params={'supportsAllDrives':'true','fields':'id,name,mimeType,capabilities(canAddChildren)'}) as response:
             data = response_json(response)
         if data.get('mimeType') != 'application/vnd.google-apps.folder' or not data.get('capabilities',{}).get('canAddChildren'):
             raise RepositoryError('공유 드라이브의 파일 추가 권한을 확인해 주세요.')
-        return data.get('name', '업무자료')
+        return drive.get('name', '업무자료')
 
     def upload(self, name, content):
         # Bounded uploads avoid keeping large files in the web worker's memory.

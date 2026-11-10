@@ -42,6 +42,10 @@ class DocumentTests(TestCase):
         with patch('tasks.drive_storage.DriveClient.open') as cloud:
             self.assertEqual(self.client.get(f'/work/documents/{doc.pk}/download/').status_code,404)
             cloud.assert_not_called()
+    def test_legacy_task_page_also_lists_private_documents(self):
+        self.task.workflow_version=1;self.task.save();self.doc()
+        r=self.client.get(f'/tasks/{self.task.pk}/')
+        self.assertContains(r,'업무자료');self.assertContains(r,'자료.pdf');self.assertContains(r,'자료 추가')
     def test_download_is_authenticated_private_attachment(self):
         doc=self.doc()
         with patch('tasks.drive_storage.WorkhubStorage._open',return_value=ContentFile(b'file')):
@@ -138,6 +142,30 @@ class DocumentTests(TestCase):
 
 
 class StorageTests(SimpleTestCase):
+    def test_valid_service_account_key_constructs_client_without_network(self):
+        import json
+        from unittest.mock import mock_open
+        from cryptography.hazmat.primitives.asymmetric import rsa
+        from cryptography.hazmat.primitives import serialization
+        from google.auth.transport.requests import AuthorizedSession
+        key=rsa.generate_private_key(public_exponent=65537,key_size=2048)
+        info={'type':'service_account','client_email':'test@example.iam.gserviceaccount.com',
+              'private_key':key.private_bytes(serialization.Encoding.PEM,serialization.PrivateFormat.PKCS8,serialization.NoEncryption()).decode(),
+              'token_uri':'https://oauth2.googleapis.com/token'}
+        with override_settings(GOOGLE_DRIVE_CREDENTIALS_FILE='example.json'),patch('builtins.open',mock_open(read_data=json.dumps(info))):
+            client=DriveClient();self.assertEqual(client.session.credentials.service_account_email,info['client_email']);client.session.close()
+    def test_missing_secret_file_has_actionable_message_without_secret(self):
+        from google.auth.transport.requests import AuthorizedSession
+        with patch('builtins.open',side_effect=FileNotFoundError):
+            with self.assertRaises(RepositoryError) as error:DriveClient()
+        self.assertIn('Secret Files',str(error.exception))
+    def test_invalid_json_and_wrong_credential_kind_are_safe_errors(self):
+        from unittest.mock import mock_open
+        from google.auth.transport.requests import AuthorizedSession
+        for text in ['PRIVATE KEY broken JSON','{"type":"authorized_user","refresh_token":"SECRET"}']:
+            with patch('builtins.open',mock_open(read_data=text)):
+                with self.assertRaises(RepositoryError) as error:DriveClient()
+            self.assertNotIn('PRIVATE KEY',str(error.exception));self.assertNotIn('SECRET',str(error.exception))
     def test_legacy_local_files_readable_even_when_drive_configured(self):
         from django.conf import settings
         temp_root=Path(settings.BASE_DIR)/'.tmp';temp_root.mkdir(exist_ok=True)
@@ -163,6 +191,18 @@ class StorageTests(SimpleTestCase):
         f=SimpleUploadedFile('x.pdf',b'data')
         with self.assertRaises(RepositoryError):c.upload('x.pdf',f)
         self.assertEqual(c.request.call_count,1)
+
+    def test_connection_checks_shared_drive_resource_and_upload_permission(self):
+        for writable in [True,False]:
+            c=self.drive_client();responses=[]
+            for data in [{'id':'drive','name':'Workhub 업무자료'},
+                {'name':'Drive','mimeType':'application/vnd.google-apps.folder','capabilities':{'canAddChildren':writable}}]:
+                r=Mock();r.__enter__=Mock(return_value=r);r.__exit__=Mock();r.json.return_value=data;responses.append(r)
+            c.request=Mock(side_effect=responses)
+            if writable:self.assertEqual(c.check(),'Workhub 업무자료')
+            else:
+                with self.assertRaises(RepositoryError):c.check()
+            self.assertIn('/drives/',c.request.call_args_list[0].args[1])
 
     def test_upload_checks_size_and_checksum_before_accepting_file_id(self):
         import hashlib
