@@ -3,6 +3,23 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.13.0",
+      "status": "live_ui_verification_pending_login",
+      "release_notes": "releases/v0.13.0.md",
+      "migrations": [
+        "0032_assignment_ack_clock"
+      ],
+      "tests": 434,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42926683737",
+      "source_commit": "a4a64b8226c91f86c6112d56064649fdd659acf5",
+      "deploy_id": "dep-dbpqt0jl550s738l5vtg",
+      "live_at": "2026-11-11T08:54:52+09:00",
+      "backup": "/var/data/backups/workhub-pre-v0130-20261110T235446980949Z.sqlite3",
+      "backup_integrity": "ok",
+      "health": "ok",
+      "browser_verification": "Public health verified. Authenticated button interaction and actual mobile layout verification pending."
+    },
+    {
       "version": "0.12.7",
       "status": "live_ui_verification_pending_login",
       "release_notes": "releases/v0.12.7.md",
