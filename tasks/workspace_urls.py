@@ -1,9 +1,14 @@
 from django.urls import path
 from . import collaboration,collaboration_views,personal,calendar_views,hiworks_views,work_series,subscriptions,reports
 from . import audit_views
+from . import documents
 from . import notice_views
 from . import schedule_control,requests as work_requests
 urlpatterns=[
+    path('documents/storage/',documents.repository_status,name='repository_status'),
+    path('documents/<str:kind>/<int:pk>/add/',documents.document_add,name='document_add'),
+    path('documents/<int:pk>/download/',documents.document_download,name='document_download'),
+    path('documents/<int:pk>/archive/',documents.document_archive,name='document_archive'),
     path('register/',work_requests.register,name='work_register'),
     path('schedule-control/',schedule_control.control_view,name='schedule_control'),
     path('schedule-control/policy/',schedule_control.policy_view,name='deadline_policy'),

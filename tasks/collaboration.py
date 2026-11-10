@@ -30,6 +30,8 @@ class UserChoice(forms.ModelChoiceField):
 
 
 class OfficialTaskForm(TaskForm):
+    attachment=forms.FileField(label='참고 파일 첨부 · 최대 20MB',required=False,
+        help_text='소개자료·업무 요청서 등을 함께 등록합니다. 추가 자료는 업무 상세에서 관리하세요.')
     purpose=forms.ChoiceField(choices=[('self','내 업무'),('request','업무 요청')],required=False,widget=forms.HiddenInput)
     intake_revision=forms.IntegerField(required=False,widget=forms.HiddenInput)
     intake = forms.IntegerField(widget=forms.HiddenInput,required=False)
@@ -47,6 +49,15 @@ class OfficialTaskForm(TaskForm):
         locals()[f'stage_{number}'] = forms.TypedChoiceField(label=f'{number}번 결재자의 결재 단계', choices=[(n,f'{n}단계') for n in range(1,6)], coerce=int, required=False, initial=number,
             help_text='같은 단계의 결재자는 동시에 검토하고 모두 승인해야 다음 단계로 넘어갑니다.')
     del number
+
+    def clean_attachment(self):
+        value=self.cleaned_data.get('attachment')
+        if value:
+            from .documents import validate_file
+            from .drive_storage import configured
+            validate_file(value)
+            if not configured():raise ValidationError('자료 저장소 연결 후 파일을 첨부할 수 있습니다.')
+        return value
 
     def __init__(self, *args, user=None, request_intake=None, **kwargs):
         self.request_intake=request_intake
@@ -157,7 +168,7 @@ def edit_task(request, task=None, intake_override=None):
         initial.update(intake=intake.pk,title=intake.title,description=intake.description,completion_criteria=intake.description,
                        due_date=intake.requested_due_date,start_date=intake.requested_start_date or timezone.localdate(),project=intake.project_id,
                        customer=intake.customer,location=intake.location,intake_revision=intake.revision,purpose='request')
-    form = OfficialTaskForm(request.POST if request.method=='POST' else None, instance=task, user=request.user,initial=initial,request_intake=intake)
+    form = OfficialTaskForm(request.POST if request.method=='POST' else None, request.FILES or None, instance=task, user=request.user,initial=initial,request_intake=intake)
     if request.method=='POST' and form.is_valid():
         if intake:
             from .requests import claim
@@ -173,6 +184,16 @@ def edit_task(request, task=None, intake_override=None):
             obj.creation_kind='cooperation' if intake else form.cleaned_data.get('purpose') or 'self'
         obj.revision += 1
         obj.save()
+        reference=None
+        if form.cleaned_data.get('attachment'):
+            from .documents import add_document
+            from .drive_storage import RepositoryError
+            try:reference=add_document(request.user,'task',obj,{'file':form.cleaned_data['attachment'],'kind':'reference'})
+            except RepositoryError as exc:
+                form.add_error('attachment',str(exc))
+                response=render(request,'tasks/official_form.html',{'form':form,'task':task,'intake':intake})
+                transaction.set_rollback(True)
+                return response
         if intake:
             intake.task=obj; intake.assigned_at=timezone.now(); intake.save(update_fields=['task','assigned_at','revision'])
         members = form.cleaned_data['member_ids']
@@ -206,6 +227,10 @@ def edit_task(request, task=None, intake_override=None):
                           ['id','assignee','revision','accepted_at','last_report_at','submitted_at','completed_at','approved_at','quality_score']}
                 fields['assignee_id']=pk
                 clone=Task.objects.create(**fields)
+                if reference:
+                    from .models import WorkDocument
+                    WorkDocument.objects.create(task=clone,file=reference.file.name,name=reference.name,kind=reference.kind,
+                        size=reference.size,uploader=request.user,uploader_name=reference.uploader_name)
                 TaskParticipation.objects.create(task=clone,employee_id=pk)
                 clone.watchers.set(obj.watchers.all())
                 ApprovalStep.objects.bulk_create([ApprovalStep(task=clone,approver=s.approver,approver_name=s.approver_name,position=s.position,stage=s.stage) for s in obj.approval_steps.all()])

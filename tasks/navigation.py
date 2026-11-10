@@ -34,7 +34,12 @@ def navigation(request):
         administration.append(item('시스템 로그','/work/system-log/','shield',path=='/work/system-log/'))
         administration.append(item('관리자 계정','/accounts/administrators/','shield',path=='/accounts/administrators/'))
         administration.append(item('하이웍스 자동 연동','/work/hiworks/','users',path=='/work/hiworks/'))
+        administration.append(item('업무자료 저장소','/work/documents/storage/','folder',path=='/work/documents/storage/'))
     if administration: groups.append({'label':'관리자 전용','items':administration,'collapsible':True,'open':any(i['active'] for i in administration)})
+    if path=='/work/documents/storage/':
+        for group in groups:
+            for entry in group['items']:
+                if entry['href']=='/work/':entry['active']=False
     current=next((i['label'] for group in groups for i in group['items'] if i['active']),'업무 공간')
     if path=='/work/register/': current='업무 등록'
     elif path=='/work/calendar/subscription/': current='하이웍스 일정 연결'

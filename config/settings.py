@@ -26,7 +26,7 @@ LOGOUT_REDIRECT_URL = '/login/'
 
 WSGI_APPLICATION = 'config.wsgi.application'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STORAGES = {'default':{'BACKEND':'django.core.files.storage.FileSystemStorage'},'staticfiles':{'BACKEND':'whitenoise.storage.CompressedManifestStaticFilesStorage'}}
+STORAGES = {'default':{'BACKEND':'tasks.drive_storage.WorkhubStorage'},'staticfiles':{'BACKEND':'whitenoise.storage.CompressedManifestStaticFilesStorage'}}
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
@@ -82,6 +82,9 @@ WORKHUB_REQUIRE_HIWORKS = os.getenv('WORKHUB_REQUIRE_HIWORKS', '0' if DEBUG else
 MEDIA_ROOT = Path(os.getenv('WORKHUB_UPLOAD_PATH', str(Path(DATABASES['default']['NAME']).resolve().parent / 'private-uploads')))
 FILE_UPLOAD_MAX_MEMORY_SIZE = 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
+GOOGLE_DRIVE_CREDENTIALS_FILE = os.getenv('GOOGLE_DRIVE_CREDENTIALS_FILE', '')
+GOOGLE_DRIVE_SHARED_DRIVE_ID = os.getenv('GOOGLE_DRIVE_SHARED_DRIVE_ID', '')
+WORKHUB_DOCUMENT_MAX_BYTES = 20 * 1024 * 1024
 LOGGING = {'version':1,'disable_existing_loggers':False,
     'filters':{'subscription_tokens':{'()':'config.log_filters.SubscriptionTokenFilter'}},
     'loggers':{'django.request':{'filters':['subscription_tokens']},'django.server':{'filters':['subscription_tokens']}}}
