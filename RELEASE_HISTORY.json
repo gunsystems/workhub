@@ -3,15 +3,42 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.12.1",
+      "status": "live_verified",
+      "release_notes": "releases/v0.12.1.md",
+      "migrations": [],
+      "tests": 424,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42795883397",
+      "source_commit": "47b3e165a02a55d198b4e3694f8fadd3aebbb4bc",
+      "deploy_id": "dep-dbpep3h42hec73cemhsg",
+      "live_at": "2026-11-10T19:07:04+09:00",
+      "health": "ok",
+      "shared_drive_permission_verified": true,
+      "upload_download_verified": true,
+      "verification_document_id": 1,
+      "verification_task_id": 10,
+      "verification_bytes": 281,
+      "verification_sha256": "f919cd5052a31e8a6b449180d0d9e954f47e3fee53b341ffe56729205aa00357"
+    },
+    {
       "version": "0.12.0",
-      "status": "local_verified",
+      "status": "live_verified",
       "release_notes": "releases/v0.12.0.md",
       "migrations": [
         "0030_work_documents"
       ],
       "storage": "Google Drive shared drive",
       "legacy_local_files_preserved": true,
-      "tests": 417
+      "tests": 419,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42793431967",
+      "source_commit": "721685bdf0521f9285112501ed4d90415948b8a9",
+      "deploy_id": "dep-dbpegvjncjis73be10r0",
+      "live_at": "2026-11-10T18:49:43+09:00",
+      "backup": "/var/data/backups/workhub-pre-v0120-20261110T094933876414Z.sqlite3",
+      "backup_integrity": "ok",
+      "health": "ok",
+      "storage_check": "service account authentication and file-add permission verified",
+      "storage_permission_verified": true
     },
     {
       "version": "0.11.1",
