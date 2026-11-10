@@ -21,6 +21,7 @@ urlpatterns = [
     path('employees/<int:employee_id>/manage/', manage_account, name='manage_employee_account'),
     path('invitation-preview/<int:employee_id>/', views.invitation_preview, name='invitation_preview'),
     path('activate/<str:token>/', views.activate, name='activate'),
+    path('mfa/switch/', views.switch_account, name='switch_account'),
     path('mfa/setup/', views.mfa_setup, name='mfa_setup'),
     path('mfa/restore/', restore, name='mfa_restore'),
     path('mfa/verify/', views.mfa_verify, name='mfa_verify'),
