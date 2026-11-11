@@ -4,20 +4,30 @@
   "releases": [
     {
       "version": "0.16.1",
-      "status": "rollout_authorized_pending_deploy",
+      "status": "live_employee_view_verified",
       "release_notes": "releases/v0.16.1-weekly-draft.md",
       "migrations": [
         "0038_weekly_calendar_reports"
       ],
       "scope": "Weekly reports approved for rollout; leave remains superuser-only preview.",
-      "source_commit": "44f06e48aff5144d43889f4a2f10371226aa75c1",
+      "source_commit": "f52ae2c4bcb937a780fbdc4232eafde77ebd49bf",
       "pull_request": "https://github.com/gunsystems/workhub/pull/22",
       "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43025991696",
-      "validation": "Related suite 58 passed locally; final weekly suite14 passed; GitHub full regression514 and Node checks passed. Runtime mobile/browser review pending rollout."
+      "validation": "Related suite 58 passed locally; final weekly suite14 passed; GitHub full regression514 and Node checks passed. Runtime mobile/browser review pending rollout.",
+      "deploy_id": "dep-dbq6qv8ae00c73fp4qm0",
+      "live_at": "2026-11-11T22:29:39+09:00",
+      "release_ci": "https://github.com/gunsystems/workhub/actions/runs/43027218274",
+      "deployment": "Render dashboard succeeded/live; tasks0037 and0038 applied; employee-view login pending.",
+      "browser_verification": "Lee employee account: real current-week and next-week calendar drafts populated; weekly submission board opened. Input overflow absent at 360/390/768/1366px. No real report submitted during UI verification.",
+      "screenshots": [
+        "outputs/Workhub_v0161_주간보고_화면.png",
+        "outputs/Workhub_v0161_주간보고_PC.png",
+        "outputs/Workhub_v0161_주간보고_모바일.png"
+      ]
     },
     {
       "version": "0.16.0-preview",
-      "status": "ci_passed_awaiting_admin_preview_deploy",
+      "status": "live_admin_only_preview",
       "release_notes": "releases/v0.16.0-preview.md",
       "migrations": [
         "0037_leave_preview"
@@ -27,7 +37,8 @@
       "pull_request": "https://github.com/gunsystems/workhub/pull/21",
       "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43023090678",
       "validation": "21 targeted tests passed locally; GitHub Linux 500-test regression and Node checks succeeded. Local full run interrupted after CI success; no local full-pass claim.",
-      "deployment_blocker": "Render list_deploys returns internal error; dashboard remains loading; /work/leave/ still 404. No live verification yet."
+      "deployment_blocker": "Render list_deploys returns internal error; dashboard remains loading; /work/leave/ still 404. No live verification yet.",
+      "included_in_deploy": "dep-dbq6qv8ae00c73fp4qm0"
     },
     {
       "version": "0.15.4",
