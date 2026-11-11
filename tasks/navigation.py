@@ -35,6 +35,8 @@ def navigation(request):
     administration=[]
     if system_admin(user):
         administration.append(item('직원 관리','/accounts/employees/','users',path.startswith('/accounts/employees/') or path=='/accounts/departments/' or path.startswith('/admin/tasks/employee/')))
+    if user.is_staff or user.is_superuser:
+        administration.append(item('일정 · 업무 휴지통','/work/trash/','folder',path.startswith('/work/trash/')))
     if user.is_superuser:
         administration.append(item('휴가 관리 · 준비','/work/leave/','calendar',path.startswith('/work/leave/')))
         administration.append(item('시스템 로그','/work/system-log/','shield',path=='/work/system-log/'))

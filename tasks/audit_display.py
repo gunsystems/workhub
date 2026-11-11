@@ -13,7 +13,7 @@ KEY_LABELS={'task_id':'업무','employee_id':'직원','user_id':'계정','assign
     'result':'처리 결과','kind':'처리 종류','body':'내용','details':'상세 내용','action':'처리',
     'participants':'수행자','approval_line':'결재라인','private':'비공개 항목','task_title':'업무명',
     'employee_name':'직원명','channel':'전달 방법','status':'상태','recipient_count':'대상 직원 수',
-    'progress':'진행률','stage':'결재 단계','decision':'검토 결과','round':'보고 회차','before':'이전 내용','start_date':'시작일','due_date':'마감일','revision':'변경 차수','state':'상태','creator_name':'작성자','audience':'전달 대상','start_time':'시작 시간','timing':'발송 시점','supervisor_id':'직속 상위자','report_type':'보고 구분'}
+    'progress':'진행률','stage':'결재 단계','decision':'검토 결과','round':'보고 회차','before':'이전 내용','start_date':'시작일','due_date':'마감일','revision':'변경 차수','state':'상태','creator_name':'작성자','audience':'전달 대상','start_time':'시작 시간','timing':'발송 시점','supervisor_id':'직속 상위자','report_type':'보고 구분','is_deleted':'휴지통 이동','recoverable':'복구 가능','reason':'사유'}
 
 
 def readable(key,value):

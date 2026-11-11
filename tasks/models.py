@@ -99,7 +99,15 @@ class WorkCategory(models.Model):
     def __str__(self): return self.name
 
 
+class ActiveTaskManager(models.Manager):
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
+
+
 class Task(models.Model):
+    objects = ActiveTaskManager()
+    all_objects = models.Manager()
+    is_deleted = models.BooleanField(default=False, db_default=False, editable=False)
     creation_kind = models.CharField("등록 구분",max_length=12,default="self",choices=[("self","내 업무"),("request","업무 요청"),("cooperation","업무협조 요청")])
     assignment_email = models.BooleanField('이메일로 배정 알림',default=True)
     assignment_messenger = models.BooleanField('하이웍스로 배정 알림',default=True)
@@ -682,6 +690,16 @@ class ReportFile(models.Model):
     file = models.FileField(upload_to=private_report_path)
     name = models.CharField(max_length=200)
     uploaded_at = models.DateTimeField(default=timezone.now)
+
+class TaskTrash(models.Model):
+    task = models.ForeignKey(Task,on_delete=models.PROTECT,related_name='trash_records')
+    previous_status = models.CharField(max_length=10)
+    reason = models.CharField(max_length=1000)
+    deleted_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='+')
+    deleted_at = models.DateTimeField(default=timezone.now)
+    restored_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='+')
+    restored_at = models.DateTimeField(null=True)
+
 
 from .document_models import WorkDocument
 from .quick_models import QuickRequest, QuickEvent, QuickDelivery

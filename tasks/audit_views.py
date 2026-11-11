@@ -9,7 +9,7 @@ from .models import SystemAudit, AssignmentMail
 from .permissions import is_company_admin
 from .audit_display import decorate
 
-ACTIONS=[('','전체 작업'),('create','생성'),('update','변경'),('delete','삭제'),('work_event','업무 처리'),
+ACTIONS=[('','전체 작업'),('create','생성'),('update','변경'),('delete','삭제'),('restore','복구'),('work_event','업무 처리'),
          ('login','로그인'),('logout','로그아웃'),('session_timeout','무활동 만료'),('mail_sent','메일 발송'),
          ('auto_supervisor','직속 상위자 자동 연결'),('notice_scheduled','공지 발송 확정'),('notice_cancelled','공지 발송 취소'),('notice_published','공지 게시'),('notice_delivery','공지 전달 결과'),('mail_unknown','메일 결과 확인 필요'),('mail_skipped','메일 발송 제외')]
 

@@ -62,7 +62,7 @@ def access_token(connection):
 
 def official_allowed(user,task):
     return bool(CalendarExportPolicy.objects.filter(pk=1,allow_official=True).exists()
-                and user.is_active and task.status not in ['draft','cancelled']
+                and user.is_active and not task.is_deleted and task.status not in ['draft','cancelled']
                 and (task.assignee.user_id==user.pk or task.participants.filter(user=user,is_active=True).exists()))
 
 
@@ -138,7 +138,9 @@ def payload(export):
 def sync_export(connection,export,token):
     data=payload(export)
     calendar_id=connection.calendar_id
-    event_id=export.event_id if export.calendar_id==calendar_id and export.event_id else 'a'+hashlib.sha256(f'{connection.user_id}:{"card" if export.card_id else "task"}:{export.card_id or export.task_id}'.encode()).hexdigest()
+    restored=export.task.trash_records.filter(restored_at__isnull=False).order_by('-pk').values_list('pk',flat=True).first() if export.task_id else None
+    generation=f':restore:{restored}' if restored else ''
+    event_id=export.event_id if export.calendar_id==calendar_id and export.event_id else 'a'+hashlib.sha256((f'{connection.user_id}:{"card" if export.card_id else "task"}:{export.card_id or export.task_id}'+generation).encode()).hexdigest()
     endpoint='https://www.googleapis.com/calendar/v3/calendars/'+quote(calendar_id,safe='')+'/events/'+event_id
     if data is None:
         if export.event_id and export.calendar_id==calendar_id:

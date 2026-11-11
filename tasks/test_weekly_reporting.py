@@ -75,7 +75,7 @@ class WeeklyReportTests(TestCase):
     def test_board_render_and_no_friday_submission_restriction(self):
         self.client.post('/work/reports/weekly/new/',self.post(action='submit'));self.client.force_login(self.leader)
         response=self.client.get('/work/reports/',{'week':str(self.week+timedelta(days=4))})
-        self.assertContains(response,'주간보고 제출 현황');self.assertContains(response,'제출 완료');self.assertEqual(response.context['start'],self.week)
+        self.assertContains(response,'주간업무보고 제출 현황');self.assertContains(response,'제출 완료');self.assertEqual(response.context['start'],self.week)
     def test_collection_query_count_does_not_grow_with_tasks(self):
         for i in range(30):self.task('일정'+str(i),self.week)
         with self.assertNumQueries(2):calendar_draft(self.worker,self.week)

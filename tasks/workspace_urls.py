@@ -6,8 +6,10 @@ from . import notice_views
 from . import surveys,assessments
 from . import quick
 from . import schedule_control,requests as work_requests
-from . import leave_views
+from . import leave_views,task_trash
 urlpatterns=[
+    path('trash/',task_trash.listing,name='task_trash'),
+    path('tasks/<int:pk>/delete/',task_trash.remove,name='task_delete'),
     path("leave/",leave_views.overview,name="leave_list"),
     path("leave/new/",leave_views.new,name="leave_new"),
     path("leave/settings/",leave_views.settings_view,name="leave_settings"),

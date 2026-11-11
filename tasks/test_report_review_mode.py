@@ -50,4 +50,4 @@ class EmployeeReportReviewTests(TestCase):
     def test_report_form_does_not_offer_grouping(self):
         response=self.client.get('/work/reports/weekly/new/')
         self.assertNotContains(response,'data-report-grouping')
-        self.assertContains(response,'주간보고 작성')
+        self.assertContains(response,'주간업무보고 작성')
