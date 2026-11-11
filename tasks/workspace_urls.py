@@ -43,6 +43,7 @@ urlpatterns=[
     path('system-log/',audit_views.audit_list,name='system_audit'),
     path('reports/',reports.report_list,name='period_reports'),
     path('reports/weekly/new/',reports.report_edit,{'calendar_seed':True},name='weekly_report_new'),
+    path('reports/team/new/',reports.report_edit,{'team_seed':True},name='team_report_new'),
     path('reports/new/',reports.report_edit,name='period_report_new'),
     path('reports/<int:pk>/',reports.report_detail,name='period_report_detail'),
     path('reports/<int:pk>/edit/',reports.report_edit,name='period_report_edit'),

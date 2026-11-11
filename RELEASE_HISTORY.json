@@ -3,6 +3,16 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.0",
+      "status": "release_prepared",
+      "release_notes": "releases/v0.17.0.md",
+      "migrations": [
+        "0041_task_report_grouping"
+      ],
+      "scope": "Editable weekly team report drafts grouped by explicit customer/vendor metadata, internal activities and unclassified items; source-version provenance and exact-line deduplication. Add task vendor, solution and report grouping fields.",
+      "validation": "Related suite78 passed; final grouping suite14 passed; Node explicit-apply/data-preservation scenarios passed. No migration drift."
+    },
+    {
       "version": "0.16.5",
       "status": "live_verified",
       "release_notes": "releases/v0.16.5.md",

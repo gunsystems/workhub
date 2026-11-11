@@ -32,3 +32,4 @@ jobs:
       - run: python manage.py test --verbosity 1
       - run: node tasks/test_request_form.cjs
       - run: node tasks/test_file_upload.cjs
+      - run: node tasks/test_report_grouping.cjs

@@ -179,7 +179,7 @@ def edit_task(request, task=None, intake_override=None):
         if intake.closed_at or intake.stage=='rejected': raise PermissionDenied
         initial.update(intake=intake.pk,title=intake.title,description=intake.description,completion_criteria=intake.description,
                        due_date=intake.requested_due_date,start_date=intake.requested_start_date or timezone.localdate(),project=intake.project_id,
-                       customer=intake.customer,location=intake.location,intake_revision=intake.revision,purpose='request')
+                       customer=intake.customer,solution=intake.solution,location=intake.location,intake_revision=intake.revision,purpose='request')
     form = OfficialTaskForm(request.POST if request.method=='POST' else None, request.FILES or None, instance=task, user=request.user,initial=initial,request_intake=intake)
     if request.method=='POST' and form.is_valid():
         if intake:

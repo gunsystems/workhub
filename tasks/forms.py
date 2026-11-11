@@ -13,6 +13,8 @@ class TaskForm(forms.ModelForm):
         # Older open forms have neither control and retain their previous defaults.
         def compatible(data):
             data=data.copy()
+            for name in ['vendor','solution','report_group']:
+                if name not in data:data[name]=getattr(kwargs.get('instance'),name,'auto' if name=='report_group' else '')
             if data.get('assignment_channels_present'):return data
             for name in ['assignment_email','assignment_messenger']:
                 if name not in data:data[name]='true' if getattr(kwargs.get('instance'),name,True) else 'false'
@@ -30,6 +32,9 @@ class TaskForm(forms.ModelForm):
         self.fields['assignment_email'].help_text='새 업무·새 담당자 배정 시 회사 이메일로 안내합니다.'
         self.fields['assignment_messenger'].help_text='하이웍스 연결·업무 알림을 허용한 직원에게 안내합니다. 둘 다 선택할 수 있습니다.'
         self.fields['management_mode'].required = False
+        self.fields['report_group'].required = False
+        self.fields['report_group'].help_text='자동 분류는 고객사→벤더사→팀 운영·기타 순으로 적용합니다. 벤더사 중심의 업무는 벤더사 업무를 선택하세요.'
+        self.fields['customer'].help_text='주간보고에서 같은 고객사 업무를 모을 때 사용합니다.'
         self.fields['category'].empty_label = '업무 종류 선택'
         self.fields['category'].queryset = WorkCategory.objects.filter(Q(is_active=True)|Q(pk=self.instance.category_id))
         self.fields['report_days'].required = False
@@ -49,13 +54,14 @@ class TaskForm(forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = ['title','description','project','completion_criteria','report_days','review_days','assignee','assignment_email','assignment_messenger','status','importance','priority','start_date','start_time','due_date','category','management_mode','activity_start','activity_end','location','customer','work_style','estimated_minutes','next_action','next_check_date']
+        fields = ['title','description','project','completion_criteria','report_days','review_days','assignee','assignment_email','assignment_messenger','status','importance','priority','start_date','start_time','due_date','category','management_mode','activity_start','activity_end','location','customer','vendor','solution','report_group','work_style','estimated_minutes','next_action','next_check_date']
         widgets = {'start_date':forms.DateInput(format='%Y-%m-%d',attrs={'type':'date'}),'start_time':forms.TimeInput(format='%H:%M',attrs={'type':'time','step':'60'}),'due_date':forms.DateInput(attrs={'type':'date'}),'description':forms.Textarea(attrs={'rows':4}),
             'activity_start':forms.DateTimeInput(format='%Y-%m-%dT%H:%M',attrs={'type':'datetime-local'}),
             'activity_end':forms.DateTimeInput(format='%Y-%m-%dT%H:%M',attrs={'type':'datetime-local'}),
             'next_check_date':forms.DateInput(attrs={'type':'date'})}
     def clean(self):
         data = super().clean()
+        data['report_group'] = data.get('report_group') or self.instance.report_group or 'auto'
         data['management_mode'] = data.get('management_mode') or self.instance.management_mode or 'report'
         start_time,end_time = data.get('activity_start'),data.get('activity_end')
         if bool(start_time) != bool(end_time): self.add_error('activity_end','시작·종료 시간을 모두 입력하거나 모두 비워 종일 일정으로 등록하세요.')

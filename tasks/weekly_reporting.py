@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.utils import timezone
 from django.db.models import Q
 from .models import Task,PeriodReport,Employee
+from .report_grouping import metadata_tags
 from .permissions import profile,performing_employee,can_view_company
 
 def week_start(day):
@@ -40,7 +41,8 @@ def calendar_draft(user,start):
             project=' · '+task.project.name if task.project_id else ''
             category=task.category.name if task.category_id else '일반 업무'
             title=task.title if task.title.startswith('['+category+']') else '['+category+'] '+task.title
-            text=f'- [{label}] {title}{project} ({task.get_status_display()} · {task.progress}%)'
+            tags=metadata_tags(task)
+            text=f'- [{label}] {tags+" " if tags else ""}{title}{project} ({task.get_status_display()} · {task.progress}%)'
             bucket.append((lo,task.pk,text))
             if bucket is current and any((lo+timedelta(days=n)).weekday()>=5 for n in range((hi-lo).days+1)):weekend=True
     return {'current':'\n'.join(row[2] for row in sorted(current)), 'next':'\n'.join(row[2] for row in sorted(upcoming)), 'task_ids':ids,'count':len(current),'weekend':weekend}

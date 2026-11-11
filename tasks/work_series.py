@@ -14,7 +14,7 @@ from .schedules import ScheduleFields, next_run, SEOUL
 from .workflow import record
 
 COPY_FIELDS = ['title','description','completion_criteria','assignee_id','project_id','category_id','management_mode',
-               'importance','priority','report_days','review_days','location','customer','work_style','estimated_minutes','assignment_email','assignment_messenger']
+               'importance','priority','report_days','review_days','location','customer','vendor','solution','report_group','work_style','estimated_minutes','assignment_email','assignment_messenger']
 
 
 class WorkSeriesForm(ScheduleFields):

@@ -2,6 +2,7 @@
 from datetime import date,timedelta
 from pathlib import Path
 from django import forms
+from django.forms.utils import ErrorDict
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
@@ -16,6 +17,7 @@ from .permissions import profile,can_view_company,visible_tasks,visible_employee
 from .collaboration import UserChoice,users
 from .drive_storage import RepositoryError
 from .weekly_reporting import calendar_draft,week_start,responsible_reviewer,submission_board
+from .report_grouping import may_aggregate, grouped_draft, task_metadata
 
 
 def visible_reports(user):
@@ -31,7 +33,20 @@ def visible_reports(user):
 def selectable_sources(user):
     # Only already-submitted versions in the user's team/oversight scope.
     qs=ReportSubmission.objects.filter(report__in=visible_reports(user)).exclude(report__author=user)
-    return qs.select_related('report__author').order_by('-created_at')
+    return qs.select_related('report__author__employee__department').order_by('-created_at','-pk')
+
+
+def weekly_sources(user,start,end):
+    # Latest submitted version only; pending corrections are not auto-collected.
+    qs=selectable_sources(user).filter(report__report_type='weekly',report__period_start=start,report__period_end=end,
+        report__state__in=['submitted','approved'],report__current_submission_id=F('pk'),
+        report__author__is_active=True,report__author__employee__is_active=True)
+    employee=profile(user)
+    if not employee or employee.position in ['head','executive']:
+        qs=qs.filter(report__reviewer=user)
+    latest={}
+    for sub in qs:latest.setdefault(sub.report.author_id,sub)
+    return list(latest.values())
 
 
 class ReportForm(forms.ModelForm):
@@ -108,20 +123,52 @@ def report_list(request):
 
 @login_required
 @transaction.atomic
-def report_edit(request,pk=None,calendar_seed=False):
+def report_edit(request,pk=None,calendar_seed=False,team_seed=False):
     emp=profile(request.user)
     if not emp and not request.user.is_superuser:raise PermissionDenied
+    if team_seed and not may_aggregate(request.user):raise PermissionDenied
     obj=get_object_or_404(PeriodReport.objects.select_for_update(),pk=pk,author=request.user) if pk else None
     if obj and obj.state in ['submitted','approved']:raise PermissionDenied('제출했거나 확인 완료된 보고는 보완 요청 이후에 수정할 수 있습니다.')
     today=timezone.localdate();start=today-timedelta(days=today.weekday())
     initial={} if obj else {'report_type':'weekly','period_start':start,'period_end':start+timedelta(days=6),'reviewer':emp.supervisor.user_id if emp and emp.supervisor else None}
-    seed=None
+    seed=None;group_info=None;group_preview=None;group_error=''
+    if team_seed and not obj and request.method=='GET':
+        try:start=week_start(date.fromisoformat(request.GET.get('week','')))
+        except ValueError:pass
+        selected=weekly_sources(request.user,start,start+timedelta(days=6))
+        group_info=grouped_draft(request.user,selected)
+        initial.update(report_type='weekly',period_start=start,period_end=start+timedelta(days=6),summary=group_info['current'],next_week_plan=group_info['next'],report_issues=group_info['issues'],sources=[sub.pk for sub in selected],reviewer=responsible_reviewer(emp))
     if calendar_seed and not obj and request.method=='GET':
         try:start=week_start(date.fromisoformat(request.GET.get('week','')))
         except ValueError:pass
         seed=calendar_draft(request.user,start)
         initial.update(report_type='weekly',period_start=start,period_end=start+timedelta(days=6),summary=seed['current'],next_week_plan=seed['next'],tasks=seed['task_ids'],reviewer=responsible_reviewer(emp))
     form=ReportForm(request.POST if request.method=='POST' else None,request.FILES or None,instance=obj,user=request.user,initial=initial)
+    if team_seed and request.method=='GET':
+        ids=initial.get('sources',[])
+        form.fields['sources'].queryset=selectable_sources(request.user).filter(pk__in=ids)
+
+    if request.method=='POST' and request.POST.get('action')=='group':
+        if not may_aggregate(request.user):raise PermissionDenied
+        try:
+            if request.FILES:raise ValidationError('분류 초안을 먼저 만든 뒤 첨부파일을 다시 선택해 주세요. 파일은 저장되지 않았습니다.')
+            start_value=forms.DateField().clean(request.POST.get('period_start'))
+            end_value=forms.DateField().clean(request.POST.get('period_end'))
+            if request.POST.get('report_type')!='weekly' or start_value.weekday()!=0 or end_value!=start_value+timedelta(days=6):
+                raise ValidationError('주간 보고의 월요일~일요일 기간을 선택하세요.')
+            try:selected=list(form.fields['sources'].clean(request.POST.getlist('sources')))
+            except ValidationError:raise ValidationError('선택한 직원 보고를 조회할 수 없습니다. 목록에서 다시 선택하세요.')
+            if not selected:raise ValidationError('취합할 직원 제출본을 선택하세요.')
+            if len(selected)>100:raise ValidationError('한 번에 최대 100개 보고를 취합할 수 있습니다.')
+            if any(sub.report.report_type!='weekly' or sub.report.period_start!=start_value or sub.report.period_end!=end_value for sub in selected):
+                raise ValidationError('선택한 보고는 모두 같은 주간 보고 기간이어야 합니다.')
+            if len({sub.report.author_id for sub in selected})!=len(selected):
+                raise ValidationError('같은 직원의 보고는 제출 버전 한 개만 선택하세요.')
+            if sum(len(str(sub.snapshot)) for sub in selected)>500000:raise ValidationError('취합할 내용이 많습니다. 제출본을 나누어 선택하세요.')
+            group_preview=grouped_draft(request.user,selected)
+        except ValidationError as exc:group_error=' '.join(exc.messages)
+        form._errors=ErrorDict();form.cleaned_data={}
+        return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'can_aggregate':True,'team_seed':team_seed or bool(obj and obj.source_submissions.exists()),'group_preview':group_preview,'group_error':group_error})
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False);obj.author=request.user;obj.revision+=1
         if calendar_seed:obj.calendar_based=True
@@ -142,7 +189,7 @@ def report_edit(request,pk=None,calendar_seed=False):
             snapshot={'report_issues':obj.report_issues,'next_week_plan':obj.next_week_plan,'calendar_based':obj.calendar_based,'report_type':obj.report_type,'report_type_label':obj.get_report_type_display(),'summary':obj.summary,'period_start':str(obj.period_start),'period_end':str(obj.period_end),
                 'author':request.user.get_username(),'reviewer':obj.reviewer.get_username(),
                 'task_ids':[t.pk for t in tasks],
-                'tasks':[{'id':t.pk,'title':t.title,'status':t.get_status_display(),'progress':t.progress,'due_date':str(t.due_date),'next_action':t.next_action,
+                'tasks':[{**task_metadata(t),'id':t.pk,'title':t.title,'status':t.get_status_display(),'progress':t.progress,'due_date':str(t.due_date),'next_action':t.next_action,
                           'reports':list(t.events.filter(kind__in=['progress','submitted']).order_by('-created_at').values('body','kind')[:5])} for t in tasks],
                 'source_submission_ids':list(obj.source_submissions.values_list('pk',flat=True)),
                 'files':list(obj.files.values('pk','name'))}
@@ -150,7 +197,7 @@ def report_edit(request,pk=None,calendar_seed=False):
             obj.current_submission=submission;obj.state='submitted';obj.submitted_at=timezone.now();obj.save(update_fields=['current_submission','state','submitted_at'])
         if f:messages.success(request,'보고서 첨부파일 업로드가 완료되었습니다.',extra_tags='upload-success')
         return redirect('period_report_detail',pk=obj.pk)
-    return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'seed':seed})
+    return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'seed':seed,'can_aggregate':may_aggregate(request.user),'team_seed':team_seed or bool(obj and obj.source_submissions.exists()),'group_info':group_info})
 
 
 @login_required
