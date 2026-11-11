@@ -4,10 +4,19 @@
   "releases": [
     {
       "version": "0.16.4",
-      "status": "release_prepared",
+      "status": "live_browser_verified",
       "release_notes": "releases/v0.16.4.md",
       "migrations": [],
-      "scope": "Show latest report review feedback above report body for both sender and reviewer; preserve historical reviews and label previous-version feedback after resubmission."
+      "scope": "Show latest report review feedback above report body for both sender and reviewer; preserve historical reviews and label previous-version feedback after resubmission.",
+      "source_commit": "da3c9a6ab064c3d8db4f3fe741ca12045f6096ae",
+      "deploy_id": "dep-dbq7hgbm8hqs73c4jkag",
+      "live_at": "2026-11-11T23:17:35+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43036843177",
+      "validation": "18 targeted tests passed including sender/recipient feedback visibility, access control, escaping and resubmission versions. Full CI succeeded. Actual saved feedback visible above report body; PC and 390/360px mobile verified without overflow. No business records changed.",
+      "screenshots": [
+        "outputs/Workhub_v0164_검토피드백_PC.png",
+        "outputs/Workhub_v0164_검토피드백_모바일.png"
+      ]
     },
     {
       "version": "0.16.3",
