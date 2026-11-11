@@ -22,6 +22,7 @@ urlpatterns=[
     path('documents/storage/',documents.repository_status,name='repository_status'),
     path('documents/<str:kind>/<int:pk>/add/',documents.document_add,name='document_add'),
     path('documents/<int:pk>/download/',documents.document_download,name='document_download'),
+    path('documents/<int:pk>/preview/',documents.document_preview,name='document_preview'),
     path('documents/<int:pk>/archive/',documents.document_archive,name='document_archive'),
     path('register/',work_requests.register,name='work_register'),
     path('schedule-control/',schedule_control.control_view,name='schedule_control'),

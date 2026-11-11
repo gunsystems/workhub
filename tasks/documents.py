@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -93,6 +93,7 @@ def add_document(user, kind, parent, data):
         name=data.get('name') or Path(f.name).name[:200], kind=data.get('kind','reference'),
         link=data.get('link',''), size=f.size if f else 0)
     if f:
+        obj.original_name=Path(f.name).name[:255]
         obj.file = f
     obj.save()
     write('create','WorkDocument',obj.pk,obj.name,
@@ -135,13 +136,52 @@ def document_download(request, pk):
     if not obj.file:
         raise Http404
     try:
-        response = FileResponse(obj.file.open('rb'), as_attachment=True, filename=obj.name,
+        opened=obj.file.open('rb')
+        head=opened.read(32);opened.seek(0)
+        extension=image_extension(head) or Path(obj.original_name).suffix.lower()
+        filename=Path(obj.name).name
+        if extension and Path(filename).suffix.lower()!=extension:filename+=extension
+        response = FileResponse(opened, as_attachment=True, filename=filename,
             content_type='application/octet-stream')
     except (FileNotFoundError, RepositoryError):
         return render(request,'tasks/document_error.html',status=503)
     response['Cache-Control']='private, no-store'
     response['X-Content-Type-Options']='nosniff'
     return response
+
+
+def image_extension(head):
+    if head.startswith(b'\x89PNG\r\n\x1a\n'):return '.png'
+    if head.startswith(b'\xff\xd8\xff'):return '.jpg'
+    if head.startswith((b'GIF87a',b'GIF89a')):return '.gif'
+    if head.startswith(b'RIFF') and head[8:12]==b'WEBP':return '.webp'
+    return ''
+
+
+@login_required
+def document_preview(request,pk):
+    """Decode and re-encode a bounded image; never serve uploaded active content inline."""
+    import io,warnings
+    from PIL import Image,ImageOps,UnidentifiedImageError
+    obj=get_object_or_404(WorkDocument,pk=pk,archived_at__isnull=True)
+    kind,parent_id=document_parent(obj);parent_for(request.user,kind,parent_id)
+    if not obj.file:raise Http404
+    try:
+        with obj.file.open('rb') as source,warnings.catch_warnings():
+            warnings.simplefilter('error',Image.DecompressionBombWarning)
+            with Image.open(source) as image:
+                if image.format not in ['JPEG','PNG','GIF','WEBP'] or image.width*image.height>16000000:
+                    return HttpResponse('미리보기 크기 제한을 초과했습니다. 파일을 내려받아 확인하세요.',status=422,content_type='text/plain; charset=utf-8')
+                image=ImageOps.exif_transpose(image);image.thumbnail((640,480))
+                output=io.BytesIO();image.convert('RGB').save(output,format='JPEG',quality=82)
+        response=HttpResponse(output.getvalue(),content_type='image/jpeg')
+        response['Cache-Control']='private, no-store';response['X-Content-Type-Options']='nosniff'
+        response['Content-Security-Policy']="default-src 'none'; frame-ancestors 'self'"
+        return response
+    except (FileNotFoundError,RepositoryError):
+        return HttpResponse('이미지를 불러오지 못했습니다. 잠시 후 다시 시도하세요.',status=503,content_type='text/plain; charset=utf-8')
+    except (UnidentifiedImageError,OSError,ValueError,Image.DecompressionBombWarning,Image.DecompressionBombError):
+        return HttpResponse('미리보기를 지원하지 않는 이미지입니다. 파일을 내려받아 확인하세요.',status=422,content_type='text/plain; charset=utf-8')
 
 
 @login_required

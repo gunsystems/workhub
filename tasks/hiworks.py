@@ -216,7 +216,8 @@ def deliver_pending():
             try:
                 api('/office/v2/notify', settings.HIWORKS_NOTIFY_TOKEN, {
                     'user_list': [link.user_id], 'message': 'Workhub: 확인할 업무 알림이 있습니다.',
-                    'link': settings.WORKHUB_BASE_URL.rstrip('/')+f'/tasks/{notification.task_id}/', 'solution_name':'GUNSYSTEMS Workhub'})
+                    'link': settings.WORKHUB_BASE_URL.rstrip('/')+f'/tasks/{notification.task_id}/',
+                    'mlink': settings.WORKHUB_BASE_URL.rstrip('/')+f'/tasks/{notification.task_id}/', 'solution_name':'GUNSYSTEMS Workhub'})
                 delivery.state='sent'; delivery.detail='하이웍스 접수 완료'
             except ValidationError as exc:
                 delivery.state='failed'; delivery.detail=exc.messages[0][:200]

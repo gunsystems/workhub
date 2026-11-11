@@ -12,6 +12,19 @@ from .quick import create,change,visible,deliver_pending
 @override_settings(WORKHUB_REQUIRE_HIWORKS=False,WORKHUB_SCHEDULER_ENABLED=False,
     PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
 class QuickTests(TestCase):
+    def test_requester_can_finish_from_comments_without_inventing_reply(self):
+        item=self.new();self.act(item,self.worker,'comment','확인 결과 이상 없습니다.')
+        with self.assertRaises(PermissionDenied):self.act(item,self.sender,'confirm')
+        self.act(item,self.worker,'accept');self.act(item,self.sender,'confirm');item.refresh_from_db()
+        self.assertEqual(item.state,'done');self.assertIsNotNone(item.completed_at);self.assertIsNone(item.replied_at)
+        self.assertIn('의견·자료',item.events.first().body)
+    def test_dashboard_menu_and_current_stage(self):
+        item=self.new();self.client.force_login(self.sender)
+        self.assertContains(self.client.get('/dashboard/?scope=mine'),'고객 확인')
+        response=self.client.get(f'/work/quick/{item.pk}/');self.assertContains(response,'현재 · 확인 대기')
+        self.assertContains(response,'업무 완료 · 요청자 확인');self.assertContains(response,'/work/quick/')
+        self.act(item,self.worker,'accept');self.assertContains(self.client.get(f'/work/quick/{item.pk}/'),'현재 · 처리 중')
+        self.client.force_login(self.other);self.assertNotContains(self.client.get('/dashboard/?scope=mine'),'고객 확인')
     def setUp(self):
         U=get_user_model();self.admin=U.objects.create_superuser('operator')
         self.team=Department.objects.create(name='영업');self.otherteam=Department.objects.create(name='기술')

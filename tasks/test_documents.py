@@ -15,6 +15,35 @@ from .drive_storage import WorkhubStorage, DriveClient, RepositoryError
     PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],
     GOOGLE_DRIVE_CREDENTIALS_FILE='/etc/secrets/example.json',GOOGLE_DRIVE_SHARED_DRIVE_ID='shared-drive')
 class DocumentTests(TestCase):
+    def image_bytes(self):
+        from PIL import Image
+        out=io.BytesIO();Image.new('RGB',(900,500),'green').save(out,format='PNG');return out.getvalue()
+    def test_custom_image_title_download_keeps_extension_and_bytes(self):
+        doc=self.doc();doc.name='첨부 증빙';doc.save();data=self.image_bytes()
+        with patch('tasks.drive_storage.WorkhubStorage._open',return_value=ContentFile(data)):
+            response=self.client.get(f'/work/documents/{doc.pk}/download/')
+            self.assertEqual(b''.join(response.streaming_content),data)
+        self.assertIn('.png',response['Content-Disposition']);self.assertIn('attachment',response['Content-Disposition'])
+    def test_image_preview_decodes_bounded_jpeg_and_rechecks_acl(self):
+        from PIL import Image
+        doc=self.doc();doc.name='이미지 증빙';doc.save()
+        self.assertContains(self.client.get(f'/tasks/{self.task.pk}/'),'이미지 미리보기')
+        with patch('tasks.drive_storage.WorkhubStorage._open',return_value=ContentFile(self.image_bytes())):
+            response=self.client.get(f'/work/documents/{doc.pk}/preview/')
+        self.assertEqual(response['Content-Type'],'image/jpeg');self.assertIn('no-store',response['Cache-Control'])
+        with Image.open(io.BytesIO(response.content)) as im:self.assertLessEqual(im.width,640);self.assertLessEqual(im.height,480)
+        self.client.force_login(self.other)
+        with patch('tasks.drive_storage.WorkhubStorage._open') as opened:
+            self.assertEqual(self.client.get(f'/work/documents/{doc.pk}/preview/').status_code,404);opened.assert_not_called()
+    def test_invalid_image_cannot_be_served_inline(self):
+        doc=self.doc()
+        with patch('tasks.drive_storage.WorkhubStorage._open',return_value=ContentFile(b'<svg onload="alert(1)"/>')):
+            response=self.client.get(f'/work/documents/{doc.pk}/preview/')
+        self.assertEqual(response.status_code,422);self.assertNotIn(b'<svg',response.content)
+    def test_original_filename_saved_separately_from_display_title(self):
+        with patch('tasks.drive_storage.DriveClient.upload',return_value='drive/file1'):
+            self.assertEqual(self.client.post(self.url(),{'kind':'reference','name':'검토자료','file':self.file()}).status_code,302)
+        self.assertEqual(WorkDocument.objects.get().original_name,'소개자료.pdf')
     def setUp(self):
         init=patch('tasks.drive_storage.DriveClient.__init__',return_value=None);init.start();self.addCleanup(init.stop)
         U=get_user_model();self.root=U.objects.create_superuser('root')

@@ -108,7 +108,8 @@ def change(pk,user,action,body,revision):
     elif action=='reply' and worker and item.state=='working':
         if not body:raise ValidationError('결과 내용을 입력하세요.')
         item.state='replied';item.replied_at=now;label='결과 회신'
-    elif action=='confirm' and owner and item.state=='replied':
+    elif action=='confirm' and owner and item.state in ['working','replied']:
+        if item.state=='working' and not body:body='전달된 의견·자료를 요청자가 확인하여 완료했습니다. 별도의 결과 회신 시각은 기록하지 않습니다.'
         item.state='done';item.completed_at=now;label='확인 완료'
     elif action=='return' and owner and item.state=='replied':
         if not body:raise ValidationError('추가 확인할 내용을 입력하세요.')
@@ -157,7 +158,8 @@ def detail(request,pk):
         return redirect('quick_detail',pk=pk)
     QuickDelivery.objects.filter(event__request=item,user=request.user,channel='app',read_at__isnull=True).update(read_at=timezone.now())
     from .documents import can_add
-    return render(request,'tasks/quick_detail.html',{'item':item,'owner':item.requester_id==request.user.pk,'worker':item.assignee.user_id==request.user.pk,'active':item.state not in ['done','cancelled'],'events':item.events.all(),'documents':item.documents.filter(archived_at__isnull=True),'can_add_documents':can_add(request.user,'quick',item)})
+    step={'pending':2,'working':3,'replied':4,'done':4}.get(item.state,0)
+    return render(request,'tasks/quick_detail.html',{'item':item,'step':step,'owner':item.requester_id==request.user.pk,'worker':item.assignee.user_id==request.user.pk,'active':item.state not in ['done','cancelled'],'events':item.events.all(),'documents':item.documents.filter(archived_at__isnull=True),'can_add_documents':can_add(request.user,'quick',item)})
 
 
 def deliver_pending(now=None):
