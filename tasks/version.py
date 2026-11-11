@@ -1,2 +1,2 @@
-VERSION = '0.16.0-preview'
+VERSION = '0.16.1'
 RELEASE_DATE = '2026-11-11'

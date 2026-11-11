@@ -3,13 +3,13 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
-      "version": "0.16.1-weekly-draft",
-      "status": "validated_draft_not_deployed",
+      "version": "0.16.1",
+      "status": "rollout_authorized_pending_deploy",
       "release_notes": "releases/v0.16.1-weekly-draft.md",
       "migrations": [
         "0038_weekly_calendar_reports"
       ],
-      "scope": "calendar-based current/next-week drafts, optional support requests, weekly submission board; no main merge or deployment",
+      "scope": "Weekly reports approved for rollout; leave remains superuser-only preview.",
       "source_commit": "44f06e48aff5144d43889f4a2f10371226aa75c1",
       "pull_request": "https://github.com/gunsystems/workhub/pull/22",
       "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43025991696",
