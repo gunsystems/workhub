@@ -3,6 +3,18 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.13.3",
+      "status": "live_test_accepted_receipt_pending",
+      "release_notes": "releases/v0.13.3.md",
+      "migrations": [],
+      "tests": 439,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42936347908",
+      "source_commit": "32a856df963e6245b1a3ef8b8e469b4720338d6a",
+      "deploy_id": "dep-dbprvj9srm7s738mag60",
+      "live_at": "2026-11-11T10:08:20+09:00",
+      "browser_verification": "Administrator recipient ID lee confirmed against fresh directory; one test notify accepted SUC at 10:08:59 KST. Actual messenger receipt pending; not a root-cause fix."
+    },
+    {
       "version": "0.13.2",
       "status": "live_health_verified",
       "release_notes": "releases/v0.13.2.md",
