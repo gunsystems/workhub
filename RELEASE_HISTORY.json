@@ -4,13 +4,24 @@
   "releases": [
     {
       "version": "0.17.0",
-      "status": "release_prepared",
+      "status": "live_verified",
       "release_notes": "releases/v0.17.0.md",
       "migrations": [
-        "0041_task_report_grouping"
+        "0041_task_report_grouping",
+        "0042_task_grouping_db_defaults"
       ],
       "scope": "Editable weekly team report drafts grouped by explicit customer/vendor metadata, internal activities and unclassified items; source-version provenance and exact-line deduplication. Add task vendor, solution and report grouping fields.",
-      "validation": "Related suite78 passed; final grouping suite14 passed; Node explicit-apply/data-preservation scenarios passed. No migration drift."
+      "validation": "Related suite78 passed; final grouping suite15 including legacy SQL insertion passed; Node explicit-apply/data-preservation scenarios and full GitHub regression passed; no migration drift.",
+      "source_commit": "e774a255ee323c2a994f27fcb4d9e15a32f983bb",
+      "deploy_id": "dep-dbq8fp59fdbs73dmlkng",
+      "live_at": "2026-11-12T00:22:03+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43046981871",
+      "browser_verification": "Readonly fixture example verified on PC, 390px and360px: source preservation, customer/vendor/internal grouping and exact-line deduplication; no horizontal field overflow. No production reports saved or submitted; physical mobile Safari not operated.",
+      "example": "https://workhub.gunsystems.co.kr/static/tasks/report_grouping_example.html",
+      "screenshots": [
+        "outputs/Workhub_v0170_자동그룹핑_PC.png",
+        "outputs/Workhub_v0170_자동그룹핑_모바일.png"
+      ]
     },
     {
       "version": "0.16.5",
