@@ -161,10 +161,11 @@ def report_detail(request,pk):
     if request.method=='POST':
         if obj.reviewer_id!=request.user.pk or obj.author_id==request.user.pk:raise PermissionDenied
         if obj.state!='submitted' or request.POST.get('revision')!=str(obj.revision):review_error='다른 변경이 반영되었습니다. 현재 제출본을 다시 확인하세요.'
-        elif request.POST.get('decision') not in ['approved','returned'] or not request.POST.get('body','').strip():review_error='검토 결과와 사유를 입력하세요.'
+        elif request.POST.get('decision') not in ['approved','returned']:review_error='검토 결과를 선택하세요.'
+        elif request.POST.get('decision')=='returned' and not request.POST.get('body','').strip():review_error='보완 요청 내용을 입력하세요.'
         else:
             obj.state=request.POST['decision'];obj.revision+=1;obj.save(update_fields=['state','revision'])
-            ReportReview.objects.create(submission=obj.current_submission,author=request.user,decision=obj.state,body=request.POST['body'][:10000])
+            ReportReview.objects.create(submission=obj.current_submission,author=request.user,decision=obj.state,body=request.POST.get('body','').strip()[:10000])
             return redirect('period_report_detail',pk=pk)
     sources=ReportSubmission.objects.filter(pk__in=obj.current_submission.snapshot.get('source_submission_ids',[]) if obj.current_submission else obj.source_submissions.values_list('pk',flat=True),report__in=visible_reports(request.user))
     latest_review=ReportReview.objects.filter(submission__report=obj).select_related('submission','author__employee__department').order_by('-created_at','-pk').first()

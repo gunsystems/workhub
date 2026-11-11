@@ -122,3 +122,20 @@ class WeeklyReportTests(TestCase):
         self.assertIn('최종 검토 의견',feedback);self.assertIn('확인 완료',feedback);self.assertIn(f'제출 v{report.current_submission.version}',feedback)
         self.assertNotIn('차주 보완 의견',feedback)
         self.assertContains(response,'차주 보완 의견')
+
+    def test_confirmation_accepts_missing_or_blank_feedback_but_return_requires_reason(self):
+        for body in [None, '', '   ']:
+            self.client.force_login(self.worker)
+            self.client.post('/work/reports/weekly/new/',self.post(action='submit'))
+            report=PeriodReport.objects.order_by('-pk').first()
+            self.client.force_login(self.leader)
+            for missing in ['', '   ']:
+                response=self.client.post(f'/work/reports/{report.pk}/',{'revision':report.revision,'decision':'returned','body':missing})
+                self.assertContains(response,'보완 요청 내용을 입력하세요.')
+                report.refresh_from_db();self.assertEqual(report.state,'submitted')
+                self.assertFalse(report.current_submission.reviews.exists())
+            data={'revision':report.revision,'decision':'approved'}
+            if body is not None:data['body']=body
+            self.assertEqual(self.client.post(f'/work/reports/{report.pk}/',data).status_code,302)
+            report.refresh_from_db();self.assertEqual(report.state,'approved')
+            self.assertEqual(report.current_submission.reviews.get().body,'')

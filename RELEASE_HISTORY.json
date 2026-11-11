@@ -3,6 +3,13 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.16.5",
+      "status": "release_prepared",
+      "release_notes": "releases/v0.16.5.md",
+      "migrations": [],
+      "scope": "Report confirmation permits empty feedback; return requests still require a reason. Conditional browser validation and visible optional/required label."
+    },
+    {
       "version": "0.16.4",
       "status": "live_browser_verified",
       "release_notes": "releases/v0.16.4.md",
