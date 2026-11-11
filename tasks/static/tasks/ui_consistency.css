@@ -138,4 +138,6 @@
 .dashboard-quick{margin:24px 0}.dashboard-quick .section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.dashboard-quick-row{display:flex;gap:12px;flex-wrap:wrap;padding:16px 0;border-top:1px solid #e4e9ee}.dashboard-quick-row small{flex-basis:100%}.dashboard-quick-row a{overflow-wrap:anywhere}
 
 /* Keep the quick-work header on the same content edge as neighbouring cards. */
-.dashboard-quick{padding:24px;min-height:0}.dashboard-quick .section-heading{padding:0;margin:0 0 16px}.dashboard-quick .section-heading h2{margin:0}.dashboard-quick>p{margin:0}@media(max-width:640px){.dashboard-quick{padding:20px}.dashboard-quick .section-heading{gap:12px}.dashboard-quick .section-heading .button{width:100%}}
+.dashboard-quick{padding:24px;min-height:0}.dashboard-quick .section-heading{padding:0;margin:0 0 16px}.dashboard-quick .section-heading h2{margin:0}.dashboard-quick>p{margin:0}@media(max-width:640px){.dashboard-quick{padding:24px}.dashboard-quick .section-heading{gap:12px;align-items:flex-start}.dashboard-quick .section-heading .button{width:100%}}
+
+.dashboard-quick .section-heading>div{align-self:flex-start;text-align:left;min-width:0}
