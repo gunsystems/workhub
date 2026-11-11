@@ -4,12 +4,17 @@
   "releases": [
     {
       "version": "0.16.2",
-      "status": "release_prepared",
+      "status": "live_browser_verified",
       "release_notes": "releases/v0.16.2.md",
       "migrations": [
         "0039_technical_support_categories"
       ],
-      "scope": "Weekly report labels and Friday17:00 guidance; add technical support onsite/remote categories without reclassifying existing work."
+      "scope": "Weekly report wording, Friday17:00 guidance, related work reference, temporary save, category-prefixed draft titles, technical support onsite/remote categories. Deadline automation remains pending.",
+      "source_commit": "b070d4674aca907fa606a4cc71903c9c98b96ddf",
+      "deploy_id": "dep-dbq74jqjnfac73evasig",
+      "live_at": "2026-11-11T22:50:12+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43032497065",
+      "validation": "GitHub regression success; targeted unified-work/weekly suite37 passed, final weekly suite14 passed. Browser verified category prefixes, deadline guidance, reference labels, temporary-save button and two technical-support choices. No business records written."
     },
     {
       "version": "0.16.1",
