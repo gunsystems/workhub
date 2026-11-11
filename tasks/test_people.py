@@ -120,13 +120,29 @@ class PeopleTests(TestCase):
               'questions-0-label':'희망 프로그램','questions-0-kind':'multiple','questions-0-options':'교육\n체험','questions-0-required':'on'}
         response=self.client.post('/work/surveys/new/',data)
         self.assertEqual(response.status_code,302)
-        s=Survey.objects.get();q=s.questions.get();publish(s.pk,self.admin)
+        s=Survey.objects.get();self.assertTrue(s.send_email);q=s.questions.get();publish(s.pk,self.admin)
         self.client.force_login(self.worker)
         self.assertContains(self.client.get(f'/work/surveys/{s.pk}/'),'희망 프로그램')
         response=self.client.post(f'/work/surveys/{s.pk}/',{'action':'submit',str(q.pk):['교육','체험']})
         self.assertEqual(response.status_code,302)
         self.assertEqual(s.submissions.get().answers[str(q.pk)],['교육','체험'])
         self.assertContains(self.client.get(f'/work/surveys/{s.pk}/'),'제출을 완료했습니다')
+
+    def test_survey_menu_and_list_are_admin_only_but_email_target_can_answer(self):
+        s,q=self.survey();publish(s.pk,self.admin)
+        self.client.force_login(self.worker)
+        self.assertEqual(self.client.get('/work/surveys/').status_code,403)
+        response=self.client.get(f'/work/surveys/{s.pk}/')
+        self.assertContains(response,q.label)
+        self.assertNotContains(response,'href="/work/surveys/"')
+        self.assertContains(response,'내 업무로')
+        self.client.force_login(self.admin)
+        response=self.client.get('/work/surveys/new/')
+        self.assertContains(response,'data-content-preview="survey"')
+        self.assertContains(response,'data-content-preview-open')
+        self.assertContains(response,'id="content-preview"')
+        response=self.client.get('/work/notices/new/')
+        self.assertContains(response,'data-content-preview="notice"')
 
     def test_assessment_routes_and_invalid_filter(self):
         self.client.force_login(self.boss)

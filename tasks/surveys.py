@@ -26,8 +26,12 @@ class SurveyForm(forms.ModelForm):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.fields['employees'].queryset=Employee.objects.filter(is_active=True,user__is_active=True,user__workhub_access__verified_at__isnull=False).select_related('department')
+        self.fields['send_email'].disabled=True
+        self.initial['send_email']=True
+        self.fields['send_email'].help_text='직원은 이메일의 응답 버튼으로 참여합니다. 메일 안내는 기본 발송합니다.'
     def clean(self):
         d=super().clean()
+        d['send_email']=True
         if d.get('closes_at') and d.get('starts_at') and d['closes_at']<=d['starts_at']:self.add_error('closes_at','시작 시각 이후로 지정하세요.')
         if d.get('closes_at') and d['closes_at']<=timezone.now():self.add_error('closes_at','현재 이후로 지정하세요.')
         for kind,field in [('team','departments'),('person','employees')]:
@@ -109,7 +113,8 @@ def submit(survey_id,user,data,draft=False):
 @login_required
 def survey_list(request):
     admin=is_company_admin(request.user)
-    qs=Survey.objects.all() if admin else Survey.objects.filter(participations__employee__user=request.user).exclude(state='draft')
+    if not admin:raise PermissionDenied('직원은 설문 안내 메일의 응답 버튼으로 참여하세요.')
+    qs=Survey.objects.all()
     return render(request,'tasks/survey_list.html',{'surveys':qs.distinct(),'survey_admin':admin})
 
 

@@ -19,10 +19,11 @@ def navigation(request):
             item('캘린더','/','calendar',path=='/')]},
         {'label':'알림','items':[
             item('공지사항','/work/notices/','bell',path.startswith('/work/notices/')),
-            item('설문조사','/work/surveys/','work',path.startswith('/work/surveys/'),key='surveys'),
             item('업무 알림','/work/notifications/','bell',path.startswith('/work/notifications/')),
             item('조치 필요','/alerts/','flag',path=='/alerts/',key='alerts')]},
     ]
+    if user.is_superuser:
+        groups[2]['items'].insert(1,item('설문조사','/work/surveys/','work',path.startswith('/work/surveys/')))
     organization=[]
     from .assessments import executive
     if executive(user):organization.append(item('수행 평가','/work/assessments/','chart',path.startswith('/work/assessments/')))
@@ -52,8 +53,5 @@ def navigation(request):
             for entry in group['items']:
                 if entry['href']=='/work/':entry['active']=False
         current='설문조사' if path.startswith('/work/surveys/') else '수행 평가'
-    from .people_models import SurveyParticipation
-    from django.utils import timezone
-    pending=SurveyParticipation.objects.filter(employee__user=user,employee__is_active=True,submitted=False,survey__state='open',survey__starts_at__lte=timezone.now(),survey__closes_at__gt=timezone.now()).count()
     from .version import VERSION
-    return {'survey_pending_count':pending,'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username()}
+    return {'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username()}
