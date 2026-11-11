@@ -147,4 +147,7 @@ class PeopleTests(TestCase):
         job.attempted_at=timezone.now()-timedelta(days=1,minutes=1);job.save()
         queue_notifications();queue_notifications();self.assertEqual(SurveyDelivery.objects.count(),2)
         self.assertTrue(SurveyDelivery.objects.filter(stage='day3').exists())
+        reminder=SurveyDelivery.objects.get(stage='day3');reminder.state='sent';reminder.attempted_at=timezone.now();reminder.save()
+        s.closes_at=timezone.now()+timedelta(hours=23);s.save()
+        queue_notifications();self.assertFalse(SurveyDelivery.objects.filter(stage='day1').exists())
         queue_notifications(now=s.closes_at+timedelta(seconds=1));self.assertEqual(SurveyDelivery.objects.count(),2)

@@ -193,7 +193,8 @@ def queue_notifications(now=None):
             stages=['initial']
             initial=part.deliveries.filter(stage='initial').first()
             if initial and survey.reminders:
-                if not initial.attempted_at or now-initial.attempted_at<timedelta(days=1):continue
+                latest=part.deliveries.exclude(attempted_at=None).order_by('-attempted_at').first()
+                if not latest or now-latest.attempted_at<timedelta(days=1):continue
                 left=survey.closes_at-now
                 # On first scheduling only send the most relevant reminder, never a burst.
                 if timedelta(hours=0)<left<=timedelta(days=1):stages=['day1']
