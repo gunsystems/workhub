@@ -3,6 +3,34 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.14.1",
+      "status": "live_mobile_ui_verified",
+      "release_notes": "releases/v0.14.1.md",
+      "migrations": [],
+      "tests": 453,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42945622748",
+      "source_commit": "d7a8f3f1583ca69b7dc39ffac0031f3cb959fe74",
+      "deploy_id": "dep-dbpt3sek1f9s73ctupug",
+      "live_at": "2026-11-11T11:25:45+09:00",
+      "browser_verification": "Notice/survey previews opened and closed; ESC and unsaved text persistence confirmed. Literal HTML remains text. 360/390/430px preview bounds verified. Dashboard descriptions verified at 390 and 1280px. New admin-only survey menu/list access covered by automated tests. Physical iPhone Safari not operated."
+    },
+    {
+      "version": "0.14.0",
+      "status": "live_workflow_and_mobile_verified",
+      "release_notes": "releases/v0.14.0.md",
+      "migrations": [
+        "0033_surveys_and_executive_assessments"
+      ],
+      "tests": 452,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42943452627",
+      "source_commit": "0a02bfd71d7188a07b73e7aae59b07ffd5eaf572",
+      "deploy_id": "dep-dbpsrm56e07s73bdhic0",
+      "live_at": "2026-11-11T11:08:23+09:00",
+      "backup": "/var/data/backups/workhub-pre-v0140-20261111T015912988071Z.sqlite3",
+      "backup_integrity": "ok",
+      "browser_verification": "Root survey authoring/publishing; Lee-only internal anonymous survey 1 with no external channels; Lee draft persistence and submission; admin count/anonymous aggregation; closed survey. Root assessment 403; executive assessment form 200. 360/390/430px survey/assessment controls no overflow; date controls 48px. No actual employee assessment scores created."
+    },
+    {
       "version": "0.13.3",
       "status": "live_test_accepted_receipt_pending",
       "release_notes": "releases/v0.13.3.md",
