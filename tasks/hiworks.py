@@ -16,7 +16,7 @@ from .models import HiworksLink, HiworksDelivery, HiworksSyncStatus, SchedulerLe
 from .permissions import visible_tasks
 
 
-def api(path, token, data=None):
+def api(path, token, data=None, *, full_response=False):
     if not token or any(c in token for c in '\r\n'):
         raise ValidationError('서버에 해당 기능의 하이웍스 토큰을 설정해 주세요.')
     body = json.dumps(data).encode('utf-8') if data is not None else None
@@ -44,7 +44,46 @@ def api(path, token, data=None):
             if ip: raise ValidationError(f'하이웍스 토큰의 허용 IP에 {ip}를 추가해 주세요. 서버 재배포는 필요 없습니다.')
     if not isinstance(result, dict) or result.get('code') != 'SUC':
         raise ValidationError('하이웍스에서 성공 응답을 받지 못했습니다. 토큰의 사용 범위를 확인해 주세요.')
-    return result.get('result')
+    return result if full_response else result.get('result')
+
+
+def test_notification(link_id, actor):
+    """One explicitly requested message; fresh directory identity, no queue replay."""
+    from .permissions import is_company_admin
+    from django.core.exceptions import PermissionDenied
+    from .audit import write
+    if not is_company_admin(actor): raise PermissionDenied
+    link = HiworksLink.objects.select_related('employee__user__workhub_access').get(pk=link_id)
+    employee = link.employee
+    user = employee.user
+    access = getattr(user, 'workhub_access', None)
+    if not (employee.is_active and user and user.is_active and access and access.verified_at
+            and link.email.lower() == user.email.lower() == access.email.lower()):
+        raise ValidationError('현재 재직·계정·인증 이메일을 확인할 수 없습니다.')
+    rows = [r for r in directory_rows() if r['email'].lower() == link.email.lower()]
+    if len(rows) != 1 or any(rows[0][key] != getattr(link,key) for key in ['remote_id','user_id']):
+        raise ValidationError('현재 하이웍스 직원 ID와 저장된 연결이 다릅니다. 발송하지 않았습니다.')
+    now = timezone.now()
+    key = f'hiworks-test-{link.pk}'
+    SchedulerLease.objects.get_or_create(key=key, defaults={'expires_at':now})
+    if not SchedulerLease.objects.filter(key=key,expires_at__lte=now).update(expires_at=now+timedelta(minutes=1)):
+        raise ValidationError('중복 방지를 위해 같은 직원의 테스트는 1분 후 다시 진행하세요.')
+    label = f'Workhub 연결 확인 {timezone.localtime(now):%H:%M:%S}'
+    write('hiworks_test','HiworksLink',link.pk,label,actor=actor,
+          after={'recipient_email':link.email,'recipient_id':link.user_id,'status':'attempting'})
+    try:
+        response = api('/office/v2/notify',settings.HIWORKS_NOTIFY_TOKEN,{
+            'user_list':[link.user_id], 'message':label+' · 선택한 직원 1명에게 보내는 연결 확인 알림입니다.',
+            'link':settings.WORKHUB_BASE_URL.rstrip('/')+'/work/notices/',
+            'mlink':settings.WORKHUB_BASE_URL.rstrip('/')+'/work/notices/',
+            'solution_name':'GUNSYSTEMS Workhub'},full_response=True)
+    except ValidationError as exc:
+        write('hiworks_test','HiworksLink',link.pk,label,actor=actor,
+              after={'recipient_id':link.user_id,'status':'unconfirmed','result':exc.messages[0]})
+        raise
+    write('hiworks_test','HiworksLink',link.pk,label,actor=actor,
+          after={'recipient_email':link.email,'recipient_id':link.user_id,'status':'accepted','provider_code':response['code']})
+    return f'{employee.name} · {link.email} · 수신 ID {link.user_id} · 하이웍스 응답 {response["code"]} · {label}. 실제 메신저 수신 여부는 별도로 확인해 주세요.'
 
 
 def directory_rows():

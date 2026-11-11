@@ -54,6 +54,12 @@ def settings_view(request):
                     review.applied_at=timezone.now(); review.save(update_fields=['applied_at'])
                 messages.success(request, f'{count}명의 직원 연결을 반영했습니다. 로그인 계정 생성이나 초대 메일 발송은 하지 않았습니다.')
                 return redirect('hiworks_settings')
+            elif action == 'test_notification':
+                if not request.POST.get('link','').isdigit(): raise ValidationError('연결할 직원을 확인해 주세요.')
+                get_object_or_404(HiworksLink,pk=request.POST['link'])
+                from .hiworks import test_notification
+                messages.success(request,test_notification(int(request.POST['link']),request.user))
+                return redirect('hiworks_settings')
             elif action == 'notification':
                 if not request.POST.get('link','').isdigit(): raise ValidationError('연결할 직원을 확인해 주세요.')
                 link = get_object_or_404(HiworksLink, pk=request.POST.get('link'))
