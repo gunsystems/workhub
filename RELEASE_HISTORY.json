@@ -3,6 +3,22 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.15.0",
+      "status": "live_mobile_ui_verified",
+      "release_notes": "releases/v0.15.0.md",
+      "migrations": [
+        "0034_quick_requests",
+        "0035_quick_documents"
+      ],
+      "tests": 469,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42950227496",
+      "source_commit": "cc117556c06c2a47092f211f15fb1150afb3406f",
+      "deploy_id": "dep-dbptne0n74is7392fdsg",
+      "live_at": "2026-11-11T12:07:30+09:00",
+      "backup": "/var/data/backups/workhub-pre-v0150-20261111T030721524059Z.sqlite3",
+      "browser_verification": "Administrator created quick request #1 with file and article link, downloaded matching file, commented and cancelled; external channels off, Lee only. 360/390/430px quick form and 360/390/430/1280px notice/survey action spacing verified. Staff workflow and ACL automated; physical iPhone not operated."
+    },
+    {
       "version": "0.14.1",
       "status": "live_mobile_ui_verified",
       "release_notes": "releases/v0.14.1.md",
