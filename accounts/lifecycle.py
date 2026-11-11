@@ -39,9 +39,11 @@ def account_allowed(user):
 
 def business_counts(employee):
     from tasks.models import PeriodReport, WorkSeries
-    from tasks.models import SurveyParticipation,StaffAssessment
+    from tasks.models import SurveyParticipation,StaffAssessment,QuickRequest
     user_id = employee.user_id
     return {
+        '담당 간단 업무': QuickRequest.objects.filter(assignee=employee).count(),
+        '요청한 간단 업무': QuickRequest.objects.filter(requester_id=user_id).count() if user_id else 0,
         '담당 업무': Task.objects.filter(assignee=employee).count(),
         '총괄 프로젝트': Project.objects.filter(owner=employee).count(),
         '받은 종합 피드백': EmployeeFeedback.objects.filter(employee=employee).count(),

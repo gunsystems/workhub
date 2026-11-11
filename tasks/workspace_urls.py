@@ -4,8 +4,12 @@ from . import audit_views
 from . import documents
 from . import notice_views
 from . import surveys,assessments
+from . import quick
 from . import schedule_control,requests as work_requests
 urlpatterns=[
+    path('quick/',quick.listing,name='quick_list'),
+    path('quick/new/',quick.new,name='quick_new'),
+    path('quick/<int:pk>/',quick.detail,name='quick_detail'),
     path('surveys/',surveys.survey_list,name='survey_list'),
     path('surveys/new/',surveys.edit,name='survey_new'),
     path('surveys/<int:pk>/',surveys.detail,name='survey_detail'),

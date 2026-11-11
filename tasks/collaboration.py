@@ -63,6 +63,8 @@ class OfficialTaskForm(TaskForm):
     def __init__(self, *args, user=None, request_intake=None, **kwargs):
         self.request_intake=request_intake
         super().__init__(*args, user=user, **kwargs)
+        if not self.instance.pk and not request_intake:
+            self.fields['management_mode'].choices=list(self.fields['management_mode'].choices)+[('quick','간단 업무 · 전용 입력 화면')]
         active = Employee.objects.filter(is_active=True).filter(Q(user__isnull=True)|Q(user__is_active=True)).select_related('department')
         self.fields['assignee'].queryset = active
         self.fields['assignee'].label = '총괄 담당자'
@@ -93,6 +95,11 @@ class OfficialTaskForm(TaskForm):
                 self.initial[f'approver_{n}'] = step.approver_id
                 self.initial[f'stage_{n}'] = step.stage
 
+    def clean_management_mode(self):
+        value=self.cleaned_data['management_mode']
+        if value=='quick':raise ValidationError('간단 업무는 상단의 간단 업무 전달 링크에서 등록하세요.')
+        return value
+
     def clean(self):
         data = super().clean()
         members = set(data.get('collaborators', Employee.objects.none()).values_list('pk',flat=True))
@@ -102,7 +109,7 @@ class OfficialTaskForm(TaskForm):
         reviewers = [data.get(f'approver_{n}') for n in range(1,6) if data.get(f'approver_{n}')]
         if data.get('management_mode') == 'event':
             data['no_approval'] = True
-            if reviewers: self.add_error('management_mode','간단 일정에는 결재자를 지정하지 않습니다. 보고 업무로 선택하거나 결재자를 비워 주세요.')
+            if reviewers: self.add_error('management_mode','일반 업무에는 결재자를 지정하지 않습니다. 보고 업무로 선택하거나 결재자를 비워 주세요.')
         if not data.get('no_approval') and not reviewers:
             self.add_error('approver_1', '결재자를 선택하거나 결재 없이 완료 처리를 명시하세요.')
         if data.get('no_approval') and reviewers:

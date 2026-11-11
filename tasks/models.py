@@ -102,10 +102,10 @@ class WorkCategory(models.Model):
 class Task(models.Model):
     creation_kind = models.CharField("등록 구분",max_length=12,default="self",choices=[("self","내 업무"),("request","업무 요청"),("cooperation","업무협조 요청")])
     assignment_email = models.BooleanField('이메일로 배정 알림',default=True)
-    assignment_messenger = models.BooleanField('하이웍스 메신저로 배정 알림',default=True)
+    assignment_messenger = models.BooleanField('하이웍스로 배정 알림',default=True)
     start_time = models.TimeField('시작 시간', null=True, blank=True)
     category = models.ForeignKey(WorkCategory, on_delete=models.PROTECT, null=True, blank=True, verbose_name='업무 종류')
-    management_mode = models.CharField('관리 방식', max_length=12, default='report', choices=[('report','보고 업무'),('event','간단 일정')])
+    management_mode = models.CharField('관리 방식', max_length=12, default='report', choices=[('report','보고 업무'),('event','일반 업무')])
     activity_start = models.DateTimeField('실제 수행 시작', null=True, blank=True)
     activity_end = models.DateTimeField('실제 수행 종료', null=True, blank=True)
     location = models.CharField('장소 · 접속 안내', max_length=200, blank=True)
@@ -678,4 +678,5 @@ class ReportFile(models.Model):
     uploaded_at = models.DateTimeField(default=timezone.now)
 
 from .document_models import WorkDocument
+from .quick_models import QuickRequest, QuickEvent, QuickDelivery
 from .people_models import Survey, SurveyQuestion, SurveyParticipation, SurveySubmission, SurveyDelivery, StaffAssessment, AssessmentRevision
