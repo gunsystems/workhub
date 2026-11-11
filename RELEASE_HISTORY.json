@@ -3,6 +3,18 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.15.2",
+      "status": "live_mobile_ui_verified",
+      "release_notes": "releases/v0.15.2.md",
+      "migrations": [],
+      "targeted_tests": 18,
+      "source_commit": "fbc2bb4adc97927f252f70570e17b23eeab17d55",
+      "deploy_id": "dep-dbq040qjnfac73em2gmg",
+      "live_at": "2026-11-11T14:51:00+09:00",
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42968275695",
+      "browser_verification": "Existing done request: final step retains step-current and aria-current, duplicate small removed. 390px no page overflow. No business data changed."
+    },
+    {
       "version": "0.15.1",
       "status": "live_mobile_ui_verified",
       "release_notes": "releases/v0.15.1.md",
