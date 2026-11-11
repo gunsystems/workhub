@@ -164,3 +164,16 @@ class ReportGroupingTests(TestCase):
         source.snapshot['summary']='【벤더사 · B사】\n- [고객사: A사] 벤더 협의로 재분류'
         self.assertIn('【벤더사 · B사】',grouped_draft(self.leader,[source])['current'])
         self.assertNotIn('【고객사 · A사】',grouped_draft(self.leader,[source])['current'])
+
+    def test_old_version_insert_without_new_columns_uses_database_defaults(self):
+        from django.db import connection
+        self.assertEqual(Task().vendor,'');self.assertEqual(Task().solution,'')
+        task=self.task('이전 버전 등록 호환')
+        fields=[field.column for field in Task._meta.local_fields if field.column not in ['id','vendor','solution','report_group']]
+        columns=','.join(connection.ops.quote_name(name) for name in fields)
+        table=connection.ops.quote_name(Task._meta.db_table)
+        with connection.cursor() as cursor:
+            cursor.execute(f'INSERT INTO {table} ({columns}) SELECT {columns} FROM {table} WHERE id=%s',[task.pk])
+            new_id=cursor.lastrowid
+        legacy=Task.objects.get(pk=new_id)
+        self.assertEqual(legacy.report_group,'auto');self.assertEqual(legacy.vendor,'');self.assertEqual(legacy.solution,'')
