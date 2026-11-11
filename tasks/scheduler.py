@@ -46,6 +46,9 @@ def tick(now=None,sync_google=True):
             from .notices import publish_due,deliver_pending as deliver_notices
             publish_due(now)
             deliver_notices()
+            from .surveys import queue_notifications,deliver_notifications
+            queue_notifications(now)
+            deliver_notifications(now)
             from .models import WorkSeries
             from .work_series import process_work_rule
             for pk in WorkSeries.objects.filter(enabled=True,mode='calendar',next_at__lte=now).values_list('pk',flat=True):

@@ -3,8 +3,18 @@ from . import collaboration,collaboration_views,personal,calendar_views,hiworks_
 from . import audit_views
 from . import documents
 from . import notice_views
+from . import surveys,assessments
 from . import schedule_control,requests as work_requests
 urlpatterns=[
+    path('surveys/',surveys.survey_list,name='survey_list'),
+    path('surveys/new/',surveys.edit,name='survey_new'),
+    path('surveys/<int:pk>/',surveys.detail,name='survey_detail'),
+    path('surveys/<int:pk>/edit/',surveys.edit,name='survey_edit'),
+    path('surveys/<int:pk>/results/',surveys.results,name='survey_results'),
+    path('assessments/',assessments.overview,name='assessment_list'),
+    path('assessments/new/',assessments.edit,name='assessment_new'),
+    path('assessments/<int:pk>/',assessments.detail,name='assessment_detail'),
+    path('assessments/<int:pk>/edit/',assessments.edit,name='assessment_edit'),
     path('documents/storage/',documents.repository_status,name='repository_status'),
     path('documents/<str:kind>/<int:pk>/add/',documents.document_add,name='document_add'),
     path('documents/<int:pk>/download/',documents.document_download,name='document_download'),
