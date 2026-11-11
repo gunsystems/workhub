@@ -3,6 +3,16 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.15.4",
+      "status": "live_wording_verified",
+      "release_notes": "releases/v0.15.4.md",
+      "migrations": [],
+      "source_commit": "9345163d4a2013c860a4f211546d3a4bd34c8814",
+      "deploy_id": "dep-dbq0n6e7bikc73bm9gu0",
+      "live_at": "2026-11-11T15:32:11+09:00",
+      "browser_verification": "Quick work input and page help both display the requested simplified Hiworks guidance. No business records changed."
+    },
+    {
       "version": "0.15.3",
       "status": "live_responsive_audit_verified",
       "release_notes": "releases/v0.15.3.md",
