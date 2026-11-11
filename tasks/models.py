@@ -644,7 +644,7 @@ class PeriodReport(models.Model):
     period_end = models.DateField('보고 종료일')
     summary = models.TextField('수행 결과 · 장애 사항 · 다음 계획')
     reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='period_reviews')
-    state = models.CharField(max_length=12, default='draft', choices=[('draft','작성 중'),('submitted','검토 대기'),('returned','보완 요청'),('approved','승인')])
+    state = models.CharField(max_length=12, default='draft', choices=[('draft','작성 중'),('submitted','검토 대기'),('returned','보완 요청'),('approved','확인 완료')])
     revision = models.PositiveIntegerField(default=0)
     submitted_at = models.DateTimeField(null=True)
     current_submission = models.ForeignKey('ReportSubmission', on_delete=models.PROTECT, null=True, related_name='+')

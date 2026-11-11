@@ -3,6 +3,15 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.16.3",
+      "status": "release_prepared",
+      "release_notes": "releases/v0.16.3.md",
+      "migrations": [
+        "0040_report_review_confirmation_label"
+      ],
+      "scope": "Report review approval wording changed to confirmation completed; return workflow and stored approved values unchanged."
+    },
+    {
       "version": "0.16.2",
       "status": "live_browser_verified",
       "release_notes": "releases/v0.16.2.md",

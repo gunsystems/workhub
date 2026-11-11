@@ -112,7 +112,7 @@ def report_edit(request,pk=None,calendar_seed=False):
     emp=profile(request.user)
     if not emp and not request.user.is_superuser:raise PermissionDenied
     obj=get_object_or_404(PeriodReport.objects.select_for_update(),pk=pk,author=request.user) if pk else None
-    if obj and obj.state in ['submitted','approved']:raise PermissionDenied('제출/승인된 보고는 보완 요청 이후에 수정할 수 있습니다.')
+    if obj and obj.state in ['submitted','approved']:raise PermissionDenied('제출했거나 확인 완료된 보고는 보완 요청 이후에 수정할 수 있습니다.')
     today=timezone.localdate();start=today-timedelta(days=today.weekday())
     initial={} if obj else {'report_type':'weekly','period_start':start,'period_end':start+timedelta(days=6),'reviewer':emp.supervisor.user_id if emp and emp.supervisor else None}
     seed=None
