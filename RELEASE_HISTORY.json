@@ -4,7 +4,7 @@
   "releases": [
     {
       "version": "0.15.1",
-      "status": "live_backend_verified_browser_pending_login",
+      "status": "live_mobile_ui_verified",
       "release_notes": "releases/v0.15.1.md",
       "migrations": [
         "0036_document_original_name"
@@ -15,7 +15,8 @@
       "deploy_id": "dep-dbpvn29srm7s73920ch0",
       "live_at": "2026-11-11T14:23:15+09:00",
       "backup": "/var/data/backups/workhub-pre-v0151-20261111T052306243473Z.sqlite3",
-      "verification": "Actual existing PNG verified intact; missing filename extension confirmed. Production read-only administrative handler test returned PNG filename extension and 200 JPEG preview 222x480. Business records and files unchanged, no test notifications sent. Browser/mobile checks awaiting user login."
+      "verification": "Actual existing PNG verified intact; missing filename extension confirmed. Production read-only administrative handler test returned PNG filename extension and 200 JPEG preview 222x480. Business records and files unchanged, no test notifications sent. Browser/mobile checks awaiting user login.",
+      "browser_verification": "Lee session: opened quick work from My Work, highlighted working step, enabled requester completion, loaded actual existing image thumbnail; 360/390/430px bounds verified. Downloaded actual PNG and verified 220957 bytes, 1125x2436, integrity OK. Real business state unchanged; no comment/test mail or Hiworks notification sent. Physical iPhone Safari not operated."
     },
     {
       "version": "0.15.0",
