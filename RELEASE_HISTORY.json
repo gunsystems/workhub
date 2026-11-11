@@ -4,12 +4,17 @@
   "releases": [
     {
       "version": "0.16.0-preview",
-      "status": "local_tests_in_progress",
+      "status": "ci_passed_awaiting_admin_preview_deploy",
       "release_notes": "releases/v0.16.0-preview.md",
       "migrations": [
         "0037_leave_preview"
       ],
-      "scope": "superuser-only preview; no staff rollout, automatic grants, external notifications or calendar changes"
+      "scope": "superuser-only preview; no staff rollout, automatic grants, external notifications or calendar changes",
+      "source_commit": "65d999e01018c33bb5bccd93d0174475afddac12",
+      "pull_request": "https://github.com/gunsystems/workhub/pull/21",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43023090678",
+      "validation": "21 targeted tests passed locally; GitHub Linux 500-test regression and Node checks succeeded. Local full run interrupted after CI success; no local full-pass claim.",
+      "deployment_blocker": "Render list_deploys returns internal error; dashboard remains loading; /work/leave/ still 404. No live verification yet."
     },
     {
       "version": "0.15.4",
