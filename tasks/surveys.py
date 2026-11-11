@@ -50,7 +50,7 @@ class QuestionForm(forms.ModelForm):
         return d
 
 
-QuestionSet=inlineformset_factory(Survey,SurveyQuestion,form=QuestionForm,extra=3,min_num=1,validate_min=True,max_num=20,validate_max=True,can_delete=True)
+QuestionSet=inlineformset_factory(Survey,SurveyQuestion,form=QuestionForm,extra=0,min_num=1,validate_min=True,max_num=20,validate_max=True,can_delete=True)
 
 
 def survey_targets(survey):
