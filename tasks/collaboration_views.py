@@ -7,6 +7,7 @@ from .permissions import visible_departments,visible_employees,performing_depart
 
 
 def official_detail(request,task):
+    from .progress_reporting import next_report_number
     from .permissions import visible_requests
     from .google_calendar import official_allowed
     from .calendar_views import task_calendar_registered
@@ -24,7 +25,7 @@ def official_detail(request,task):
     return render(request,'tasks/official_detail.html',{
         'source_request':visible_requests(request.user).filter(task=task).first(),'task':task,'steps':steps,'current':current,'assignments':task.assignments.select_related('employee__department'),
         'conflicts':conflicts,
-        'my_assignment':my_assignment,'assignment_count':assignment_count,'pending_performers':pending_performers,
+        'next_progress_number':next_report_number(task,request.user),'my_assignment':my_assignment,'assignment_count':assignment_count,'pending_performers':pending_performers,
         'can_edit':can_edit(request.user,task) and task.status not in ['review','done','cancelled'],
         'can_report':can_report(request.user,task),'can_review':can_review(request.user,task),
         'primary':task.assignee.user_id==request.user.pk,'owner':task.creator_id==request.user.pk,

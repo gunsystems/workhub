@@ -96,5 +96,7 @@ def transition(user, pk, action, data):
             raise ValidationError('알 수 없는 작업입니다.')
         task.last_report_at = timezone.now()
     task.save()
-    record(task,user,kind,data['body'],{'before':before,'report_gap_days':report_gap,'report_interval_days':task.report_days})
+    from .progress_reporting import next_report_number
+    report_details={'progress_report_number':next_report_number(task,user),'performer_progress':task.progress,'action':'progress'} if action=='progress' else {}
+    record(task,user,kind,data['body'],{'before':before,'report_gap_days':report_gap,'report_interval_days':task.report_days,**report_details})
     return task

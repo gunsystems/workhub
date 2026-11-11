@@ -70,6 +70,7 @@ def detail(request,pk):
     if task.workflow_version == 2:
         from .collaboration_views import official_detail
         return official_detail(request,task)
+    from .progress_reporting import next_report_number
     sensitive = is_company_admin(request.user) or can_review(request.user,task) or task.assignee.user_id == request.user.pk
     events = task.events.select_related('author__employee__department')
     if not sensitive:
@@ -77,7 +78,7 @@ def detail(request,pk):
     from .google_calendar import official_allowed
     from .calendar_views import task_calendar_registered
     calendar_export_allowed = official_allowed(request.user, task)
-    return render(request,'tasks/detail.html',{'task':task,'can_export_calendar':calendar_export_allowed,'calendar_registered':task_calendar_registered(request.user,task),'can_edit':can_edit(request.user, task) and task.status not in ['review','done'], 'can_review':can_review(request.user, task),'can_report':can_report(request.user,task),'sensitive':sensitive,'events':events,'checklist':task.checklist.filter(retired=False)})
+    return render(request,'tasks/detail.html',{'task':task,'can_export_calendar':calendar_export_allowed,'calendar_registered':task_calendar_registered(request.user,task),'can_edit':can_edit(request.user, task) and task.status not in ['review','done'], 'can_review':can_review(request.user, task),'can_report':can_report(request.user,task),'next_progress_number':next_report_number(task,request.user),'sensitive':sensitive,'events':events,'checklist':task.checklist.filter(retired=False)})
 
 @login_required
 @transaction.atomic
@@ -176,7 +177,12 @@ def task_action(request,pk,action):
     task = get_object_or_404(visible_tasks(request.user),pk=pk)
     allowed = can_review(request.user,task) if action in ['review','feedback'] else can_report(request.user,task)
     if not allowed: raise PermissionDenied
-    form = forms[action](request.POST if request.method == 'POST' else None)
+    if task.workflow_version == 2 and action in ['progress','submit']:
+        return redirect('official_action',pk=pk,kind=action)
+    from .progress_reporting import next_report_number
+    if action=='progress':titles['progress']=f'진행 보고 {next_report_number(task,request.user)}차'
+    initial={'progress':min(99,task.progress),'delay_reason':task.delay_reason} if action=='progress' else {}
+    form = forms[action](request.POST if request.method == 'POST' else None,initial=initial)
     if request.method == 'POST' and form.is_valid():
         try:
             transition(request.user,pk,action,form.cleaned_data)
