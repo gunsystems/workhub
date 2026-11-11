@@ -270,7 +270,11 @@ def action(request,pk,kind):
     if kind not in titles: raise PermissionDenied
     task=get_object_or_404(visible_tasks(request.user),pk=pk,workflow_version=2)
     if kind=='submit': titles['submit']='완료 보고 제출' if task.approval_steps.exists() else '업무 완료'
-    form=ActionForm(request.POST if request.method=='POST' else None,initial={'revision':task.revision,**({'body':'업무 내용과 기한을 확인했습니다.'} if kind=='accept' else {})})
+    from .progress_reporting import next_report_number
+    participant=task.assignments.filter(employee__user=request.user).first()
+    progress_initial=min(99,participant.progress) if participant else min(99,task.progress)
+    if kind=='progress': titles['progress']=f'진행 보고 {next_report_number(task,request.user)}차'
+    form=ActionForm(request.POST if request.method=='POST' else None,initial={'revision':task.revision,'progress':progress_initial,**({'body':'업무 내용과 기한을 확인했습니다.'} if kind=='accept' else {})})
     form.fields['replacement'].queryset=users().filter(employee__is_active=True)
     if kind!='progress': form.fields.pop('progress')
     if kind not in ['review','override']: form.fields.pop('quality_score')
@@ -429,8 +433,10 @@ def _change(user,pk,kind,data):
     if kind=='handover':
         from .assignment_mail import enqueue as enqueue_assignment_mail
         enqueue_assignment_mail(task,user,{task.assignee_id})
+    from .progress_reporting import next_report_number
+    report_details={'progress_report_number':next_report_number(task,user),'performer_progress':participant.progress} if kind=='progress' else {}
     record(task,user,event,data['body'],{'before':before,'action':kind,'decision':data.get('decision'),
-           'round':task.report_round,'step':current.position if current else None})
+           'round':task.report_round,'step':current.position if current else None,**report_details})
     if task.status=='done':
         from .work_series import completion_followup
         completion_followup(task)

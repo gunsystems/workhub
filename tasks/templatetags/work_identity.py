@@ -19,3 +19,8 @@ def elapsed_since(value):
     if days: return f'{days}일 {hours}시간 경과'
     if hours: return f'{hours}시간 {mins}분 경과'
     return f'{minutes}분 경과'
+
+@register.filter
+def next_progress(task,user):
+    from tasks.progress_reporting import next_report_number
+    return next_report_number(task,user)
