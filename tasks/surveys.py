@@ -160,10 +160,11 @@ def detail(request,pk):
     if part:part.refresh_from_db()
     if part and not part.submitted and form is None:form=answer_form(obj,initial=part.draft)
     parts=obj.participations.select_related('employee__department') if admin else []
-    total=obj.participations.count() if admin else 0
+    preview=list(survey_targets(obj).select_related('department')) if admin and obj.state=='draft' else []
+    total=len(preview) if admin and obj.state=='draft' else obj.participations.count() if admin else 0
     submitted=obj.participations.filter(submitted=True).count() if admin else 0
     active=obj.state=='open' and obj.starts_at<=timezone.now()<obj.closes_at
-    return render(request,'tasks/survey_detail.html',{'survey':obj,'survey_admin':admin,'participation':part,'form':form,'error':error,'parts':parts,'total':total,'submitted':submitted,'active':active})
+    return render(request,'tasks/survey_detail.html',{'survey':obj,'survey_admin':admin,'participation':part,'form':form,'error':error,'parts':parts,'preview':preview,'total':total,'submitted':submitted,'active':active})
 
 
 @login_required
