@@ -4,10 +4,16 @@
   "releases": [
     {
       "version": "0.16.5",
-      "status": "release_prepared",
+      "status": "live_verified",
       "release_notes": "releases/v0.16.5.md",
       "migrations": [],
-      "scope": "Report confirmation permits empty feedback; return requests still require a reason. Conditional browser validation and visible optional/required label."
+      "scope": "Report confirmation permits empty feedback; return requests still require a reason. Conditional browser validation and visible optional/required label.",
+      "source_commit": "f93fb44eea98aee29e159d449867238a39e519be",
+      "deploy_id": "dep-dbq7mi59fdbs73dkcr2g",
+      "live_at": "2026-11-11T23:28:19+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43038554918",
+      "validation": "19 targeted tests passed, including missing/empty/whitespace confirmation feedback acceptance and return reason rejection; JS syntax check and full CI passed. Live version verified in existing employee session. No real review submitted.",
+      "preview": "Isolated in-memory fixtures rendered actual leader report list, composition and executive detail templates; standalone HTML under outputs/team-report-preview. No production staff roles or reports changed."
     },
     {
       "version": "0.16.4",
