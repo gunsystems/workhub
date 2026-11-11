@@ -3,6 +3,23 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.1",
+      "status": "live_verified",
+      "release_notes": "releases/v0.17.1.md",
+      "migrations": [],
+      "source_commit": "cd583f77de879eda87d58c29a9c15f9ef267d980",
+      "deploy_id": "dep-dbqe8t6gekts73e8k66g",
+      "live_at": "2026-11-12T06:57:03+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43107322414",
+      "scope": "Defer team automatic aggregation and executive rollup. Show employee weekly submitted snapshots, issues and latest review feedback in expandable cards. Omit visible provenance lines; retain existing source relations.",
+      "validation": "62 related tests, Node grouping and full GitHub regression passed; no migration drift. Disabled grouping GET redirects, stale group POST denied, new source additions ignored, existing source links preserved, draft content and other teams remain private.",
+      "browser_verification": "Public synthetic employee-review example on PC, 390px and360px: expandable cards work, current/next content and review feedback readable, no provenance text or card/page horizontal overflow. Production report changes not submitted; physical Safari not operated.",
+      "screenshots": [
+        "outputs/Workhub_v0171_직원별보고_PC.jpg",
+        "outputs/Workhub_v0171_직원별보고_모바일.jpg"
+      ]
+    },
+    {
       "version": "0.17.0",
       "status": "live_verified",
       "release_notes": "releases/v0.17.0.md",
