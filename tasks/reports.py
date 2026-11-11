@@ -15,6 +15,7 @@ from .models import PeriodReport,ReportSubmission,ReportReview,ReportFile,Task,E
 from .permissions import profile,can_view_company,visible_tasks,visible_employees
 from .collaboration import UserChoice,users
 from .drive_storage import RepositoryError
+from .weekly_reporting import calendar_draft,week_start,responsible_reviewer,submission_board
 
 
 def visible_reports(user):
@@ -22,7 +23,9 @@ def visible_reports(user):
     if can_view_company(user): return qs.exclude(Q(state='draft') & ~Q(author=user))
     emp=profile(user)
     if not emp:return qs.none()
-    return qs.filter(Q(author=user)|Q(reviewer=user)|Q(author__employee__department=emp.department)).exclude(Q(state='draft') & ~Q(author=user))
+    scope=Q(author=user)|Q(reviewer=user)
+    if emp.position=='leader' or emp.role=='manager':scope|=Q(author__employee__department=emp.department)
+    return qs.filter(scope).exclude(Q(state='draft') & ~Q(author=user))
 
 
 def selectable_sources(user):
@@ -39,8 +42,8 @@ class ReportForm(forms.ModelForm):
     attachment=forms.FileField(widget=forms.ClearableFileInput(attrs={'data-upload-limit':'10485760','accept':'.pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg'}),label='첨부 (선택 · 파일당 10MB)',required=False)
     class Meta:
         model=PeriodReport
-        fields=['report_type','period_start','period_end','summary','reviewer']
-        widgets={'period_start':forms.DateInput(attrs={'type':'date'}),'period_end':forms.DateInput(attrs={'type':'date'}),'summary':forms.Textarea(attrs={'rows':6})}
+        fields=['report_type','period_start','period_end','summary','next_week_plan','report_issues','reviewer']
+        widgets={'period_start':forms.DateInput(attrs={'type':'date'}),'period_end':forms.DateInput(attrs={'type':'date'}),'summary':forms.Textarea(attrs={'rows':8}),'next_week_plan':forms.Textarea(attrs={'rows':6}),'report_issues':forms.Textarea(attrs={'rows':3})}
     def __init__(self,*args,user,**kwargs):
         # Preserve compatibility with report forms opened before this field existed.
         if args and args[0] is not None and 'report_type' not in args[0]:
@@ -48,6 +51,9 @@ class ReportForm(forms.ModelForm):
         elif kwargs.get('data') is not None and 'report_type' not in kwargs['data']:
             kwargs['data']=kwargs['data'].copy();kwargs['data']['report_type']=getattr(kwargs.get('instance'),'report_type','period')
         super().__init__(*args,**kwargs);self.user=user
+        kind=self.data.get('report_type') if self.is_bound else self.initial.get('report_type',self.instance.report_type)
+        if kind=='weekly':self.fields['summary'].label='이번 주 진행 업무'
+        self.fields['next_week_plan'].help_text='다음 주 월요일~일요일의 예정 업무를 정리하세요.'
         self.fields['report_type'].help_text='보고 목적에 맞는 구분을 선택하세요. 개별 보고는 특정 업무·사안에 대한 보고입니다.'
         self.fields['reviewer'].queryset=users().exclude(pk=user.pk)
         self.fields['tasks'].queryset=visible_tasks(user).exclude(status='draft')
@@ -84,6 +90,7 @@ def report_list(request):
     try:start=date.fromisoformat(request.GET.get('week',''))
     except ValueError:
         today=timezone.localdate();start=today-timedelta(days=today.weekday())
+    start=week_start(start)
     end=start+timedelta(days=6)
     qs=visible_reports(request.user).filter(period_start__lte=end,period_end__gte=start)
     report_type=request.GET.get('report_type','')
@@ -94,21 +101,30 @@ def report_list(request):
     if managing:
         submitted_ids=qs.filter(state__in=['submitted','approved','returned']).values_list('author_id',flat=True)
         missing=visible_employees(request.user).filter(is_active=True,user__is_active=True).exclude(user__isnull=True).exclude(user_id__in=submitted_ids)
-    return render(request,'tasks/report_list.html',{'reports':qs.order_by('-period_start','-pk')[:100],'start':start,'end':end,'missing':missing,'managing':managing,'report_type':report_type,'report_types':PeriodReport.REPORT_TYPES})
+    board=submission_board(request.user,start)
+    return render(request,'tasks/report_list.html',{'reports':qs.order_by('-period_start','-pk')[:100],'start':start,'end':end,'missing':missing,'managing':managing,'report_type':report_type,'report_types':PeriodReport.REPORT_TYPES,'weekly_board':board,'submitted_count':sum(bool(row['report']) for row in board)})
 
 
 @login_required
 @transaction.atomic
-def report_edit(request,pk=None):
+def report_edit(request,pk=None,calendar_seed=False):
     emp=profile(request.user)
     if not emp and not request.user.is_superuser:raise PermissionDenied
     obj=get_object_or_404(PeriodReport.objects.select_for_update(),pk=pk,author=request.user) if pk else None
     if obj and obj.state in ['submitted','approved']:raise PermissionDenied('제출/승인된 보고는 보완 요청 이후에 수정할 수 있습니다.')
     today=timezone.localdate();start=today-timedelta(days=today.weekday())
     initial={} if obj else {'report_type':'weekly','period_start':start,'period_end':start+timedelta(days=6),'reviewer':emp.supervisor.user_id if emp and emp.supervisor else None}
+    seed=None
+    if calendar_seed and not obj and request.method=='GET':
+        try:start=week_start(date.fromisoformat(request.GET.get('week','')))
+        except ValueError:pass
+        seed=calendar_draft(request.user,start)
+        initial.update(report_type='weekly',period_start=start,period_end=start+timedelta(days=6),summary=seed['current'],next_week_plan=seed['next'],tasks=seed['task_ids'],reviewer=responsible_reviewer(emp))
     form=ReportForm(request.POST if request.method=='POST' else None,request.FILES or None,instance=obj,user=request.user,initial=initial)
     if request.method=='POST' and form.is_valid():
-        obj=form.save(commit=False);obj.author=request.user;obj.revision+=1;obj.save()
+        obj=form.save(commit=False);obj.author=request.user;obj.revision+=1
+        if calendar_seed:obj.calendar_based=True
+        obj.save()
         obj.source_submissions.set(form.cleaned_data['sources'])
         obj.selected_tasks.set(form.cleaned_data['tasks'])
         f=form.cleaned_data.get('attachment')
@@ -117,12 +133,12 @@ def report_edit(request,pk=None):
                 with transaction.atomic():ReportFile.objects.create(report=obj,file=f,name=Path(f.name).name[:200])
             except RepositoryError as exc:
                 form.add_error('attachment',str(exc))
-                response=render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today})
+                response=render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'seed':seed})
                 transaction.set_rollback(True)
                 return response
         if request.POST.get('action')=='submit':
             tasks=list(form.cleaned_data['tasks'])
-            snapshot={'report_type':obj.report_type,'report_type_label':obj.get_report_type_display(),'summary':obj.summary,'period_start':str(obj.period_start),'period_end':str(obj.period_end),
+            snapshot={'report_issues':obj.report_issues,'next_week_plan':obj.next_week_plan,'calendar_based':obj.calendar_based,'report_type':obj.report_type,'report_type_label':obj.get_report_type_display(),'summary':obj.summary,'period_start':str(obj.period_start),'period_end':str(obj.period_end),
                 'author':request.user.get_username(),'reviewer':obj.reviewer.get_username(),
                 'task_ids':[t.pk for t in tasks],
                 'tasks':[{'id':t.pk,'title':t.title,'status':t.get_status_display(),'progress':t.progress,'due_date':str(t.due_date),'next_action':t.next_action,
@@ -133,7 +149,7 @@ def report_edit(request,pk=None):
             obj.current_submission=submission;obj.state='submitted';obj.submitted_at=timezone.now();obj.save(update_fields=['current_submission','state','submitted_at'])
         if f:messages.success(request,'보고서 첨부파일 업로드가 완료되었습니다.',extra_tags='upload-success')
         return redirect('period_report_detail',pk=obj.pk)
-    return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today})
+    return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'seed':seed})
 
 
 @login_required

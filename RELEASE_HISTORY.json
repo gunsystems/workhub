@@ -3,6 +3,15 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.16.1-weekly-draft",
+      "status": "development_branch_only",
+      "release_notes": "releases/v0.16.1-weekly-draft.md",
+      "migrations": [
+        "0038_weekly_calendar_reports"
+      ],
+      "scope": "calendar-based current/next-week drafts, optional support requests, weekly submission board; no main merge or deployment"
+    },
+    {
       "version": "0.16.0-preview",
       "status": "ci_passed_awaiting_admin_preview_deploy",
       "release_notes": "releases/v0.16.0-preview.md",

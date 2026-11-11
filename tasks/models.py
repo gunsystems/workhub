@@ -635,6 +635,9 @@ class CalendarSubscription(models.Model):
 class PeriodReport(models.Model):
     REPORT_TYPES=[('daily','일일 보고'),('weekly','주간 보고'),('monthly','월간 보고'),('individual','개별 보고'),('period','기간 보고')]
     report_type=models.CharField('보고 구분',max_length=12,choices=REPORT_TYPES,default='period')
+    next_week_plan = models.TextField('차주 예정 업무',blank=True)
+    report_issues = models.TextField('공유·지원이 필요한 사항',blank=True)
+    calendar_based = models.BooleanField(default=False,editable=False)
     selected_tasks = models.ManyToManyField(Task, blank=True, related_name='period_reports')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='period_reports')
     period_start = models.DateField('보고 시작일')
