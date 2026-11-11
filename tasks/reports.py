@@ -167,7 +167,8 @@ def report_detail(request,pk):
             ReportReview.objects.create(submission=obj.current_submission,author=request.user,decision=obj.state,body=request.POST['body'][:10000])
             return redirect('period_report_detail',pk=pk)
     sources=ReportSubmission.objects.filter(pk__in=obj.current_submission.snapshot.get('source_submission_ids',[]) if obj.current_submission else obj.source_submissions.values_list('pk',flat=True),report__in=visible_reports(request.user))
-    return render(request,'tasks/report_detail.html',{'report':obj,'submission':obj.current_submission,'sources':sources,'can_review':obj.reviewer_id==request.user.pk and obj.state=='submitted','review_error':review_error})
+    latest_review=ReportReview.objects.filter(submission__report=obj).select_related('submission','author__employee__department').order_by('-created_at','-pk').first()
+    return render(request,'tasks/report_detail.html',{'report':obj,'submission':obj.current_submission,'sources':sources,'latest_review':latest_review,'can_review':obj.reviewer_id==request.user.pk and obj.state=='submitted','review_error':review_error})
 
 
 @login_required

@@ -3,6 +3,13 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.16.4",
+      "status": "release_prepared",
+      "release_notes": "releases/v0.16.4.md",
+      "migrations": [],
+      "scope": "Show latest report review feedback above report body for both sender and reviewer; preserve historical reviews and label previous-version feedback after resubmission."
+    },
+    {
       "version": "0.16.3",
       "status": "live_verified",
       "release_notes": "releases/v0.16.3.md",
@@ -13,8 +20,7 @@
       "source_commit": "e8f4c4db0e977047491351fa4da43633cabcbc27",
       "deploy_id": "dep-dbq7bjo8v5cc73fcnesg",
       "live_at": "2026-11-11T23:05:24+09:00",
-      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43034818621",
-      "validation": "Related tests16 passed; full CI succeeded. Live v0.16.3 report and updated review help verified in Lee session. Reviewer controls covered by regression; no actual report review submitted."
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43034818621"
     },
     {
       "version": "0.16.2",

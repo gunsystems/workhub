@@ -18,3 +18,27 @@
 @media(max-width:480px){.workspace-toolbar.work-list-filters{grid-template-columns:minmax(0,1fr)}}
 
 .workspace-field-heading{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}.workspace-field .workspace-field-heading label{margin:0}.required-badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:5px;background:#fff0ef;color:#a3312a;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap}
+
+/* Review feedback is visible without expanding historical submission records. */
+.report-review-feedback{border-left:4px solid #256b57}
+.report-feedback-heading{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.report-feedback-heading h2{margin:0}
+.report-feedback-status{display:inline-flex;padding:5px 10px;border-radius:7px;background:#e6f1ec;color:#205c49;font-size:13px;font-weight:700}
+.report-review-feedback .report-feedback-meta{font-size:13px;color:#657487;overflow-wrap:anywhere;margin:12px 0}
+.report-review-feedback .report-feedback-body{color:#172e44;line-height:1.8;overflow-wrap:anywhere;margin:16px 0}
+
+.report-detail-page .detail{min-width:0}
+.report-detail-page :is(h1,h2,h3,h4,p,a){overflow-wrap:anywhere}
+.report-detail-page .report-content-section h2,.report-detail-page .report-content-section h3{margin:0 0 16px}
+.report-detail-page .report-content-section + .report-content-section{margin-top:28px;padding-top:24px;border-top:1px solid #e3e9ef}
+.report-detail-page .report-text{margin:0;color:#34465b;line-height:1.85}
+.report-detail-page .report-empty{margin:0;font-size:14px}
+.report-detail-page .report-actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;padding-top:24px;border-top:1px solid #e3e9ef}
+.report-history details{padding:18px 0;border-top:1px solid #e3e9ef}
+.report-history summary{cursor:pointer;font-weight:600;line-height:1.6}
+.report-history details h3{margin:24px 0 12px}
+.report-history details p{line-height:1.85}
+.report-history-review{margin-top:24px;padding:18px 20px;background:#edf5f1;border:1px solid #d6e6dd;border-radius:10px;overflow-wrap:anywhere}
+.report-history-review h4{margin:0 0 10px;color:#205c49}
+.report-detail-page .report-history-review p{margin:0;color:#34465b}
+@media(max-width:600px){.report-detail-page .report-content-section + .report-content-section{margin-top:24px;padding-top:20px}.report-feedback-heading{align-items:flex-start}.report-history-review{padding:16px}.report-detail-page .report-feedback-body{font-size:15px}}

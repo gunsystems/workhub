@@ -86,3 +86,39 @@ class WeeklyReportTests(TestCase):
         self.client.post('/work/reports/weekly/new/',self.post(action='submit',next_week_plan='',report_issues='지원 요청만 존재'))
         report=PeriodReport.objects.get();self.client.force_login(self.leader)
         response=self.client.get(f'/work/reports/{report.pk}/');self.assertContains(response,'지원 요청만 존재',count=2)
+
+    def test_review_feedback_visible_to_sender_and_recipient_without_history_expansion(self):
+        self.client.post('/work/reports/weekly/new/',self.post(action='submit'))
+        report=PeriodReport.objects.get()
+        self.client.force_login(self.leader)
+        self.client.post(f'/work/reports/{report.pk}/',{'revision':report.revision,'decision':'returned','body':'교육 시간 보완\n<script>alert(1)</script>'})
+        for user in [self.worker,self.leader]:
+            self.client.force_login(user)
+            response=self.client.get(f'/work/reports/{report.pk}/')
+            html=response.content.decode()
+            feedback=html.split('aria-labelledby="report-feedback-title">')[1].split('</section>')[0]
+            self.assertIn('교육 시간 보완<br>',feedback)
+            self.assertIn('보완 요청',feedback)
+            self.assertIn('주간보고팀 · 팀장',feedback)
+            self.assertNotIn('<details',feedback)
+            self.assertIn('&lt;script&gt;',feedback)
+            self.assertNotIn('<script>',feedback)
+        self.client.force_login(self.outside)
+        self.assertEqual(self.client.get(f'/work/reports/{report.pk}/').status_code,404)
+
+    def test_previous_feedback_is_labelled_after_resubmission_and_latest_review_replaces_it(self):
+        self.client.post('/work/reports/weekly/new/',self.post(action='submit'))
+        report=PeriodReport.objects.get()
+        self.client.force_login(self.leader)
+        self.client.post(f'/work/reports/{report.pk}/',{'revision':report.revision,'decision':'returned','body':'차주 보완 의견'})
+        report.refresh_from_db();self.client.force_login(self.worker)
+        self.client.post(f'/work/reports/{report.pk}/edit/',self.post(revision=report.revision,action='submit'))
+        report.refresh_from_db()
+        self.assertContains(self.client.get(f'/work/reports/{report.pk}/'),'이전 제출본에 대한 피드백입니다.')
+        self.client.force_login(self.leader)
+        self.client.post(f'/work/reports/{report.pk}/',{'revision':report.revision,'decision':'approved','body':'최종 검토 의견'})
+        response=self.client.get(f'/work/reports/{report.pk}/')
+        feedback=response.content.decode().split('aria-labelledby="report-feedback-title">')[1].split('</section>')[0]
+        self.assertIn('최종 검토 의견',feedback);self.assertIn('확인 완료',feedback);self.assertIn(f'제출 v{report.current_submission.version}',feedback)
+        self.assertNotIn('차주 보완 의견',feedback)
+        self.assertContains(response,'차주 보완 의견')
