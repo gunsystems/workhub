@@ -26,7 +26,7 @@ def deliver_comment(mail):
     employee=mail.employee;user=employee.user if employee and employee.user_id else None
     access=getattr(user,'workhub_access',None) if user else None
     event=TaskEvent.objects.filter(pk=mail.payload.get('event_id'),task_id=mail.task_id).select_related('task','author').first()
-    if not (event and event.task.assignment_email and event.task.status!='draft' and employee.is_active and user and access and access.verified_at
+    if not (event and event.task.assignment_email and event.task.status!='draft' and employee and employee.is_active and user and access and access.verified_at
             and user.pk==mail.payload.get('user_id') and access.email.lower()==str(mail.payload.get('email','')).lower()==user.email.lower()
             and account_allowed(user) and visible_tasks(user).filter(pk=event.task_id).exists()):
         mail.state='skipped';mail.result='현재 접근 권한 또는 알림 설정 변경으로 제외했습니다.'

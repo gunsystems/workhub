@@ -40,6 +40,11 @@ class SecurityNotificationTests(TestCase):
         change(self.root,self.task.pk,'comment',{'revision':0,'body':'의견'})
         self.worker.is_active=False;self.worker.save();deliver_pending()
         self.assertEqual(len(mail.outbox),0);self.assertEqual(AssignmentMail.objects.get().state,'skipped')
+    def test_comment_email_with_removed_recipient_is_safely_skipped(self):
+        from .collaboration import change
+        change(self.root,self.task.pk,'comment',{'revision':0,'body':'의견'})
+        AssignmentMail.objects.update(employee=None);deliver_pending()
+        self.assertEqual(len(mail.outbox),0);self.assertEqual(AssignmentMail.objects.get().state,'skipped')
     def setUp(self):
         U=get_user_model()
         self.root=U.objects.create_superuser('operator',password='root-test-secret')
