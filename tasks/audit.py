@@ -6,7 +6,7 @@ from django.contrib.auth.signals import user_logged_in, user_logged_out
 from .models import SystemAudit
 
 _actor = ContextVar('workhub_audit_actor', default=None)
-BUSINESS = {'Task','Department','Employee','Project','WorkCategory','WorkRequest','ChecklistItem',
+BUSINESS = {'StaffEmployment','LeaveYear','LeaveHoliday','LeaveEntry','Task','Department','Employee','Project','WorkCategory','WorkRequest','ChecklistItem',
             'TaskParticipation','ApprovalStep','EmployeeFeedback','PeriodReport','ReportSubmission',
             'ReportReview','ReportFile','CalendarExportPolicy','WorkSeries','WorkOccurrence','Notice',
             'ScheduleExpectation','ScheduleOutcome','DeadlinePolicy','RequestEvent','RequestAllocation'}
@@ -51,7 +51,7 @@ def values(obj):
         if field.get_internal_type() in ['DateTimeField','DateField','TimeField']:
             value=value.isoformat() if value else None
         elif field.get_internal_type() == 'FileField': value=bool(value)
-        elif field.get_internal_type() == 'UUIDField':value=str(value) if value else None
+        elif field.get_internal_type() in ['UUIDField','DecimalField']:value=str(value) if value is not None else None
         result[str(field.verbose_name) if not field.is_relation else field.attname]=value
     return result
 

@@ -680,3 +680,5 @@ class ReportFile(models.Model):
 from .document_models import WorkDocument
 from .quick_models import QuickRequest, QuickEvent, QuickDelivery
 from .people_models import Survey, SurveyQuestion, SurveyParticipation, SurveySubmission, SurveyDelivery, StaffAssessment, AssessmentRevision
+
+from .leave_models import StaffEmployment, LeaveYear, LeaveHoliday, LeaveEntry, LeaveRequest, LeaveApproval, LeaveEvent

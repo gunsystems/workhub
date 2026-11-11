@@ -3,6 +3,15 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.16.0-preview",
+      "status": "local_tests_in_progress",
+      "release_notes": "releases/v0.16.0-preview.md",
+      "migrations": [
+        "0037_leave_preview"
+      ],
+      "scope": "superuser-only preview; no staff rollout, automatic grants, external notifications or calendar changes"
+    },
+    {
       "version": "0.15.4",
       "status": "live_wording_verified",
       "release_notes": "releases/v0.15.4.md",
