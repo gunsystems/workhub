@@ -6,8 +6,10 @@
       "version": "0.16.2",
       "status": "release_prepared",
       "release_notes": "releases/v0.16.2.md",
-      "migrations": [],
-      "scope": "Weekly report button/title and calendar-reference/Friday17:00 guidance only; no automatic deadline or scoring behavior change"
+      "migrations": [
+        "0039_technical_support_categories"
+      ],
+      "scope": "Weekly report labels and Friday17:00 guidance; add technical support onsite/remote categories without reclassifying existing work."
     },
     {
       "version": "0.16.1",
