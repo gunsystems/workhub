@@ -1,9 +1,9 @@
 {% extends 'tasks/base.html' %}{% load static %}{% block content %}<link rel="stylesheet" href="{% static 'tasks/workspace.css' %}">
 <section class="heading"><div><div class="eyebrow">COMPANY NOTICE</div><h1>공지사항 작성</h1><p>전사·부서·직원에게 전달할 공지를 작성합니다. 다음 화면에서 내용을 확인한 후 발송을 확정합니다.</p></div></section>
-<form method="post" class="task-form">{% csrf_token %}{{ form.non_field_errors }}
+<form method="post" class="task-form" data-content-preview="notice">{% csrf_token %}{{ form.non_field_errors }}
 <section class="detail"><h2>01 · 공지 내용</h2>{% include 'tasks/workspace_field.html' with field=form.title %}{% include 'tasks/workspace_field.html' with field=form.body %}</section>
 <section class="detail"><h2>02 · 전달 대상</h2>{% include 'tasks/workspace_field.html' with field=form.audience %}<div id="notice-teams">{% include 'tasks/workspace_field.html' with field=form.departments required_note='부서 선택 시 필수' %}</div><div id="notice-employees">{% include 'tasks/workspace_field.html' with field=form.employees required_note='직원 선택 시 필수' %}</div><p class="helptext">발송 확정 시점의 초대·이메일 인증 완료 직원으로 대상을 정합니다. 발송 직전에 재직·계정 상태를 다시 확인합니다.</p></section>
 <section class="detail"><h2>03 · 전달 방법 <span class="required-badge">1개 이상 필수</span></h2>{% include 'tasks/workspace_field.html' with field=form.send_email %}{% include 'tasks/workspace_field.html' with field=form.send_messenger %}<p class="helptext">둘 다 선택하면 이메일과 하이웍스 메신저로 각각 전달합니다. 직원은 Workhub의 공지사항 메뉴에서도 확인할 수 있습니다.</p></section>
 <section class="detail"><h2>04 · 발송 시점</h2>{% include 'tasks/workspace_field.html' with field=form.timing %}<div id="notice-schedule">{% include 'tasks/workspace_field.html' with field=form.scheduled_for required_note='예약 발송 시 필수' %}</div><p class="helptext">예약은 한국 시간 기준입니다. 예약 시각에 서버가 발송을 시작하며 실제 수신은 처리 상황에 따라 늦어질 수 있습니다.</p></section>
-<div class="workspace-actions"><button class="button primary" type="submit">내용·대상 확인하기</button><a class="button" href="{% url 'notice_list' %}">취소</a></div></form>
-<script src="{% static 'tasks/notice_form.js' %}" defer></script>{% endblock %}
+<div class="workspace-actions"><button class="button" type="button" data-content-preview-open>미리보기</button><button class="button primary" type="submit">내용·대상 확인하기</button><a class="button" href="{% url 'notice_list' %}">취소</a></div></form>
+{% include 'tasks/content_preview.html' %}<script src="{% static 'tasks/notice_form.js' %}" defer></script>{% endblock %}
