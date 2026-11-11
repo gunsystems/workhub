@@ -3,6 +3,17 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.15.3",
+      "status": "live_responsive_audit_verified",
+      "release_notes": "releases/v0.15.3.md",
+      "migrations": [],
+      "source_commit": "27014d4f7bb55bd822501903cc2e1d028576ba2d",
+      "deploy_id": "dep-dbq0guou01pc739fmsv0",
+      "live_at": "2026-11-11T15:18:33+09:00",
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42971310934",
+      "browser_verification": "12 common/executive pages x 360/390/768/1024/1366/1920px = 72 checks, no page/control overflow or oversized single-selects after CSS load. Internal table/kanban horizontal scrolling excluded. Quick card aligned internally on mobile and with neighbour at 1366px. Mobile menu opened/closed. Physical mobile browsers and administrator-only pages not exercised."
+    },
+    {
       "version": "0.15.2",
       "status": "live_mobile_ui_verified",
       "release_notes": "releases/v0.15.2.md",
