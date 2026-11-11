@@ -166,7 +166,13 @@ def dashboard(request):
     if bucket not in buckets: bucket='active'
     query = request.GET.copy()
     query.pop('bucket',None)
-    return render(request,'tasks/dashboard.html',{'company_view':can_view_company(request.user),'managing':managing,'is_manager':is_manager(request.user),'rows':rows,'tasks':buckets[bucket],'counts':{k:len(v) for k,v in buckets.items()},'bucket':bucket,'query':query.urlencode(),'month':month,'departments':visible_departments(request.user),'employees':visible_employees(request.user),'department':department_id,'employee':employee_id,'scope':request.GET.get('scope',''),'attention_count':attention_count,'attention_only':attention_only,'today':today,'employee_feedbacks':EmployeeFeedback.objects.filter(employee__in=employees).select_related('employee')[:10],'feedbacks':TaskEvent.objects.filter(task_id__in=[t.pk for t in tasks if is_company_admin(request.user) or t.assignee.user_id == request.user.pk or (managing and t.assignee.role == 'employee' and not (t.assignee.user_id and t.assignee.user.is_superuser))],kind__in=['feedback','returned','approved']).select_related('task')[:10]})
+    from .quick import visible as visible_quick
+    quick_items=visible_quick(request.user).exclude(state__in=['done','cancelled'])
+    if not managing:quick_items=quick_items.filter(Q(requester=request.user)|Q(assignee__user=request.user))
+    if department_id.isdigit():quick_items=quick_items.filter(assignee__department_id=department_id)
+    if employee_id.isdigit():quick_items=quick_items.filter(assignee_id=employee_id)
+    quick_context={'quick_items':quick_items[:10],'quick_total':quick_items.count(),'quick_pending':quick_items.filter(state='pending').count(),'quick_replied':quick_items.filter(state='replied').count()}
+    return render(request,'tasks/dashboard.html',{**quick_context,'company_view':can_view_company(request.user),'managing':managing,'is_manager':is_manager(request.user),'rows':rows,'tasks':buckets[bucket],'counts':{k:len(v) for k,v in buckets.items()},'bucket':bucket,'query':query.urlencode(),'month':month,'departments':visible_departments(request.user),'employees':visible_employees(request.user),'department':department_id,'employee':employee_id,'scope':request.GET.get('scope',''),'attention_count':attention_count,'attention_only':attention_only,'today':today,'employee_feedbacks':EmployeeFeedback.objects.filter(employee__in=employees).select_related('employee')[:10],'feedbacks':TaskEvent.objects.filter(task_id__in=[t.pk for t in tasks if is_company_admin(request.user) or t.assignee.user_id == request.user.pk or (managing and t.assignee.role == 'employee' and not (t.assignee.user_id and t.assignee.user.is_superuser))],kind__in=['feedback','returned','approved']).select_related('task')[:10]})
 
 
 @login_required

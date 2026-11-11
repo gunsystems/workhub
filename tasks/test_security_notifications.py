@@ -17,6 +17,34 @@ from .assignment_mail import enqueue, deliver_pending
     PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend',
     WORKHUB_BASE_URL='https://workhub.gunsystems.co.kr')
 class SecurityNotificationTests(TestCase):
+    @override_settings(HIWORKS_NOTIFY_TOKEN='test-only')
+    def test_comment_alerts_assignee_not_actor_and_queues_email_once(self):
+        from .collaboration import change
+        from .models import WorkNotification,HiworksLink,HiworksDelivery
+        HiworksLink.objects.create(employee=self.emp,user_id='worker',remote_id='worker',email=self.worker.email,notifications_enabled=True)
+        change(self.root,self.task.pk,'comment',{'revision':0,'body':'새 댓글입니다.'})
+        notices=WorkNotification.objects.filter(task=self.task)
+        self.assertEqual(list(notices.values_list('user_id',flat=True)),[self.worker.pk])
+        self.assertEqual(HiworksDelivery.objects.count(),1)
+        jobs=AssignmentMail.objects.filter(payload__kind='comment');self.assertEqual(jobs.count(),1)
+        deliver_pending();deliver_pending();self.assertEqual(len(mail.outbox),1)
+        self.assertIn('업무 의견 확인하기',mail.outbox[0].alternatives[0].content)
+    def test_comment_notification_channel_opt_out_still_keeps_inapp(self):
+        from .collaboration import change
+        from .models import WorkNotification,HiworksDelivery
+        self.task.assignment_email=False;self.task.assignment_messenger=False;self.task.save()
+        change(self.root,self.task.pk,'comment',{'revision':0,'body':'내부 알림만'})
+        self.assertTrue(WorkNotification.objects.filter(user=self.worker).exists());self.assertFalse(AssignmentMail.objects.exists());self.assertFalse(HiworksDelivery.objects.exists())
+    def test_comment_email_rechecks_current_access(self):
+        from .collaboration import change
+        change(self.root,self.task.pk,'comment',{'revision':0,'body':'의견'})
+        self.worker.is_active=False;self.worker.save();deliver_pending()
+        self.assertEqual(len(mail.outbox),0);self.assertEqual(AssignmentMail.objects.get().state,'skipped')
+    def test_comment_email_with_removed_recipient_is_safely_skipped(self):
+        from .collaboration import change
+        change(self.root,self.task.pk,'comment',{'revision':0,'body':'의견'})
+        AssignmentMail.objects.update(employee=None);deliver_pending()
+        self.assertEqual(len(mail.outbox),0);self.assertEqual(AssignmentMail.objects.get().state,'skipped')
     def setUp(self):
         U=get_user_model()
         self.root=U.objects.create_superuser('operator',password='root-test-secret')

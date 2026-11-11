@@ -56,7 +56,9 @@ def transition(user, pk, action, data):
             record(task,user,'accepted','배정된 업무를 확인했습니다.')
         return task
     if action == 'feedback':
-        record(task,user,'feedback',data['body'])
+        saved_event=record(task,user,'feedback',data['body'])
+        from .collaboration import notify
+        notify(task,'새 의견: '+data['body'][:150],external=task.assignment_messenger,comment_event=saved_event)
         return task
     if action == 'review':
         if task.status != 'review':

@@ -11,6 +11,7 @@ class WorkDocument(models.Model):
     file = models.FileField(upload_to='documents', blank=True)
     link = models.URLField(max_length=2000, blank=True)
     name = models.CharField(max_length=200)
+    original_name = models.CharField(max_length=255,blank=True)
     kind = models.CharField(max_length=20, choices=[('reference','참고 자료'),('working','진행 자료'),('result','결과물'),('inspection','점검확인서'),('other','기타')], default='reference')
     size = models.PositiveIntegerField(default=0)
     uploader = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
@@ -18,6 +19,12 @@ class WorkDocument(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     archived_at = models.DateTimeField(null=True)
     archive_reason = models.CharField(max_length=500, blank=True)
+
+    @property
+    def preview_candidate(self):
+        from pathlib import Path
+        suffix=Path(self.original_name or self.name).suffix.lower()
+        return bool(self.file) and (not suffix or suffix in ['.png','.jpg','.jpeg','.gif','.webp'])
 
     class Meta:
         ordering = ['-created_at','-pk']

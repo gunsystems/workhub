@@ -141,16 +141,20 @@ def request_workload(user,intake,form):
     return rows[:100]
 
 
-def notify(task, message, external=True):
+def notify(task, message, external=True,comment_event=None):
     ids = set(task.participants.exclude(user=None).values_list('user_id',flat=True))
     if task.assignee.user_id:ids.add(task.assignee.user_id)
     ids.update(task.watchers.values_list('pk',flat=True))
     ids.update(task.approval_steps.exclude(approver=None).values_list('approver_id',flat=True))
     if task.creator_id: ids.add(task.creator_id)
     from .hiworks import enqueue
+    if comment_event:ids.discard(comment_event.author_id)
     for pk in ids:
         notification = WorkNotification.objects.create(user_id=pk,task=task,message=message[:240])
         if external: enqueue(notification)
+        if comment_event:
+            from .assignment_mail import enqueue_comment
+            enqueue_comment(comment_event,notification)
 
 
 @login_required
@@ -442,10 +446,10 @@ def _change(user,pk,kind,data):
         enqueue_assignment_mail(task,user,{task.assignee_id})
     from .progress_reporting import next_report_number
     report_details={'progress_report_number':next_report_number(task,user),'performer_progress':participant.progress} if kind=='progress' else {}
-    record(task,user,event,data['body'],{'before':before,'action':kind,'decision':data.get('decision'),
+    saved_event=record(task,user,event,data['body'],{'before':before,'action':kind,'decision':data.get('decision'),
            'round':task.report_round,'step':current.position if current else None,**report_details})
     if task.status=='done':
         from .work_series import completion_followup
         completion_followup(task)
-    notify(task,('대표 직권 처리: ' if kind=='override' else '')+data['body'][:150], external=(task.assignment_messenger if kind=='handover' else kind in ['submit','review','override','delegate','cancel']))
+    notify(task,('새 의견: ' if kind=='comment' else '대표 직권 처리: ' if kind=='override' else '')+data['body'][:150], external=(task.assignment_messenger if kind in ['handover','comment'] else kind in ['submit','review','override','delegate','cancel']),comment_event=saved_event if kind=='comment' else None)
     return task

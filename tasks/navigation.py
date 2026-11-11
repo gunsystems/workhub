@@ -14,6 +14,7 @@ def navigation(request):
         {'label':'업무 관리','items':[
             item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/personal/','/work/notifications/','/work/hiworks/','/work/reports/','/work/calendar/','/work/system-log/','/work/notices/')))),
             item('업무 보고','/work/reports/','work',path.startswith('/work/reports/')),
+            item('간단 업무','/work/quick/','work',path.startswith('/work/quick/')),
             item('프로젝트','/projects/','folder',path.startswith('/projects/')),
             item('업무 접수함','/intake/','inbox',path.startswith('/intake/')),
             item('캘린더','/','calendar',path=='/')]},
@@ -48,10 +49,10 @@ def navigation(request):
     if path=='/work/register/': current='업무 등록'
     elif path=='/work/calendar/subscription/': current='하이웍스 일정 연결'
     elif path=='/work/calendar/': current='Google Calendar 연결'
-    if path.startswith(('/work/surveys/','/work/assessments/')):
+    if path.startswith(('/work/surveys/','/work/assessments/','/work/quick/')):
         for group in groups:
             for entry in group['items']:
                 if entry['href']=='/work/':entry['active']=False
-        current='설문조사' if path.startswith('/work/surveys/') else '수행 평가'
+        current='간단 업무' if path.startswith('/work/quick/') else ('설문조사' if path.startswith('/work/surveys/') else '수행 평가')
     from .version import VERSION
     return {'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username()}

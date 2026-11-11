@@ -8,6 +8,40 @@ from django.utils import timezone
 from .models import AssignmentMail, Employee, Task
 
 
+def enqueue_comment(event,notification):
+    task=event.task
+    if not task.assignment_email or task.status=='draft' or notification.user_id==event.author_id:return
+    employee=Employee.objects.filter(user_id=notification.user_id,is_active=True).select_related('user').first()
+    access=getattr(employee.user,'workhub_access',None) if employee else None
+    if not access or not access.verified_at:return
+    AssignmentMail.objects.get_or_create(dedupe_key=f'comment:{event.pk}:{notification.user_id}',defaults={'task':task,'employee':employee,
+        'payload':{'kind':'comment','event_id':event.pk,'user_id':notification.user_id,'email':access.email,'task_title':task.title}})
+
+
+def deliver_comment(mail):
+    from accounts.lifecycle import account_allowed
+    from accounts.services import deliver
+    from .models import TaskEvent
+    from .permissions import visible_tasks
+    employee=mail.employee;user=employee.user if employee and employee.user_id else None
+    access=getattr(user,'workhub_access',None) if user else None
+    event=TaskEvent.objects.filter(pk=mail.payload.get('event_id'),task_id=mail.task_id).select_related('task','author').first()
+    if not (event and event.task.assignment_email and event.task.status!='draft' and employee and employee.is_active and user and access and access.verified_at
+            and user.pk==mail.payload.get('user_id') and access.email.lower()==str(mail.payload.get('email','')).lower()==user.email.lower()
+            and account_allowed(user) and visible_tasks(user).filter(pk=event.task_id).exists()):
+        mail.state='skipped';mail.result='현재 접근 권한 또는 알림 설정 변경으로 제외했습니다.'
+    else:
+        url=settings.WORKHUB_BASE_URL.rstrip('/')+reverse('task_detail',args=[event.task_id])
+        context={'title':'업무에 새 의견이 등록되었습니다','item':event.task,'event':event,'url':url}
+        try:deliver('[Workhub] 업무에 새 의견이 등록되었습니다',f'{event.task.title}\n{event.body}\n{url}',access.email,
+                    html_body=render_to_string('tasks/email_comment.html',context))
+        except Exception:mail.state='unknown';mail.result='발송 결과 확인 필요 · 자동 재발송하지 않습니다.'
+        else:mail.state='sent';mail.sent_at=timezone.now();mail.result='메일 서버가 발송을 접수했습니다.'
+    mail.save(update_fields=['state','result','sent_at'])
+    from .audit import write
+    write('mail_'+mail.state,'AssignmentMail',mail.pk,'업무 의견 메일',after={'task_id':mail.task_id,'event_id':mail.payload.get('event_id'),'result':mail.result})
+
+
 def enqueue(task, actor, employee_ids=None):
     if not task.assignment_email or task.status in ['draft', 'cancelled', 'done']:
         return
@@ -37,6 +71,9 @@ def deliver_pending(limit=10):
         if not AssignmentMail.objects.filter(pk=pk, state='pending').update(state='sending', attempts=F('attempts')+1, claimed_until=now+timedelta(minutes=2)):
             continue
         mail = AssignmentMail.objects.select_related('task', 'employee__user').get(pk=pk)
+        if mail.payload.get('kind')=='comment':
+            deliver_comment(mail)
+            continue
         employee, task = mail.employee, mail.task
         user = employee.user if employee and employee.user_id else None
         access = getattr(user, 'workhub_access', None) if user else None
