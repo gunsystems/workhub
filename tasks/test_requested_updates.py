@@ -84,7 +84,7 @@ class RequestedUpdatesTests(TestCase):
         response=self.client.get('/work/reports/new/')
         self.assertEqual(response.status_code,200);self.assertContains(response,'보고 구분')
         self.assertEqual(response.context['form']['report_type'].value(),'weekly')
-        for label in ['일일 보고','주간 보고','월간 보고','개별 보고','기간 보고']:self.assertContains(response,label)
+        for label in ['일일 보고','주간 보고','월간 보고','건별 보고','기간 지정 보고']:self.assertContains(response,label)
 
     def test_report_kind_is_frozen_in_submission_snapshot(self):
         self.client.force_login(self.worker)
@@ -196,3 +196,4 @@ class RequestedUpdatesMigrationTests(TransactionTestCase):
         self.assertEqual(ReportSubmission.objects.get(pk=submission.pk).snapshot,{'summary':'고정된 원본'})
         migrated=Task.objects.get(pk=task.pk)
         self.assertTrue(migrated.assignment_email);self.assertTrue(migrated.assignment_messenger)
+
