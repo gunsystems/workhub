@@ -38,7 +38,9 @@ def calendar_draft(user,start):
             if lo>hi:continue
             label=lo.strftime('%m.%d') if lo==hi else lo.strftime('%m.%d')+'~'+hi.strftime('%m.%d')
             project=' · '+task.project.name if task.project_id else ''
-            text=f'- [{label}] {task.title}{project} ({task.get_status_display()} · {task.progress}%)'
+            category=task.category.name if task.category_id else '일반 업무'
+            title=task.title if task.title.startswith('['+category+']') else '['+category+'] '+task.title
+            text=f'- [{label}] {title}{project} ({task.get_status_display()} · {task.progress}%)'
             bucket.append((lo,task.pk,text))
             if bucket is current and any((lo+timedelta(days=n)).weekday()>=5 for n in range((hi-lo).days+1)):weekend=True
     return {'current':'\n'.join(row[2] for row in sorted(current)), 'next':'\n'.join(row[2] for row in sorted(upcoming)), 'task_ids':ids,'count':len(current),'weekend':weekend}
