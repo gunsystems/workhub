@@ -3,6 +3,21 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.15.1",
+      "status": "live_backend_verified_browser_pending_login",
+      "release_notes": "releases/v0.15.1.md",
+      "migrations": [
+        "0036_document_original_name"
+      ],
+      "tests": 479,
+      "ci_url": "https://github.com/gunsystems/workhub/actions/runs/42964637432",
+      "source_commit": "9f0edebfba2a8fd2e1b87df0bfe36b3ef748bd7a",
+      "deploy_id": "dep-dbpvn29srm7s73920ch0",
+      "live_at": "2026-11-11T14:23:15+09:00",
+      "backup": "/var/data/backups/workhub-pre-v0151-20261111T052306243473Z.sqlite3",
+      "verification": "Actual existing PNG verified intact; missing filename extension confirmed. Production read-only administrative handler test returned PNG filename extension and 200 JPEG preview 222x480. Business records and files unchanged, no test notifications sent. Browser/mobile checks awaiting user login."
+    },
+    {
       "version": "0.15.0",
       "status": "live_mobile_ui_verified",
       "release_notes": "releases/v0.15.0.md",
