@@ -2,6 +2,7 @@
 from datetime import date,timedelta
 from pathlib import Path
 from django import forms
+from django.conf import settings
 from django.forms.utils import ErrorDict
 from django.contrib import messages
 from django.contrib.auth import get_user_model
@@ -18,6 +19,11 @@ from .collaboration import UserChoice,users
 from .drive_storage import RepositoryError
 from .weekly_reporting import calendar_draft,week_start,responsible_reviewer,submission_board
 from .report_grouping import may_aggregate, grouped_draft, task_metadata
+
+
+def aggregation_enabled():
+    # Deferred until the team-to-executive reporting workflow is agreed.
+    return getattr(settings,'WORKHUB_TEAM_REPORT_AGGREGATION',False)
 
 
 def visible_reports(user):
@@ -82,6 +88,9 @@ class ReportForm(forms.ModelForm):
             data=submission.snapshot
             return f"{name} · {data.get('report_type_label','기간 보고')} · {data.get('period_start',submission.report.period_start)}~{data.get('period_end',submission.report.period_end)} · 제출 v{submission.version}"
         self.fields['sources'].label_from_instance=source_label
+        if not aggregation_enabled():
+            self.fields['sources'].disabled=True
+            self.fields['sources'].widget=forms.MultipleHiddenInput()
         if self.instance.pk:
             self.initial['revision']=self.instance.revision
             self.initial['sources']=list(self.instance.source_submissions.values_list('pk',flat=True))
@@ -118,7 +127,15 @@ def report_list(request):
         submitted_ids=qs.filter(state__in=['submitted','approved','returned']).values_list('author_id',flat=True)
         missing=visible_employees(request.user).filter(is_active=True,user__is_active=True).exclude(user__isnull=True).exclude(user_id__in=submitted_ids)
     board=submission_board(request.user,start)
-    return render(request,'tasks/report_list.html',{'reports':qs.order_by('-period_start','-pk')[:100],'start':start,'end':end,'missing':missing,'managing':managing,'report_type':report_type,'report_types':PeriodReport.REPORT_TYPES,'weekly_board':board,'submitted_count':sum(bool(row['report']) for row in board)})
+    employee_reports=[]
+    if managing:
+        submitted=list(qs.filter(report_type='weekly',current_submission__isnull=False).exclude(author=request.user).exclude(state='draft').order_by('author__employee__department__name','author__employee__name','-submitted_at','-pk')[:100])
+        reviews={}
+        for review in ReportReview.objects.filter(submission__report_id__in=[r.pk for r in submitted]).select_related('submission').order_by('-created_at','-pk'):
+            reviews.setdefault(review.submission.report_id,review)
+        for report in submitted:
+            employee_reports.append({'report':report,'snapshot':report.current_submission.snapshot,'review':reviews.get(report.pk)})
+    return render(request,'tasks/report_list.html',{'reports':qs.order_by('-period_start','-pk')[:100],'start':start,'end':end,'missing':missing,'managing':managing,'report_type':report_type,'report_types':PeriodReport.REPORT_TYPES,'weekly_board':board,'submitted_count':sum(bool(row['report']) for row in board),'employee_reports':employee_reports,'can_aggregate':aggregation_enabled() and may_aggregate(request.user)})
 
 
 @login_required
@@ -127,6 +144,9 @@ def report_edit(request,pk=None,calendar_seed=False,team_seed=False):
     emp=profile(request.user)
     if not emp and not request.user.is_superuser:raise PermissionDenied
     if team_seed and not may_aggregate(request.user):raise PermissionDenied
+    if team_seed and not aggregation_enabled():
+        messages.info(request,'직원별 주간보고를 확인해 주세요. 팀 보고 취합은 준비 중입니다.')
+        return redirect('period_reports')
     obj=get_object_or_404(PeriodReport.objects.select_for_update(),pk=pk,author=request.user) if pk else None
     if obj and obj.state in ['submitted','approved']:raise PermissionDenied('제출했거나 확인 완료된 보고는 보완 요청 이후에 수정할 수 있습니다.')
     today=timezone.localdate();start=today-timedelta(days=today.weekday())
@@ -149,6 +169,7 @@ def report_edit(request,pk=None,calendar_seed=False,team_seed=False):
         form.fields['sources'].queryset=selectable_sources(request.user).filter(pk__in=ids)
 
     if request.method=='POST' and request.POST.get('action')=='group':
+        if not aggregation_enabled():raise PermissionDenied('팀 보고 취합은 현재 제공하지 않습니다.')
         if not may_aggregate(request.user):raise PermissionDenied
         try:
             if request.FILES:raise ValidationError('분류 초안을 먼저 만든 뒤 첨부파일을 다시 선택해 주세요. 파일은 저장되지 않았습니다.')
@@ -197,7 +218,7 @@ def report_edit(request,pk=None,calendar_seed=False,team_seed=False):
             obj.current_submission=submission;obj.state='submitted';obj.submitted_at=timezone.now();obj.save(update_fields=['current_submission','state','submitted_at'])
         if f:messages.success(request,'보고서 첨부파일 업로드가 완료되었습니다.',extra_tags='upload-success')
         return redirect('period_report_detail',pk=obj.pk)
-    return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'seed':seed,'can_aggregate':may_aggregate(request.user),'team_seed':team_seed or bool(obj and obj.source_submissions.exists()),'group_info':group_info})
+    return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'seed':seed,'can_aggregate':aggregation_enabled() and may_aggregate(request.user),'team_seed':aggregation_enabled() and (team_seed or bool(obj and obj.source_submissions.exists())),'group_info':group_info})
 
 
 @login_required

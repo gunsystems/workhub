@@ -147,6 +147,7 @@ class UnifiedWorkTests(TestCase):
         report.refresh_from_db();self.assertEqual(report.state,'returned')
         self.client.force_login(self.worker);self.client.post(f'/work/reports/{report.pk}/edit/',self.report_data(revision=report.revision,summary='보완 결과'))
         report.refresh_from_db();self.assertEqual(report.submissions.count(),2);first.refresh_from_db();self.assertEqual(first.snapshot['summary'],'업무 결과와 다음 계획')
+    @override_settings(WORKHUB_TEAM_REPORT_AGGREGATION=True)
     def test_report_aggregation_freezes_selected_submission(self):
         self.client.force_login(self.worker);self.client.post('/work/reports/new/',self.report_data())
         source=PeriodReport.objects.get().current_submission

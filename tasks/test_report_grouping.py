@@ -6,7 +6,7 @@ from .models import Department, Employee, Task, WorkCategory, PeriodReport, Repo
 from .report_grouping import grouped_draft
 
 
-@override_settings(WORKHUB_REQUIRE_HIWORKS=False, WORKHUB_SCHEDULER_ENABLED=False,
+@override_settings(WORKHUB_TEAM_REPORT_AGGREGATION=True, WORKHUB_REQUIRE_HIWORKS=False, WORKHUB_SCHEDULER_ENABLED=False,
                    PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'])
 class ReportGroupingTests(TestCase):
     def setUp(self):
@@ -50,7 +50,7 @@ class ReportGroupingTests(TestCase):
         b = self.source(self.peer,summary='[고객사: 고객 A] 다른 진행 보고')
         draft = grouped_draft(self.leader,[a,b])
         for value in ['【고객사 · 고객 A】','【벤더사 · 벤더 B】','【팀 운영·기타】','【미분류 · 확인 필요】',
-                      '지원 완료','문의 회신','기술교육','추가로 적은 새 업무','직원 A','직원 B']:
+                      '지원 완료','문의 회신','기술교육','추가로 적은 새 업무']:
             self.assertIn(value,draft['current'])
         self.assertEqual(draft['current'].count('【고객사 · 고객 A】'),1)
         self.assertIn('차주 지원',draft['next']);self.assertIn('장애 이슈',draft['issues'])
@@ -60,7 +60,9 @@ class ReportGroupingTests(TestCase):
         b=self.source(self.peer,summary='[고객사: ACME] 진행 30%\n[고객사: ACME] 진행 50%')
         result=grouped_draft(self.leader,[a,b])['current']
         self.assertEqual(result.count('진행 30%'),1);self.assertIn('진행 50%',result)
-        self.assertIn('직원 A',result);self.assertIn('직원 B',result)
+        self.assertNotIn('↳ 출처:',result)
+        self.assertIn('직원 A',' '.join(grouped_draft(self.leader,[a,b])['source_labels']))
+        self.assertIn('직원 B',' '.join(grouped_draft(self.leader,[a,b])['source_labels']))
 
     def test_frozen_metadata_wins_and_old_snapshots_can_use_visible_current_labels(self):
         task=self.task('고객 점검',customer='현재 고객')
@@ -83,7 +85,8 @@ class ReportGroupingTests(TestCase):
         result=grouped_draft(self.head,[team])['current']
         self.assertEqual(result.count('【고객사 · A사】'),1)
         self.assertIn('팀장이 수정한 실적',result);self.assertNotIn('직원 원문',result)
-        self.assertIn('직원 A',result);self.assertIn('팀장',result)
+        self.assertNotIn('↳ 출처:',result)
+        self.assertIn('팀장',' '.join(grouped_draft(self.head,[team])['source_labels']))
 
     def test_team_get_prefills_latest_eligible_sources_without_saving(self):
         current=self.source(summary='[벤더사: B사] 문의 완료')

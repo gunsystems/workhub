@@ -141,7 +141,6 @@ def grouped_draft(user, submissions):
             result.append(f'【{"고객사" if kind == "customer" else "벤더사"} · {name}】' if kind in ['customer', 'vendor'] else ('【팀 운영·기타】' if kind == 'general' else '【미분류 · 확인 필요】'))
             for item in section['items'].values():
                 result.append('- ' + item['text'])
-                result.append('  ↳ 출처: ' + ' / '.join(sorted(item['origins'])))
             result.append('')
         return '\n'.join(result).strip()
 

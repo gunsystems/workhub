@@ -1,0 +1,14 @@
+<section class="detail employee-report-review" aria-labelledby="employee-reports-title">
+<h2 id="employee-reports-title">직원별 주간보고</h2>
+<p class="helptext">직원 이름을 눌러 이번 주 업무와 차주 계획을 확인하세요. 제출한 내용을 기준으로 표시합니다. 확인 완료·보완 요청은 보고 상세에서 처리합니다.</p>
+{% for item in employee_reports %}
+<details class="employee-report-card">
+<summary><span><strong>{{ item.report.author.employee.name|default:item.report.author.username }}</strong><span class="employee-report-meta">{{ item.report.author.employee.department.name }} · {{ item.report.period_start|date:'m.d' }}~{{ item.report.period_end|date:'m.d' }}</span></span><span class="report-feedback-status">{{ item.report.get_state_display }}</span></summary>
+<div class="employee-report-content"><p class="employee-report-meta">제출 {{ item.report.submitted_at|date:'m.d H:i' }} · 보고 대상 {{ item.report.reviewer.employee.name|default:item.report.reviewer.username }}</p>
+<div class="employee-report-columns"><div><h3>이번 주 진행 업무</h3><p class="report-text">{{ item.snapshot.summary|default:'등록된 내용이 없습니다.'|linebreaksbr }}</p></div><div><h3>차주 예정 업무</h3><p class="report-text">{{ item.snapshot.next_week_plan|default:'등록된 차주 계획이 없습니다.'|linebreaksbr }}</p></div></div>
+{% if item.snapshot.report_issues %}<div class="employee-report-issues"><h3>공유·지원이 필요한 사항</h3><p class="report-text">{{ item.snapshot.report_issues|linebreaksbr }}</p></div>{% endif %}
+{% if item.review %}<aside class="report-history-review"><h3>최근 검토 피드백 · {% if item.review.decision == 'approved' %}확인 완료{% else %}보완 요청{% endif %}</h3>{% if item.review.submission_id != item.report.current_submission_id %}<p>이전 제출본에 대한 피드백입니다.</p>{% endif %}{% if item.review.body %}<p class="report-text">{{ item.review.body|linebreaksbr }}</p>{% endif %}</aside>{% endif %}
+<div class="workspace-actions"><a class="button" href="{% url 'period_report_detail' item.report.pk %}">보고 상세 · 검토하기</a></div></div>
+</details>
+{% empty %}<p class="report-empty">선택한 기간에 제출된 직원 주간보고가 없습니다.</p>{% endfor %}
+</section>
