@@ -3,6 +3,13 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.16.2",
+      "status": "release_prepared",
+      "release_notes": "releases/v0.16.2.md",
+      "migrations": [],
+      "scope": "Weekly report button/title and calendar-reference/Friday17:00 guidance only; no automatic deadline or scoring behavior change"
+    },
+    {
       "version": "0.16.1",
       "status": "live_employee_view_verified",
       "release_notes": "releases/v0.16.1-weekly-draft.md",
