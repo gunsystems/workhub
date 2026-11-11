@@ -12,3 +12,5 @@
 .intake-box-tab.current .intake-box-icon{background:#ffffff24;color:#fff}
 .intake-box-tabs .intake-box-tab:focus-visible{outline:3px solid #4b63f6;outline-offset:3px}
 @media(max-width:760px){.intake-box-tabs{grid-template-columns:1fr;gap:8px}.intake-box-tabs .intake-box-tab{min-height:72px;padding:14px 16px}}
+
+@media(min-width:901px){.request-entry{grid-template-columns:repeat(2,minmax(0,1fr))}}

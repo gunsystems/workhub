@@ -3,6 +3,12 @@
   const approvals = document.getElementById('approval-fields');
   if (!mode || !approvals) return;
   function update() {
+    if (mode.value === 'quick') {
+      const link = document.querySelector('[data-quick-entry]');
+      if (link && window.confirm('간단 업무 입력 화면으로 이동합니다. 현재 입력한 내용은 저장되지 않습니다. 이동할까요?')) window.location.assign(link.href);
+      mode.value = 'report';
+      return;
+    }
     const simple = mode.value === 'event';
     approvals.hidden = simple;
     for (const name of ['report_days','review_days','completion_criteria']) {

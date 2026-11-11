@@ -48,6 +48,9 @@ class DocumentForm(forms.Form):
 
 
 def parent_for(user, kind, pk):
+    if kind == 'quick':
+        from .quick import visible
+        return get_object_or_404(visible(user),pk=pk)
     scopes = {'task':visible_tasks, 'request':visible_requests, 'project':visible_projects}
     if kind not in scopes:
         raise Http404
@@ -55,14 +58,17 @@ def parent_for(user, kind, pk):
 
 
 def parent_kwargs(kind, obj):
+    if kind == 'quick':return {'quick_request':obj}
     return {('work_request' if kind == 'request' else kind):obj}
 
 
 def parent_url(kind, obj):
-    return reverse({'task':'task_detail','request':'intake_detail','project':'project_detail'}[kind], args=[obj.pk])
+    return reverse({'task':'task_detail','request':'intake_detail','project':'project_detail','quick':'quick_detail'}[kind], args=[obj.pk])
 
 
 def can_add(user, kind, obj):
+    if kind == 'quick':
+        return obj.state not in ['done','cancelled'] and (obj.requester_id==user.pk or obj.assignee.user_id==user.pk)
     if is_company_admin(user):
         return True
     if not profile(user):
@@ -115,6 +121,7 @@ def document_add(request, kind, pk):
 
 
 def document_parent(obj):
+    if obj.quick_request_id:return 'quick',obj.quick_request_id
     if obj.task_id:return 'task',obj.task_id
     if obj.work_request_id:return 'request',obj.work_request_id
     return 'project',obj.project_id

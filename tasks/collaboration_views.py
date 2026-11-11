@@ -65,7 +65,10 @@ def notifications(request):
     from .models import RequestNotification
     from .permissions import visible_requests
     notices=RequestNotification.objects.filter(user=request.user,request__in=visible_requests(request.user)).select_related('request','event').order_by('-event__created_at')
-    return render(request,'tasks/notifications.html',{'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
+    from .models import QuickDelivery
+    from .quick import visible as visible_quick
+    quick_items=QuickDelivery.objects.filter(user=request.user,channel='app',event__request__in=visible_quick(request.user)).select_related('event__request').order_by('-event__created_at')
+    return render(request,'tasks/notifications.html',{'quick_notifications':quick_items[:100],'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
 
 
 @login_required
