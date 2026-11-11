@@ -3,6 +3,26 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.2",
+      "status": "live_verified_external_removal_user_check",
+      "release_notes": "releases/v0.17.2.md",
+      "migrations": [
+        "0043_task_trash"
+      ],
+      "source_commit": "c39fd185c622608d7a71abe81ee2d07617f045c6",
+      "deploy_id": "dep-dbqfpi942hec73d0i55g",
+      "live_at": "2026-11-12T08:40:54+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43121239256",
+      "scope": "Administrator-only recoverable task/calendar removal and restoration, preserving business history; omit trashed tasks from active queries and iCalendar, delete Google exports. Unify weekly/work report write and submit labels.",
+      "validation": "Related99 passed before security/restore/wording followups; final related30 and full GitHub regression passed. Validated authenticated subadmin/root permissions, non-admin denial, reason/revision/CSRF, retained history, deleted ICS UID omission and restore, Google DELETE and fresh restoration ID. No migration drift; JS syntax passed.",
+      "browser_verification": "healthz0.17.2 c39fd18 ok. Public synthetic actual-template deletion view PC/390/360px control bounds passed; report example buttons renamed. No production task deleted; actual Hiworks calendar removal explicitly reserved for user verification.",
+      "screenshots": [
+        "outputs/Workhub_v0172_관리자삭제_PC.jpg",
+        "outputs/Workhub_v0172_관리자삭제_모바일.jpg",
+        "outputs/Workhub_v0172_업무보고버튼.jpg"
+      ]
+    },
+    {
       "version": "0.17.1",
       "status": "live_verified",
       "release_notes": "releases/v0.17.1.md",
