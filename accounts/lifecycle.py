@@ -39,6 +39,7 @@ def account_allowed(user):
 
 def business_counts(employee):
     from tasks.models import PeriodReport, WorkSeries
+    from tasks.models import SurveyParticipation,StaffAssessment
     user_id = employee.user_id
     return {
         '담당 업무': Task.objects.filter(assignee=employee).count(),
@@ -52,6 +53,8 @@ def business_counts(employee):
         '지정된 결재': ApprovalStep.objects.filter(approver_id=user_id).count() if user_id else 0,
         '작성·검토한 기간 보고': PeriodReport.objects.filter(Q(author_id=user_id)|Q(reviewer_id=user_id)).count() if user_id else 0,
         '등록한 반복 템플릿': WorkSeries.objects.filter(owner_id=user_id).count() if user_id else 0,
+        '보존할 설문 참여 기록': SurveyParticipation.objects.filter(employee=employee).count(),
+        '보존할 평가 대상 기록': StaffAssessment.objects.filter(employee=employee).count(),
     }
 
 
@@ -92,6 +95,8 @@ def change_access(actor, employee_id, action, reason, confirmation=''):
              (user.email if user else '') or (invitation.email if invitation else ''))
     user_id = user.pk if user else None
     if action in ['delete_access', 'delete_employee']:
+        if user and (user.survey_set.exists() or user.staffassessment_set.exists() or user.assessmentrevision_set.exists()):
+            raise ValidationError('작성한 설문·평가의 보존 이력이 있어 계정 삭제 대신 사용 중지를 선택하세요.')
         expected = email or employee.name
         if confirmation.strip().casefold() != expected.casefold():
             raise ValidationError('삭제 확인란에 표시된 회사 이메일 또는 직원 이름을 정확히 입력하세요.')

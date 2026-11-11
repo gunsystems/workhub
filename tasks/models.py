@@ -678,3 +678,4 @@ class ReportFile(models.Model):
     uploaded_at = models.DateTimeField(default=timezone.now)
 
 from .document_models import WorkDocument
+from .people_models import Survey, SurveyQuestion, SurveyParticipation, SurveySubmission, SurveyDelivery, StaffAssessment, AssessmentRevision
