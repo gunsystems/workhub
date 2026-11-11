@@ -19,6 +19,7 @@ from .collaboration import UserChoice,users
 from .drive_storage import RepositoryError
 from .weekly_reporting import calendar_draft,week_start,responsible_reviewer,submission_board
 from .report_grouping import may_aggregate, grouped_draft, task_metadata
+from .report_labels import display_kind
 
 
 def aggregation_enabled():
@@ -76,7 +77,7 @@ class ReportForm(forms.ModelForm):
         if kind=='weekly':self.fields['summary'].label='이번 주 진행 업무'
         self.fields['tasks'].help_text='보고 내용의 근거가 되는 원본 업무입니다. 캘린더에서 취합한 업무는 자동으로 선택됩니다.'
         self.fields['next_week_plan'].help_text='다음 주 월요일~일요일의 예정 업무를 정리하세요.'
-        self.fields['report_type'].help_text='보고 목적에 맞는 구분을 선택하세요. 개별 보고는 특정 업무·사안에 대한 보고입니다.'
+        self.fields['report_type'].help_text='건별 보고는 특정 업무나 사안에 대한 보고입니다. 기간 지정 보고는 시작일과 종료일을 직접 선택해 작성합니다.'
         self.fields['reviewer'].queryset=users().exclude(pk=user.pk)
         self.fields['tasks'].queryset=visible_tasks(user).exclude(status='draft')
         emp=profile(user)
@@ -86,7 +87,7 @@ class ReportForm(forms.ModelForm):
             author=submission.report.author
             name=(getattr(getattr(author,'employee',None),'name',None) or author.get_username()) if author else '삭제된 계정'
             data=submission.snapshot
-            return f"{name} · {data.get('report_type_label','기간 보고')} · {data.get('period_start',submission.report.period_start)}~{data.get('period_end',submission.report.period_end)} · 제출 v{submission.version}"
+            return f"{name} · {display_kind(data)} · {data.get('period_start',submission.report.period_start)}~{data.get('period_end',submission.report.period_end)} · 제출 v{submission.version}"
         self.fields['sources'].label_from_instance=source_label
         if not aggregation_enabled():
             self.fields['sources'].disabled=True

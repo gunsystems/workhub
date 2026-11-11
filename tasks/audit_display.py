@@ -6,7 +6,7 @@ from .models import Task, Employee, Project, Department
 TYPE_LABELS={'WorkDocument':'업무자료','Task':'업무','Employee':'직원','Project':'프로젝트','Department':'부서','Account':'계정',
     'AssignmentMail':'업무 배정 메일','TaskParticipation':'공동 수행','TaskWatchers':'참조자',
     'ApprovalStep':'결재','WorkRequest':'업무 요청','ChecklistItem':'체크리스트','AccountEvent':'계정 처리',
-    'PeriodReport':'기간 보고','ReportSubmission':'제출 보고','ReportReview':'보고 검토','ReportFile':'첨부',
+    'PeriodReport':'업무보고','ReportSubmission':'제출 보고','ReportReview':'보고 검토','ReportFile':'첨부',
     'WorkSeries':'정기 업무','WorkOccurrence':'정기 업무 회차','Notice':'공지사항','NoticeDelivery':'공지 전달'}
 KEY_LABELS={'task_id':'업무','employee_id':'직원','user_id':'계정','assignee_id':'담당자',
     'project_id':'프로젝트','department_id':'부서','creator_id':'작성자','approver_id':'결재자',

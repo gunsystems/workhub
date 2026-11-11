@@ -644,7 +644,7 @@ class CalendarSubscription(models.Model):
 
 
 class PeriodReport(models.Model):
-    REPORT_TYPES=[('daily','일일 보고'),('weekly','주간 보고'),('monthly','월간 보고'),('individual','개별 보고'),('period','기간 보고')]
+    REPORT_TYPES=[('daily','일일 보고'),('weekly','주간 보고'),('monthly','월간 보고'),('individual','건별 보고'),('period','기간 지정 보고')]
     report_type=models.CharField('보고 구분',max_length=12,choices=REPORT_TYPES,default='period')
     next_week_plan = models.TextField('차주 예정 업무',blank=True)
     report_issues = models.TextField('공유·지원이 필요한 사항',blank=True)

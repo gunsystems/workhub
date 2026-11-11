@@ -51,3 +51,15 @@ class EmployeeReportReviewTests(TestCase):
         response=self.client.get('/work/reports/weekly/new/')
         self.assertNotContains(response,'data-report-grouping')
         self.assertContains(response,'주간업무보고 작성')
+
+    def test_report_choices_and_legacy_history_use_current_labels_without_rewriting(self):
+        response=self.client.get('/work/reports/new/')
+        choices=dict(response.context['form'].fields['report_type'].choices)
+        self.assertEqual(choices['individual'],'건별 보고')
+        self.assertEqual(choices['period'],'기간 지정 보고')
+        self.assertContains(response,'보고 기간은 직접 변경할 수 있습니다.')
+        sub=self.source();sub.report.report_type='individual';sub.report.save()
+        sub.snapshot.update(report_type='individual',report_type_label='개별 보고');sub.save()
+        response=self.client.get(f'/work/reports/{sub.report_id}/')
+        self.assertContains(response,'건별 보고');self.assertNotContains(response,'개별 보고')
+        sub.refresh_from_db();self.assertEqual(sub.snapshot['report_type_label'],'개별 보고')
