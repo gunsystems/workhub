@@ -37,7 +37,7 @@ def selectable_sources(user):
 class ReportForm(forms.ModelForm):
     revision=forms.IntegerField(widget=forms.HiddenInput,initial=0)
     reviewer=UserChoice(label='보고받을 사람',queryset=get_user_model().objects.none())
-    tasks=forms.ModelMultipleChoiceField(label='관련 업무 · 기존 기록 연결',queryset=Task.objects.none(),required=False,widget=forms.CheckboxSelectMultiple)
+    tasks=forms.ModelMultipleChoiceField(label='참조할 업무',queryset=Task.objects.none(),required=False,widget=forms.CheckboxSelectMultiple)
     sources=forms.ModelMultipleChoiceField(label='취합할 직원 보고 · 제출 버전 선택',queryset=ReportSubmission.objects.none(),required=False,widget=forms.CheckboxSelectMultiple)
     attachment=forms.FileField(widget=forms.ClearableFileInput(attrs={'data-upload-limit':'10485760','accept':'.pdf,.docx,.xlsx,.pptx,.txt,.csv,.png,.jpg,.jpeg'}),label='첨부 (선택 · 파일당 10MB)',required=False)
     class Meta:
@@ -53,6 +53,7 @@ class ReportForm(forms.ModelForm):
         super().__init__(*args,**kwargs);self.user=user
         kind=self.data.get('report_type') if self.is_bound else self.initial.get('report_type',self.instance.report_type)
         if kind=='weekly':self.fields['summary'].label='이번 주 진행 업무'
+        self.fields['tasks'].help_text='보고 내용의 근거가 되는 원본 업무입니다. 캘린더에서 취합한 업무는 자동으로 선택됩니다.'
         self.fields['next_week_plan'].help_text='다음 주 월요일~일요일의 예정 업무를 정리하세요.'
         self.fields['report_type'].help_text='보고 목적에 맞는 구분을 선택하세요. 개별 보고는 특정 업무·사안에 대한 보고입니다.'
         self.fields['reviewer'].queryset=users().exclude(pk=user.pk)
