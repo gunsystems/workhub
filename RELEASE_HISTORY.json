@@ -3,6 +3,20 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.10",
+      "status": "live_verified",
+      "release_notes": "releases/v0.19.10.md",
+      "source_commit": "9e1f831b4894eeb4ac444ea91f9382430ee1d2b1",
+      "deploy_id": "dep-dbqrqel6e07s7383bk30",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43226080981",
+      "validation": {
+        "ci": "650 Django tests; regression workflow passed",
+        "ui": "Production administrator desktop visual check, 48px input contained in panel; responsive CSS prepared but viewport override ineffective; physical mobile unverified"
+      },
+      "migrations": [],
+      "rollback_source": "9adb6e66ca9937494897e0f55ea55caee301c259"
+    },
+    {
       "version": "0.19.9",
       "status": "live_verified",
       "release_notes": "releases/v0.19.9.md",
