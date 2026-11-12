@@ -3,6 +3,28 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.7",
+      "status": "live_verified_admin_leave_preview",
+      "release_notes": "releases/v0.19.7.md",
+      "source_commit": "7b8bc046dda9385336356ae8902bccf3ced18b80",
+      "deploy_id": "dep-dbqqsijbc2fs73e62g70",
+      "live_at": "2026-11-12T21:18:19+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43216075659",
+      "validation": {
+        "focused": "57 leave/holiday tests passed",
+        "ci": "647 Django tests + 7 Node checks passed",
+        "runtime": "Administrator v0.19.7 preview, holiday data and pre-activation approval route verified; no production entitlement or leave application created",
+        "responsive": "Desktop approximately1027px checked; requested mobile override did not take effect, mobile validation remains pending"
+      },
+      "rollback_source": "c17a3db4d188b13db55c47c089b27d2b2d46d674",
+      "limitations": [
+        "Administrator-only preview; no public rollout or automatic grants",
+        "Attendance qualification, first-year proportional grants and exit settlement need explicit review",
+        "Physical iOS and effective narrow viewport still require validation"
+      ]
+    },
+    {
       "version": "0.19.6",
       "status": "live_verified_existing_feature_stabilization",
       "release_notes": "releases/v0.19.6.md",
