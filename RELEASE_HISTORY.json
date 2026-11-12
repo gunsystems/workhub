@@ -3,6 +3,31 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.18.0",
+      "status": "live_verified_offboarding_workflow",
+      "release_notes": "releases/v0.18.0.md",
+      "source_commit": "d88a4ab453a26ea2d1709439a7ea995058e02801",
+      "deploy_id": "dep-dbqlqn142hec739gu7ig",
+      "live_at": "2026-11-12T15:32:54+09:00",
+      "migrations": [
+        "0045_offboarding"
+      ],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43168523302",
+      "scope": "Administrator employee-management offboarding cases, scoped assignee actions, private evidence, review/return, deadlines and email/app notices. No automatic external account deletion.",
+      "validation": {
+        "ci": "569 Django tests and all Node browser checks passed",
+        "local": "568 full regression tests before final guards; final 32 offboarding/account lifecycle tests passed",
+        "ui": "Authenticated administrator menu/list/new form verified; 320/360px inputs contained; actual-template synthetic case/review/submission inspected",
+        "runtime": "healthz version 0.18.0 commit d88a4ab status ok; migration 0045 OK"
+      },
+      "limitations": [
+        "No real offboarding case registered or account modified",
+        "Production evidence upload and actual mail receipt not exercised in this release; isolated upload/download/preview and dispatch tested",
+        "Hiworks/MS365/CAPS actions remain manual"
+      ],
+      "rollback": "Previous application remains compatible with additive tables. Do not reverse migration or discard evidence. Rollback does not undo external manual actions."
+    },
+    {
       "version": "0.17.9",
       "status": "live_verified_staff_management_navigation",
       "release_notes": "releases/v0.17.9.md",
@@ -144,7 +169,7 @@
         "outputs/Workhub_v0172_관리자삭제_모바일.jpg",
         "outputs/Workhub_v0172_업무보고버튼.jpg"
       ],
-      "hiworks_deletion_user_verification": "2026-11-12: 사용자가 Workhub에서 삭제한 일정이 하이웍스에서도 삭제되는 것을 실제 확인함."
+      "hiworks_deletion_user_verification": "2026-11-12 사용자가 하이웍스 일정 삭제 반영 확인"
     },
     {
       "version": "0.17.1",
