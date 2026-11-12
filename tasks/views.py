@@ -46,6 +46,9 @@ def calendar_view(request):
     status = request.GET.get('status','')
     if status in dict(Task.STATUS): tasks=tasks.filter(status=status)
     tasks=list(tasks)
+    from .models import PublicHoliday,LeaveHoliday
+    public_holidays=dict(PublicHoliday.objects.filter(date__range=(start,end),active=True).values_list('date','name'))
+    company_holidays=dict(LeaveHoliday.objects.filter(date__range=(start,end)).values_list('date','name'))
     days=[]
     for offset in range((end-start).days+1):
         day=start+timedelta(days=offset)
@@ -55,7 +58,7 @@ def calendar_view(request):
             last=timezone.localtime(t.activity_end-timedelta(microseconds=1)).date() if t.activity_end else t.due_date
             if first<=day<=last:items.append(t)
         items.sort(key=lambda t:(bool(t.activity_start),t.activity_start.isoformat() if t.activity_start else '',t.pk))
-        days.append({'date':day,'today':day==today,'outside':day.month!=selected.month,'tasks':items})
+        days.append({'date':day,'today':day==today,'outside':day.month!=selected.month,'tasks':items,'public_holiday':public_holidays.get(day,''),'company_holiday':company_holidays.get(day,''),'weekday':day.weekday()})
     for day in days:
         day['total'] = len(day['tasks'])
         day['more'] = max(0, day['total'] - 4) if mode == 'month' else 0

@@ -130,3 +130,17 @@ class HolidayTests(TestCase):
         self.client.force_login(self.admin);response=self.client.get('/work/leave/settings/?year=2027')
         self.assertContains(response,'공휴일 자동 연결');self.assertContains(response,'회사 지정 휴일 추가');self.assertNotContains(response,'법정 공휴일은 자동으로 입력되지 않습니다.')
         self.assertEqual(self.client.post('/work/leave/settings/?year=2027',{'action':'review_holidays','request_id':'999','revision':'0'}).status_code,409)
+
+    def test_employee_calendar_displays_holidays_in_month_week_day_without_task_counts(self):
+        PublicHoliday.objects.create(date=date(2027,1,4),name='임시공휴일')
+        PublicHoliday.objects.create(date=date(2027,1,5),name='이전 공휴일',active=False)
+        LeaveHoliday.objects.create(date=date(2027,1,4),name='회사 창립일')
+        self.client.force_login(self.users['member'])
+        for mode in ['month','week','day']:
+            response=self.client.get('/?view='+mode+'&date=2027-01-04')
+            self.assertContains(response,'임시공휴일');self.assertContains(response,'회사 창립일 · 회사 휴일')
+            self.assertNotContains(response,'이전 공휴일')
+            self.assertEqual(response.context['count'],0)
+            day=next(d for d in response.context['days'] if d['date']==date(2027,1,4))
+            self.assertEqual(day['total'],0)
+            self.assertNotContains(response,'휴가 신청 사유')

@@ -1,0 +1,9 @@
+.calendar .day.is-public-holiday{background:#fffafb}
+.calendar .day.is-company-holiday:not(.is-public-holiday){background:#f5faf7}
+.calendar .day.is-public-holiday .day-number>span,.calendar .day.is-sunday .day-number>span{color:#b53743}
+.calendar .day.is-saturday:not(.is-public-holiday) .day-number>span{color:#3b67b3}
+.calendar .day.is-today .day-number>span{color:#fff}
+.calendar-holiday-label{font-size:12px;font-weight:600;line-height:1.6;color:#b53743;padding:2px 3px 5px;overflow-wrap:anywhere}
+.calendar-holiday-label.company{color:#286c50;font-weight:500}
+.calendar .day.outside .calendar-holiday-label{opacity:.75}
+@media(max-width:700px){.calendar-holiday-label{font-size:12px}}
