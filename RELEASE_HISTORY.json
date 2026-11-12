@@ -3,6 +3,25 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.3",
+      "status": "live_verified_quick_ui",
+      "release_notes": "releases/v0.17.3.md",
+      "migrations": [
+        "0044_report_type_labels"
+      ],
+      "source_commit": "6a8f3910fd2988f832d57fc4eefdea546f3b6a6f",
+      "deploy_id": "dep-dbqg1uifngtc73fg61cg",
+      "live_at": "2026-11-12T08:58:43+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43123411667",
+      "scope": "Rename individual/period reports to 건별 보고/기간 지정 보고 and simplify date guidance; current presentation of legacy labels without snapshot rewrites. Apply shared toolbar styling to quick-work filters.",
+      "validation": "48 report-related tests,18 quick-work tests,4 date-helper scenarios and544 full CI tests plus Node checks passed. Initial full run failed one stale old-label assertion; updated expectation and full rerun succeeded.",
+      "browser_verification": "Synthetic actual-template quick-list view: desktop44px heights,13px font,600 weight and common font family across search/select/button.390/360px controls bounded without page overflow. Existing report example tab reload timed out; no live browser claim for report choices. Underlying report UI and history labels verified by automated tests. No production reports altered.",
+      "screenshots": [
+        "outputs/Workhub_v0173_간단업무_PC.jpg",
+        "outputs/Workhub_v0173_간단업무_모바일.jpg"
+      ]
+    },
+    {
       "version": "0.17.2",
       "status": "live_verified_external_removal_user_check",
       "release_notes": "releases/v0.17.2.md",
