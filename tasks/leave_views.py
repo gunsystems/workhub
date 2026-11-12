@@ -104,7 +104,8 @@ def overview(request):
     state=request.GET.get('state','all')
     if state in dict(LeaveRequest._meta.get_field('state').choices):qs=qs.filter(state=state)
     staff=visible_employees(request.user).filter(is_active=True).select_related('department')
-    rows=[{'employee':person,'balance':leave.balance(person,year),'reserved':leave.reserved(person,year)} for person in staff]
+    prepared={row['employee'].pk:row for row in leave.preparation(year)['rows']}
+    rows=[{**prepared.get(person.pk,{}),'employee':person,'balance':leave.balance(person,year),'reserved':leave.reserved(person,year)} for person in staff]
     pending=[item for item in qs if (leave.current(item) and e and leave.current(item).approver_id==e.pk)]
     return render(request,'tasks/leave_list.html',{'items':qs,'rows':rows,'year':year,'state':state,'states':LeaveRequest._meta.get_field('state').choices,'pending_count':len(pending),'can_admin':system_admin(request.user),'can_apply':bool(e),'own_balance':leave.balance(e,year) if e else None,'own_reserved':leave.reserved(e,year) if e else None})
 
@@ -151,7 +152,13 @@ def settings_view(request):
     year=year_value(request)
     selected=request.GET.get('employee','')
     employment=EmploymentForm(instance=StaffEmployment.objects.filter(employee_id=selected).first() if selected.isdigit() else None,initial={'employee':selected} if selected.isdigit() else {})
-    grant=GrantForm(initial={'year':year,'key':uuid.uuid4()});year_form=YearForm(instance=LeaveYear.objects.filter(year=year).first(),initial={'year':year});holiday=HolidayForm()
+    grant_initial={'year':year,'key':uuid.uuid4()}
+    selected_person=Employee.objects.filter(pk=selected).first() if selected.isdigit() else None
+    if selected_person:
+        grant_initial['employee']=selected_person.pk
+        reference=leave.entitlement_preview(selected_person,year)
+        if reference['days'] is not None and not LeaveEntry.objects.filter(employee=selected_person,year=year).exists():grant_initial['amount']=reference['days']
+    grant=GrantForm(initial=grant_initial);year_form=YearForm(instance=LeaveYear.objects.filter(year=year).first(),initial={'year':year});holiday=HolidayForm()
     error='';success=''
     if request.method=='POST':
         action=request.POST.get('action')

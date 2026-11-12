@@ -1,5 +1,5 @@
 """Year-based leave ledger and snapshotted, sequential approval."""
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
@@ -23,6 +23,26 @@ def balance(employee,year):
 def reserved(employee,year):
     return LeaveRequest.objects.filter(employee=employee,start__year=year,state='pending').aggregate(v=Sum('days'))['v'] or Decimal('0')
 
+def entitlement_preview(employee, year):
+    """Jan-1 tenure reference, never an attendance or legal-entitlement decision."""
+    employment = getattr(employee, 'employment', None)
+    if employee.position == 'executive':
+        return {'days': None, 'note': '대표 · 적용 여부 별도 확인'}
+    if not employment:
+        return {'days': None, 'note': '입사일 등록 필요'}
+    opening = date(year, 1, 1)
+    if employment.ended_on and employment.ended_on < opening:
+        return {'days': None, 'note': '운영 연도 이전 퇴사'}
+    joined = employment.joined_on
+    years = year - joined.year - ((1, 1) < (joined.month, joined.day))
+    if years < 1:
+        return {'days': None, 'note': '월 개근 발생분·첫해 비례 부여 별도 확인'}
+    if employment.ended_on:
+        return {'days': None, 'note': '퇴사 예정 · 입사일 기준 정산 확인'}
+    return {'days': min(25, 15 + max(0, (years - 1) // 2)),
+            'note': f'1월 1일 기준 만 {years}년 · 전년도 출근율 80% 이상 가정'}
+
+
 def preparation(year):
     """Read-only opening checklist; never infer entitlement from tenure alone."""
     staff=Employee.objects.filter(is_active=True).select_related('department','user','employment')
@@ -30,7 +50,7 @@ def preparation(year):
     entries={}
     for entry in LeaveEntry.objects.filter(year=year):
         data=entries.setdefault(entry.employee_id,{'granted':Decimal('0'),'used':Decimal('0'),'has_grant':False})
-        if entry.key.startswith('leave:'):
+        if entry.key.startswith(('leave:', 'holiday:')):
             data['used']-=entry.amount
         else:
             data['granted']+=entry.amount
@@ -48,9 +68,9 @@ def preparation(year):
         if not representative:
             try:chain=route(employee)
             except ValidationError as exc:issues.extend(exc.messages)
-        if not ledger['has_grant']:issues.append('연차 부여·적용 대상 확인 필요')
+        if not representative and not ledger['has_grant']:issues.append('연차 부여·적용 대상 확인 필요')
         rows.append({'employee':employee,'employment':employment,'chain':chain,'issues':issues,
-                     'representative':representative,**ledger,'balance':ledger['granted']-ledger['used']})
+                     'representative':representative,'entitlement':entitlement_preview(employee,year),**ledger,'balance':ledger['granted']-ledger['used']})
     calendar=LeaveYear.objects.filter(year=year).first()
     from django.conf import settings
     source_ready=not getattr(settings,'WORKHUB_HOLIDAY_SYNC_ENABLED',True) or HolidaySync.objects.filter(year=year,last_success__gte=timezone.now()-timedelta(hours=48)).exists()
@@ -136,7 +156,7 @@ def change(pk,user,action,reason,revision):
     e=profile(user);owner=e and e.pk==item.employee_id
     step=current(item)
     if action in ('approve','reject'):
-        if not step or not e or step.approver_id!=e.pk:raise PermissionDenied
+        if not step or not e or step.approver_id!=e.pk or not e.is_active:raise PermissionDenied
         if action=='approve' and hasattr(item,'calendar_review') and item.calendar_review.pending:raise ValidationError('휴무일이 변경되어 일수 확인이 필요합니다. 관리자 확인 후 승인할 수 있습니다.')
         from django.conf import settings
         if action=='approve' and getattr(settings,'WORKHUB_HOLIDAY_SYNC_ENABLED',True) and not HolidaySync.objects.filter(year=item.start.year,last_success__gte=timezone.now()-timedelta(hours=48)).exists():raise ValidationError('공휴일 자료 연결 상태를 관리자에게 확인한 후 승인해 주세요.')

@@ -197,3 +197,54 @@ class LeaveTests(TestCase):
         self.assertContains(response,'for="leave_grant_employee"')
         self.assertContains(response,'for="leave_year_year"')
         self.assertNotContains(response,'Employee:')
+
+    def test_entitlement_reference_tenure_cap_and_midyear(self):
+        person=self.people['member']
+        employment=person.employment
+        for joined, expected in [(date(2020,1,1),18),(date(2024,1,1),16),(date(2024,5,13),15),(date(1990,1,1),25)]:
+            employment.joined_on=joined;employment.save()
+            self.assertEqual(leave.entitlement_preview(person,2027)['days'],expected)
+        employment.joined_on=date(2026,5,1);employment.save()
+        self.assertIsNone(leave.entitlement_preview(person,2027)['days'])
+        self.assertIsNone(leave.entitlement_preview(self.people['executive'],2027)['days'])
+
+    def test_selected_grant_prefills_only_without_existing_ledger(self):
+        self.client.force_login(self.admin)
+        url=f'/work/leave/settings/?year=2027&employee={self.people["member"].pk}'
+        response=self.client.get(url)
+        self.assertEqual(response.context['grant_form'].initial['employee'],self.people['member'].pk)
+        self.assertNotIn('amount',response.context['grant_form'].initial)
+        LeaveEntry.objects.all().delete()
+        response=self.client.get(url)
+        self.assertEqual(response.context['grant_form'].initial['amount'],18)
+        self.assertFalse(LeaveEntry.objects.exists())
+
+    def test_inactive_employee_cannot_decide_even_with_active_login(self):
+        item=self.submit()
+        self.people['leader'].is_active=False;self.people['leader'].save()
+        with self.assertRaises(PermissionDenied):self.act(item,'leader')
+        item.refresh_from_db();self.assertEqual(item.revision,0)
+
+    def test_overview_separates_grants_usage_pending_and_balance(self):
+        item=self.submit();self.act(item,'leader');self.act(item,'executive')
+        self.submit(start=date(2027,1,5),end=date(2027,1,5))
+        self.client.force_login(self.admin)
+        response=self.client.get('/work/leave/?year=2027')
+        row=next(r for r in response.context['rows'] if r['employee']==item.employee)
+        self.assertEqual((row['granted'],row['used'],row['balance'],row['reserved']),(15,1,14,1))
+        self.assertContains(response,'부여·조정')
+        self.assertContains(response,'연차 확인')
+
+    def test_holiday_reconciliation_is_usage_adjustment_not_new_grant(self):
+        from .models import LeaveCalendarReview
+        from .holidays import reconcile
+        item=self.submit(start=date(2027,1,4),end=date(2027,1,5))
+        self.act(item,'leader');self.act(item,'executive')
+        LeaveHoliday.objects.create(date=date(2027,1,5),name='회사 휴무')
+        LeaveCalendarReview.objects.create(request=item)
+        item.refresh_from_db();reconcile(item.pk,self.admin,item.revision)
+        row=next(r for r in leave.preparation(2027)['rows'] if r['employee']==item.employee)
+        self.assertEqual((row['granted'],row['used'],row['balance']),(15,1,14))
+        self.act(item,'member','cancel');self.act(item,'leader');self.act(item,'executive')
+        row=next(r for r in leave.preparation(2027)['rows'] if r['employee']==item.employee)
+        self.assertEqual((row['granted'],row['used'],row['balance']),(15,0,15))
