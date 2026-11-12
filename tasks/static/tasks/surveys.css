@@ -44,6 +44,10 @@
 .survey-page .survey-named-answer+.survey-named-answer{margin-top:24px;padding-top:24px;border-top:1px solid #e4e9ed}
 .survey-page .survey-named-answer h3{font-size:16px;line-height:1.8;margin:0 0 10px}
 .survey-page .survey-named-answer p{margin:0}
+.app-shell main .survey-page .survey-question .workspace-field-heading label{font-size:15px;font-weight:600}
+.app-shell main .survey-page .survey-question .workspace-field>div[id] label{font-size:14px;font-weight:400}
+.app-shell main .survey-page .detail>.people-copy,.app-shell main .survey-page .survey-written-answer,.app-shell main .survey-page .survey-named-answer p{font-size:15px}
+.app-shell main .survey-page .survey-guidance,.app-shell main .survey-page .survey-question .helptext{font-size:14px}
 .survey-preview .preview-meta{margin:10px 0}
 .survey-preview .preview-question h3{margin:0 0 14px}
 .survey-preview .preview-choice{margin:10px 0;line-height:1.8}
