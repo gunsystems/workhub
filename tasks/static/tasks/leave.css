@@ -1,1 +1,42 @@
 .leave-actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.leave-filters{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:24px 0}.leave-filters label{display:grid;gap:8px}.leave-filters input,.leave-filters select,.leave-filters button{height:44px;box-sizing:border-box}.leave-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.leave-grid .detail{margin:0}.leave-grid+.detail{margin-top:24px}.leave-grid form,.leave-grid input,.leave-grid select,.leave-grid textarea{min-width:0;max-width:100%;box-sizing:border-box}.leave-grid input:not([type=checkbox]),.leave-grid select,.leave-grid textarea{width:100%}.leave-steps{display:flex;flex-wrap:wrap;gap:12px}.leave-step{border:1px solid #d9e3df;border-radius:12px;padding:16px;flex:1;min-width:150px}.leave-step.current{border:2px solid #4966ef;background:#eef2ff}.leave-event{padding:20px 0;border-bottom:1px solid #e1e6ed;overflow-wrap:anywhere}.leave-message{padding:16px;background:#edf5f0;border-radius:12px}.leave-warning{color:#a23a24;font-weight:700}@media(max-width:720px){.leave-grid{grid-template-columns:minmax(0,1fr)}.leave-filters{display:grid;grid-template-columns:minmax(0,1fr)}.leave-filters input,.leave-filters select{width:100%;min-width:0}.leave-actions .button{min-height:44px}.leave-step{min-width:0;flex-basis:100%}.leave-grid input[type=date]{appearance:none;-webkit-appearance:none;min-height:44px}}
+/* Leave-only layout and readable form/table typography. */
+.leave-page{display:grid;gap:24px;min-width:0}
+.app-shell main .leave-page>.detail{margin:0;min-width:0}
+.leave-page .heading{gap:24px;align-items:flex-start;padding-bottom:8px}
+.leave-page .heading>div:first-child{min-width:0;flex:1}
+.leave-page .heading p{font-size:14px;line-height:1.8;max-width:80ch;overflow-wrap:anywhere}
+.leave-page .heading .leave-heading-note{margin-top:10px;font-size:13px}
+.leave-page .leave-actions{gap:12px;align-items:stretch}
+.leave-page .heading .leave-actions{flex-shrink:0;padding-top:4px}
+.app-shell main .leave-page .button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;box-sizing:border-box;margin:0;padding:10px 18px;line-height:1.5;font-size:14px;white-space:normal;text-align:center}
+.leave-page .leave-filters{display:grid;grid-template-columns:150px 210px auto;justify-content:start;gap:16px;align-items:end;margin:12px 0 0}
+.leave-page .leave-filters label{min-width:0;gap:8px;font-size:14px;line-height:1.6;font-weight:600;color:#5c6b7b}
+.app-shell main .leave-page .leave-filters :is(input,select){display:block;width:100%;max-width:100%;min-width:0;height:44px;margin:0;padding:10px 12px;border:1px solid #c9d8cf;border-radius:8px;background:#fff;color:#20332d;font:inherit;font-size:14px;box-sizing:border-box}
+.leave-page .leave-filters button{align-self:end}
+.leave-page .detail>h2{margin-bottom:16px}
+.leave-page .detail>p,.leave-page .detail>ol{font-size:14px;line-height:1.8;margin:0 0 20px;overflow-wrap:anywhere}
+.leave-page .detail>ol li+li{margin-top:8px}
+.leave-page .table-scroll{max-width:100%;min-width:0;overflow-x:auto;border:1px solid #e5ebe7;border-radius:8px}
+.leave-page table{font-size:14px;width:100%}
+.leave-page :is(th,td){padding:14px 16px;line-height:1.7}
+.leave-page th{font-size:13px;font-weight:600}
+.leave-page td{min-width:88px;overflow-wrap:anywhere}
+.leave-page td:first-child{min-width:140px}
+.leave-page .leave-balance-table td:first-child{min-width:100px}
+.leave-page .leave-balance-table :is(th,td):not(:first-child){text-align:right;white-space:nowrap;min-width:72px}
+.leave-page .leave-grid{min-width:0;gap:24px}
+.leave-page .leave-grid>.detail{min-width:0;max-width:100%;margin:0}
+.leave-page .workspace-field{margin:0 0 20px}
+.leave-page .workspace-field-heading{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:8px}
+.leave-page .workspace-field-heading label{font-size:14px;line-height:1.6;margin:0}
+.leave-page .helptext{display:block;margin-top:8px;font-size:13px;line-height:1.8}
+@media(max-width:720px){
+ .leave-page{gap:20px}
+ .leave-page .heading{flex-direction:column;gap:16px}
+ .leave-page .heading .leave-actions{width:100%;padding:0}
+ .leave-page .heading .leave-actions .button{flex:1 1 140px}
+ .leave-page .leave-filters{grid-template-columns:minmax(0,1fr);justify-content:stretch;gap:16px}
+ .leave-page .leave-filters button{width:100%}
+ .leave-page .leave-grid{grid-template-columns:minmax(0,1fr);gap:20px}
+ .leave-page :is(th,td){padding:12px}
+}

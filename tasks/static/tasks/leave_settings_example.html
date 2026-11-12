@@ -1,0 +1,101 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workhub · 함께 만드는 업무의 흐름</title><link rel="stylesheet" href="/static/tasks/style.css"><link rel="stylesheet" href="/static/tasks/navigation.css"><link rel="stylesheet" href="/static/tasks/ui_consistency.css"><link rel="stylesheet" href="/static/tasks/file_upload.css"></head>
+<body class="app-shell" data-idle-session><svg xmlns="http://www.w3.org/2000/svg" class="nav-sprite" aria-hidden="true"><defs>
+<symbol id="nav-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3Z M9 20v-7h6v7"/></symbol>
+<symbol id="nav-board" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16M5 8h2m4 0h2m4 0h2m-14 4h2m4 0h2"/></symbol>
+<symbol id="nav-work" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M8 6V3h8v3M3 12h18M10 12v3h4v-3"/></symbol>
+<symbol id="nav-folder" viewBox="0 0 24 24"><path d="M3 7V4h6l3 3h9v13H3Z"/></symbol>
+<symbol id="nav-inbox" viewBox="0 0 24 24"><path d="m3 15 3-10h12l3 10v5H3ZM3 15h5l2 3h4l2-3h5"/></symbol>
+<symbol id="nav-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v5m10-5v5M3 11h18m-14 4h2m4 0h2m-8 3h2"/></symbol>
+<symbol id="nav-bell" viewBox="0 0 24 24"><path d="M5 17h14l-2-4V9a5 5 0 0 0-10 0v4ZM10 21h4"/></symbol>
+<symbol id="nav-flag" viewBox="0 0 24 24"><path d="M5 22V3m0 1c5-3 8 3 14 0v10c-6 3-9-3-14 0"/></symbol>
+<symbol id="nav-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 17v-6m5 6V6m5 11v-9"/></symbol>
+<symbol id="nav-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m0-17a3 3 0 0 1 0 6m4 11v-3a6 6 0 0 0-3-5"/></symbol>
+<symbol id="nav-shield" viewBox="0 0 24 24"><path d="m12 2 8 3v7c0 5-8 10-8 10S4 17 4 12V5Zm-4 9 3 3 5-6"/></symbol>
+<symbol id="nav-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 2v1"/></symbol>
+<symbol id="nav-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="nav-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+</defs></svg>
+<aside class="sidebar app-sidebar">
+<div class="sidebar-top"><div class="sidebar-brand-row"><a class="brand company-logo" href="#" aria-label="GUNSYSTEMS Workhub 홈"><span class="company-wordmark">GUNSYSTEMS</span><span class="company-product">Workhub <small>업무관리 시스템</small></span></a><button disabled type="button" id="nav-toggle" aria-label="메뉴 열기" aria-controls="sidebar-nav" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+</button></div><a class="sidebar-create" href="#"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+업무 등록</a></div>
+<nav class="sidebar-scroll" id="sidebar-nav" aria-label="주 메뉴" data-user="1">
+<section class="nav-group" aria-label="내 공간"><h2>내 공간</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>내 업무</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>개인 보드</span></a>
+</section><section class="nav-group" aria-label="업무 관리"><h2>업무 관리</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 현황</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 보고</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>간단 업무</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>프로젝트</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 접수함</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>캘린더</span></a>
+</section><section class="nav-group" aria-label="알림"><h2>알림</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>공지사항</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>설문조사</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 알림</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>조치 필요</span></a>
+</section><section class="nav-group" aria-label="조직 현황"><h2>조직 현황</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>전사 현황</span></a>
+</section><details class="nav-group nav-collapsible" open data-group="organization" data-active="true"><summary>관리자 전용<span aria-hidden="true">⌄</span></summary><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>직원 관리</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>일정 · 업무 휴지통</span></a><a class="nav active" href="#" aria-current="page"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>휴가 관리 · 준비</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>시스템 로그</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>관리자 계정</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>하이웍스 자동 연동</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무자료 저장소</span></a>
+</details></nav>
+<div class="sidebar-foot"><a class="nav nav-help" href="#"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>도움말 · 사용 가이드</span></a><details class="account-menu"><summary><span class="profile-avatar">L</span><span class="profile-name">leave_preview<small>관리자</small></span><span aria-hidden="true">⌄</span></summary><div class="account-actions"><a href="#">계정 보안 · OTP</a><a href="#">Google Calendar 연결</a><a href="#">하이웍스 일정 연결</a><form action="/logout/" method="post"><button disabled type="submit">로그아웃</button></form></div></details></div>
+</aside><main><header><span>워크스페이스 <b>/</b> 휴가 관리 · 준비</span><span class="live">● 전사 · leave_preview · 관리자</span>
+<link rel="stylesheet" href="/static/tasks/page_help.css">
+<button disabled type="button" class="page-help-trigger" data-page-help-open aria-haspopup="dialog" aria-controls="page-help-dialog"><span aria-hidden="true">?</span>도움말</button>
+<dialog id="page-help-dialog" class="page-help-dialog" aria-labelledby="page-help-title" aria-describedby="page-help-purpose">
+<div class="page-help-top"><div><small>WORKHUB GUIDE</small><h2 id="page-help-title">휴가 관리 · 관리자 미리보기</h2></div><button disabled type="button" class="page-help-x" data-page-help-close aria-label="도움말 닫기">×</button></div>
+<p id="page-help-purpose" class="page-help-purpose">직원 공개 전 입사일·휴무일·연차 원장을 준비합니다.</p>
+<section class="page-help-visual"><h3>한눈에 보는 흐름</h3>
+<svg class="help-flow" viewBox="0 0 548 164" role="img" aria-label="휴가 관리 · 관리자 미리보기 사용 흐름도"><defs><marker id="help-flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#89a994"/></marker></defs><path d="M172 32 H183" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><path d="M352 32 H363" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><path d="M450 56 V80 H90 V93" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><rect x="8" y="8" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="90" y="37" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">화면 · 대상 확인</text><rect x="188" y="8" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="270" y="37" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">내용 확인 · 입력</text><rect x="368" y="8" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="450" y="37" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">필요한 처리</text><rect x="8" y="98" width="164" height="48" rx="9" fill="#286b53" stroke="#d7e6dd"/><text x="90" y="127" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">저장 · 결과 확인</text></svg>
+
+</section>
+<section><h3>이렇게 사용하세요</h3><ol><li>직원 관리에서 부서·직책·재직 상태를 확인하고 직원·연차 설정에서 입사일을 등록합니다.</li><li>해당 연도의 공휴일·회사 휴무일을 등록하고 운영 확인을 저장합니다. 월~금 근무이며 반차는 0.5일입니다.</li><li>확인된 연차를 연도별로 부여합니다. 잘못 기록한 값은 사유를 남겨 반대 일수로 조정합니다.</li></ol></section>
+
+<section class="page-help-notes"><h3>알아두세요</h3><ul><li>직원 신청·직원 결재 화면은 아직 공개하지 않았습니다. 일반 직원은 직접 주소로도 접근할 수 없습니다.</li><li>자동 연차 발생·개근 판정·메일 및 하이웍스 알림은 실행하지 않습니다.</li><li>개발된 결재 구조는 팀장→본부장→대표이며, 본부장 공석은 대표 전결로 기록합니다. 승인 전에는 차감하지 않고 취소 결재 완료 후 복원합니다.</li><li>잔여 초과 신청은 허용하되 결재 의견을 남깁니다. 출퇴근 수치와 수행 평가에는 반영하지 않습니다.</li></ul></section>
+<div class="page-help-bottom"><a href="#">전체 사용 가이드</a><button disabled type="button" data-page-help-close>확인</button></div>
+</dialog>
+</header><link rel="stylesheet" href="/static/tasks/workspace.css"><link rel="stylesheet" href="/static/tasks/leave.css"><div class="leave-page"><aside class="leave-message">휴가 화면 · 가상 예시입니다. 저장·조회는 동작하지 않습니다.</aside><section class="heading"><div><div class="eyebrow">LEAVE MANAGEMENT · 관리자 미리보기</div><h1>직원·연차 설정</h1><p>직원 공개 전 준비 화면입니다.</p><p class="leave-heading-note">근무시간 10:00~17:00 · 점심 1시간<br>자동 연차 부여와 직원 알림은 실행하지 않습니다.</p></div><div class="leave-actions"><a class="button" href="#">휴가 현황</a><a class="button" href="#">직원·연차 설정</a></div></section>
+<aside class="detail"><h2>준비 순서</h2><ol><li>직원의 입사일·사번을 등록합니다. 부서·직책·재직 상태는 <a href="#">직원 관리</a>에서 수정합니다.</li><li>해당 연도의 법정 공휴일·회사 휴무일을 등록한 뒤 근무일 확인을 완료합니다.</li><li>확인된 연차를 부여합니다. 자동 발생 계산은 아직 적용하지 않습니다.</li></ol><p>출퇴근 기록과 직원 평가는 연결하지 않습니다. 과거 연차 사용 내역을 지우지 않고 연도별로 관리합니다.</p></aside>
+<div class="leave-grid"><form method="post" class="task-form detail"><input type="hidden" name="action" value="employment"><h2>직원 기본 정보</h2><div class="workspace-field"><div class="workspace-field-heading"><label for="id_employee">Employee:</label><span class="required-badge">필수</span></div><select name="employee" required id="id_employee">
+  <option value="" selected>---------</option>
+
+  <option value="1">직원 A · 예시 · 예시 부서</option>
+
+  <option value="2">직원 B · 예시 · 예시 부서</option>
+
+</select></div>
+<div class="workspace-field"><div class="workspace-field-heading"><label for="id_joined_on">입사일:</label><span class="required-badge">필수</span></div><span class="native-date-control"><input type="date" name="joined_on" required id="id_joined_on"></span></div>
+<div class="workspace-field"><div class="workspace-field-heading"><label for="id_ended_on">퇴사일:</label></div><span class="native-date-control"><input type="date" name="ended_on" id="id_ended_on"></span></div>
+<div class="workspace-field"><div class="workspace-field-heading"><label for="id_staff_number">사번:</label></div><input type="text" name="staff_number" maxlength="40" id="id_staff_number"></div>
+<button disabled class="button primary">직원 정보 저장</button></form>
+<form method="post" class="task-form detail"><input type="hidden" name="action" value="grant"><h2>연차 부여·조정</h2><p>추가 부여는 양수, 차감 조정은 음수로 입력합니다. 수정 대신 조정 기록을 남깁니다.</p><div class="workspace-field"><div class="workspace-field-heading"><label for="id_employee">직원:</label><span class="required-badge">필수</span></div><select name="employee" required id="id_employee">
+  <option value="" selected>---------</option>
+
+  <option value="1">직원 A · 예시 · 예시 부서</option>
+
+  <option value="2">직원 B · 예시 · 예시 부서</option>
+
+</select></div>
+<div class="workspace-field"><div class="workspace-field-heading"><label for="id_year">연도:</label><span class="required-badge">필수</span></div><input type="number" name="year" value="2026" min="2020" max="2100" required id="id_year"></div>
+<div class="workspace-field"><div class="workspace-field-heading"><label for="id_amount">부여·조정 일수 (차감 조정은 음수):</label><span class="required-badge">필수</span></div><input type="number" name="amount" min="-366" max="366" step="0.01" required id="id_amount"></div>
+<div class="workspace-field"><div class="workspace-field-heading"><label for="id_reason">부여·조정 사유:</label><span class="required-badge">필수</span></div><input type="text" name="reason" maxlength="500" required id="id_reason"></div>
+<input type="hidden" name="key" value="2945366c-fe54-4139-bd2c-fb5db1cf498b" id="id_key"><button disabled class="button primary">부여·조정 기록</button></form>
+<form method="post" class="task-form detail"><input type="hidden" name="action" value="holiday"><h2>공휴일·회사 휴무일 등록</h2><p>법정 공휴일은 자동으로 입력되지 않습니다. 임시·대체 공휴일도 확인해 등록하세요. 기존 신청의 일수는 소급 변경하지 않습니다.</p><div class="workspace-field"><div class="workspace-field-heading"><label for="id_date">휴무일:</label><span class="required-badge">필수</span></div><span class="native-date-control"><input type="date" name="date" required id="id_date"></span></div>
+<div class="workspace-field"><div class="workspace-field-heading"><label for="id_name">휴무일 이름:</label><span class="required-badge">필수</span></div><input type="text" name="name" maxlength="80" required id="id_name"></div>
+<button disabled class="button primary">휴무일 등록</button></form>
+<form method="post" class="task-form detail"><input type="hidden" name="action" value="year"><h2>연도별 운영 확인</h2><p>월~금 근무, 토·일요일 제외, 오전·오후 반차 각 0.5일. 공휴일 목록과 회사 규정을 확인한 후 체크하세요.</p><div class="workspace-field"><div class="workspace-field-heading"><label for="id_year">관리 연도:</label><span class="required-badge">필수</span></div><input type="number" name="year" value="2026" min="0" required id="id_year"></div>
+<div class="workspace-field"><div class="workspace-field-heading"><label for="id_calendar_confirmed">근무일·휴무일 확인 완료:</label></div><input type="checkbox" name="calendar_confirmed" id="id_calendar_confirmed"></div>
+<div class="workspace-field"><div class="workspace-field-heading"><label for="id_note">운영 메모:</label></div><input type="text" name="note" maxlength="500" id="id_note"></div>
+<button disabled class="button primary">운영 기준 저장</button></form></div>
+<section class="detail"><h2>등록된 직원 정보</h2><div class="table-scroll"><table><thead><tr><th>직원</th><th>입사일</th><th>퇴사일</th><th>사번</th><th>관리</th></tr></thead><tbody><tr><td>직원 A · 예시 · 예시 부서</td><td>2024-03-04</td><td>—</td><td>EX1</td><td><a href="#">수정</a></td></tr><tr><td>직원 B · 예시 · 예시 부서</td><td>2024-03-05</td><td>—</td><td>EX2</td><td><a href="#">수정</a></td></tr></tbody></table></div></section>
+<section class="detail"><h2>2026년 휴무일</h2><p>등록된 공휴일·회사 휴무일이 없습니다.</p></section>
+<section class="detail"><h2>2026년 연차 원장 · 최근 100건</h2><div class="table-scroll"><table><thead><tr><th>직원</th><th>일수</th><th>사유</th><th>기록 시각</th></tr></thead><tbody><tr><td>직원 B · 예시 · 예시 부서</td><td>16.00</td><td>가상 예시</td><td>2026-11-12 10:28</td></tr><tr><td>직원 A · 예시 · 예시 부서</td><td>15.00</td><td>가상 예시</td><td>2026-11-12 10:28</td></tr></tbody></table></div></section></div><footer>Workhub v0.17.8 · GUNSYSTEMS <span>시간 기준: Asia/Seoul · 마감 임박: 오늘부터 3일 이내</span></footer></main></body></html>
