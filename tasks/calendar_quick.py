@@ -13,7 +13,7 @@ from django.http import QueryDict
 from django.shortcuts import render,redirect
 from django.utils import timezone
 from .models import Employee,WorkCategory,CalendarQuickSave
-from .permissions import profile,is_company_admin
+from .permissions import profile,is_company_admin,visible_employees
 from .collaboration import edit_task
 
 def entry_token(user):return signing.dumps({'user':user.pk,'nonce':secrets.token_hex(20)},salt='calendar-quick')
@@ -34,7 +34,7 @@ class CalendarQuickForm(forms.Form):
     token=forms.CharField(widget=forms.HiddenInput)
     def __init__(self,*args,user,details=False,**kwargs):
         super().__init__(*args,**kwargs)
-        self.fields['assignee'].queryset=Employee.objects.filter(is_active=True).exclude(user__is_active=False).select_related('department')
+        self.fields['assignee'].queryset=visible_employees(user).filter(is_active=True).exclude(user__is_active=False).select_related('department')
         self.fields['category'].queryset=WorkCategory.objects.filter(is_active=True)
         self.fields['title'].required=not details;self.fields['assignee'].required=not details
     def clean(self):

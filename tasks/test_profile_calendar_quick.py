@@ -70,11 +70,19 @@ class ProfileCalendarTests(TestCase):
         self.assertEqual(self.client.post('/work/calendar/quick/',self.payload(token='bad')).status_code,200)
         self.assertEqual(self.client.post('/work/calendar/quick/',self.payload(token=entry_token(self.b))).status_code,200)
         self.assertEqual(Task.objects.count(),0)
-    def test_inactive_assignee_rejected_and_staff_can_assign_active_other_team(self):
+    def test_inactive_assignee_rejected_and_staff_can_assign_active_teammate(self):
         self.other.is_active=False;self.other.save()
         self.client.post('/work/calendar/quick/',self.payload(assignee=self.other.pk));self.assertEqual(Task.objects.count(),0)
         self.other.is_active=True;self.other.save()
         response=self.client.post('/work/calendar/quick/',self.payload(assignee=self.other.pk));self.assertEqual(response.status_code,302);self.assertEqual(Task.objects.get().creation_kind,'request')
+    def test_quick_assignee_respects_calendar_scope_and_executive_company_scope(self):
+        foreign=Employee.objects.create(name='비공개 타부서',department=Department.objects.create(name='다른 검증팀'))
+        self.assertNotContains(self.client.get('/?date='+self.day),'비공개 타부서')
+        response=self.client.post('/work/calendar/quick/',self.payload(assignee=foreign.pk))
+        self.assertEqual(response.status_code,200);self.assertEqual(Task.objects.count(),0)
+        self.e.position='executive';self.e.save()
+        response=self.client.post('/work/calendar/quick/',self.payload(assignee=foreign.pk))
+        self.assertEqual(response.status_code,302);self.assertEqual(Task.objects.get().assignee,foreign)
     def test_details_preserves_values_without_creating_task(self):
         response=self.client.post('/work/calendar/quick/',self.payload(action='details',all_day='',start_time='14:00',end_time='15:00',description='내용 유지',location='회의실'))
         self.assertEqual(response.status_code,200);form=response.context['form'];self.assertEqual(form.initial['description'],'내용 유지');self.assertEqual(form.initial['location'],'회의실');self.assertEqual(form.initial['activity_start'].hour,14)
