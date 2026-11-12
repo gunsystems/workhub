@@ -1,1 +1,12 @@
-{% extends 'tasks/base.html' %}{% block content %}{% include 'accounts/staff_management_nav.html' %}<section class="heading"><div><div class="eyebrow">ADMINISTRATION · 관리자 전용</div><h1>부서 관리</h1><p>직원과 업무에 사용할 부서를 관리합니다.</p></div><a class="button" href="{% url 'employee_list' %}">직원 관리로</a></section>{% for message in messages %}<p class="workspace-notice">{{ message }}</p>{% endfor %}<section class="detail"><h2>등록된 부서</h2>{% for d in departments %}<p>{{ d }}</p>{% endfor %}<h2>부서 추가</h2><form method="post" class="task-form">{% csrf_token %}{{ form.as_p }}<button class="button primary">부서 추가</button></form></section>{% endblock %}
+{% extends 'tasks/base.html' %}
+{% block content %}
+{% include 'accounts/staff_management_nav.html' %}
+<div class="department-page">
+<section class="heading"><div><div class="eyebrow">ADMINISTRATION · 관리자 전용</div><h1>부서 관리</h1><p>직원과 업무에 사용할 부서를 관리합니다.</p></div><a class="button" href="{% url 'employee_list' %}">직원 관리로</a></section>
+{% for message in messages %}<p class="workspace-notice" role="status">{{ message }}</p>{% endfor %}
+<div class="department-layout">
+<section class="department-panel" aria-labelledby="department-list-title"><div class="department-panel-heading"><h2 id="department-list-title">등록된 부서</h2><span class="department-count">{{ departments|length }}개</span></div>
+<ul class="department-list">{% for d in departments %}<li><span class="department-icon" aria-hidden="true">{% include 'tasks/nav_icon.html' with icon='users' %}</span><strong>{{ d }}</strong></li>{% empty %}<li>등록된 부서가 없습니다.</li>{% endfor %}</ul></section>
+<section class="department-panel" aria-labelledby="department-add-title"><h2 id="department-add-title">부서 추가</h2><p class="department-help">새로 사용할 부서명을 입력해 주세요.</p>
+<form method="post" class="department-form">{% csrf_token %}{{ form.non_field_errors }}<div class="department-field"><label for="{{ form.name.id_for_label }}">부서명 <span class="department-required">필수</span></label>{{ form.name }}{{ form.name.errors }}</div><div class="department-actions"><button type="submit" class="button primary">+ 부서 추가</button></div></form></section>
+</div></div>{% endblock %}
