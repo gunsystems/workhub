@@ -3,6 +3,29 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.2",
+      "status": "live_verified_private_address_tenure_profile_layout",
+      "release_notes": "releases/v0.19.2.md",
+      "source_commit": "37439027ec8c34af239cdba6df6c48ee809dc65f",
+      "deploy_id": "dep-dbqogfd6e07s73fr6fk0",
+      "live_at": "2026-11-12T18:35:56+09:00",
+      "migrations": [
+        "0049_employee_private_address"
+      ],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43192194078",
+      "scope": "Private optional address editing for employee/root administrator, full-month tenure, rebalanced card portrait/name/frame and profile panels.",
+      "validation": {
+        "local": "33 address/photo/profile/quick tests passed; card export Node check and migration consistency passed",
+        "ci": "630 Django tests and six Node checks passed",
+        "ui": "Authenticated administrator preview verified tenure and address form; real portrait loaded600x760; final frame maintained600:760 onPC320/360px; address inputs contained and save/cancel44px; actual card PNG downloaded and decoded1080x680",
+        "runtime": "healthz0.19.2/3743902/ok"
+      },
+      "limitations": [
+        "Production addresses were not entered or modified; save/access/stale-update/audit masking tested with isolated synthetic records",
+        "Existing photo, employment, permissions and leave balances retained; no external address lookup API added"
+      ]
+    },
+    {
       "version": "0.19.1",
       "status": "live_verified_card_photo_controls",
       "release_notes": "releases/v0.19.1.md",
