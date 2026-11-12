@@ -3,6 +3,31 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.20.1",
+      "status": "live_verified_admin_preview",
+      "release_notes": "releases/v0.20.1.md",
+      "source_commit": "263a4a23b9c8b64d28a409cbc5e917fb89d7eff6",
+      "deploy_id": "dep-dbqsl9hsrm7s73drajbg",
+      "live_at": "2026-11-12T23:19:13+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43235152956",
+      "migrations": [
+        "0050_leave_notification_outbox"
+      ],
+      "validation": {
+        "focused": "49 leave/help tests passed",
+        "ci": "659 Django tests; regression workflow passed",
+        "runtime": "Production administrator annual summary for representative preview verified; no production grants, applications, approvals or messages created",
+        "badge": "Synthetic tests verified 2-to-1-to-0 sequence and cancellation round, current actual queue empty",
+        "mail": "Mock transport verified recipient, stale-request skip, changed-email skip and unknown-outcome no automatic retry"
+      },
+      "limitations": [
+        "Administrator-only leave preview remains",
+        "External leave notifications default OFF until separately scheduled employee rollout",
+        "Desktop visual QA only; physical mobile unverified"
+      ],
+      "rollback_source": "1f8587ec382d657add9611f9011cfc2480b4192d"
+    },
+    {
       "version": "0.20.0",
       "status": "live_verified_admin_preview",
       "release_notes": "releases/v0.20.0.md",
