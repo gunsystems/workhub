@@ -1,10 +1,11 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
 const source=fs.readFileSync(require('node:path').join(__dirname,'static/tasks/report_form.js'),'utf8');
-function setup(fresh=true){
+function setup(fresh=true,cache='',initialKind='weekly'){
  const field=value=>({value,checked:false,hidden:false,events:{},addEventListener(n,f){this.events[n]=f;},fire(n,event={}){this.events[n]?.(event);}});
- const nodes={id_report_type:field('weekly'),id_period_start:field('2026-11-09'),id_period_end:field('2026-11-15'),id_summary:field('캘린더 초안'),id_next_week_plan:field('차주 초안'),id_report_issues:field(''), 'calendar-applied':field('0')};
+ const nodes={id_report_type:field(initialKind),id_draft_cache:field(cache),id_period_start:field('2026-11-09'),id_period_end:field('2026-11-15'),id_summary:field('캘린더 초안'),id_next_week_plan:field('차주 초안'),id_report_issues:field(''), 'calendar-applied':field('0')};
  const checks=[field('1'),field('2')];checks[0].checked=true;
- const extras=Object.fromEntries(['data-period-calendar','data-weekly-guide','data-report-heading','data-report-intro','data-calendar-apply','data-calendar-preview','data-calendar-file-warning'].map(k=>[k,field('')]));
+ const extras=Object.fromEntries(['data-period-calendar','data-weekly-guide','data-report-heading','data-report-intro','data-calendar-apply','data-calendar-preview','data-calendar-file-warning','data-calendar-stale-warning'].map(k=>[k,field('')]));
+ extras['data-calendar-preview'].dataset={calendarStart:'2028-02-01',calendarEnd:'2028-02-11'};
  extras['data-calendar-preview'].value='[교육] 선택한 기간 업무';
  const file={files:[]},events={};
  const form={dataset:{reportToday:'2028-02-12',newReport:String(fresh)},querySelectorAll:()=>checks,querySelector:()=>file,addEventListener(n,f){events[n]=f;}};
@@ -16,8 +17,10 @@ x.nodes.id_summary.value='직접 쓴 건별 결과';x.nodes.id_period_start.valu
 x.change('individual');assert.equal(x.nodes.id_summary.value,'직접 쓴 건별 결과');assert.equal(x.nodes.id_period_start.value,'2028-02-10');assert.equal(x.checks[1].checked,true);
 x.change('weekly');assert.equal(x.nodes.id_summary.value,'캘린더 초안');assert.equal(x.nodes.id_next_week_plan.value,'차주 초안');assert.equal(x.checks[0].checked,true);assert.equal(x.nodes.id_period_start.value,'2026-11-09');
 x.change('period');x.nodes.id_period_start.value='2028-02-01';x.nodes.id_period_end.value='2028-02-11';assert.equal(x.nodes.id_summary.value,'');x.extras['data-calendar-apply'].fire('click');assert.equal(x.nodes.id_summary.value,'[교육] 선택한 기간 업무');assert.equal(x.checks[1].checked,true);assert.equal(x.nodes['calendar-applied'].value,'1');
+x.nodes.id_period_end.value='2028-02-12';x.nodes.id_summary.value='수정한 수동 본문';x.extras['data-calendar-apply'].fire('click');assert.equal(x.nodes.id_summary.value,'수정한 수동 본문');assert.equal(x.extras['data-calendar-stale-warning'].hidden,false);x.nodes.id_period_end.value='2028-02-11';x.extras['data-calendar-apply'].fire('click');
 x.change('individual');x.extras['data-calendar-apply'].fire('click');assert.equal(x.nodes.id_summary.value,'직접 쓴 건별 결과');x.change('period');assert.equal(x.nodes.id_summary.value,'[교육] 선택한 기간 업무');assert.equal(x.nodes.id_period_start.value,'2028-02-01');
 x=setup(false);x.change('individual');assert.equal(x.nodes.id_summary.value,'캘린더 초안');assert.equal(x.nodes.id_period_start.value,'2026-11-09');
 x=setup();x.change('monthly');assert.equal(x.nodes.id_period_end.value,'2028-02-29');x.change('daily');assert.equal(x.nodes.id_period_start.value,'2028-02-12');
 x.file.files=[{}];let prevented=false;x.events.submit({submitter:{value:'calendar'},preventDefault(){prevented=true;}});assert.equal(prevented,true);assert.equal(x.extras['data-calendar-file-warning'].hidden,false);prevented=false;x.events.submit({submitter:{value:'draft'},preventDefault(){prevented=true;}});assert.equal(prevented,false);
+x=setup();x.change('individual');x.nodes.id_summary.value='미리보기 후에도 보존할 건별 본문';x.change('period');x.events.submit({submitter:{value:'calendar'}});const restored=setup(true,x.nodes.id_draft_cache.value,'period');restored.change('individual');assert.equal(restored.nodes.id_summary.value,'미리보기 후에도 보존할 건별 본문');
 console.log('Report kind drafts, explicit calendar apply, date defaults, saved edits and attachment preservation passed.');

@@ -59,6 +59,7 @@ def weekly_sources(user,start,end):
 
 class ReportForm(forms.ModelForm):
     revision=forms.IntegerField(widget=forms.HiddenInput,initial=0)
+    draft_cache=forms.CharField(required=False,widget=forms.HiddenInput)
     reviewer=UserChoice(label='보고받을 사람',queryset=get_user_model().objects.none())
     tasks=forms.ModelMultipleChoiceField(label='참조할 업무',queryset=Task.objects.none(),required=False,widget=forms.CheckboxSelectMultiple)
     sources=forms.ModelMultipleChoiceField(label='취합할 직원 보고 · 제출 버전 선택',queryset=ReportSubmission.objects.none(),required=False,widget=forms.CheckboxSelectMultiple)
@@ -187,6 +188,7 @@ def report_edit(request,pk=None,calendar_seed=False,team_seed=False):
             finish=forms.DateField().clean(request.POST.get('period_end'))
             if finish<begin or (finish-begin).days>366:raise ValidationError('종료일은 시작일 이후 1년 이내로 선택하세요.')
             preview=calendar_draft(request.user,begin,period_end=finish)
+            preview.update(period_start=begin.isoformat(),period_end=finish.isoformat())
         except ValidationError as exc:error=' '.join(exc.messages)
         form._errors=ErrorDict();form.cleaned_data={}
         return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':weekly_context,'calendar_preview':preview,'calendar_error':error})

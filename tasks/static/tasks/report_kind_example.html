@@ -285,7 +285,7 @@
 .employee-report-review>h2{margin-bottom:12px}.employee-report-card{margin-top:18px;border:1px solid #dce5e0;border-radius:12px;min-width:0;overflow:hidden}.employee-report-card>summary{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:18px 20px;cursor:pointer;background:#f5f8f6;list-style:none}.employee-report-card>summary:before{content:'▸';color:#276956}.employee-report-card[open]>summary:before{content:'▾'}.employee-report-card>summary>span:first-of-type{flex:1;min-width:0}.employee-report-meta{display:block;font-size:13px;color:#637688;line-height:1.7;margin-top:5px;overflow-wrap:anywhere}.employee-report-content{padding:20px;min-width:0}.employee-report-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:18px 0}.employee-report-columns>div{min-width:0}.employee-report-content h3{font-size:16px;margin:0 0 12px}.employee-report-content .report-text{white-space:normal;overflow-wrap:anywhere;line-height:1.85;margin:0;color:#34465b}.employee-report-issues{border-top:1px solid #e3e8ed;padding-top:20px;margin:20px 0}.employee-report-content .workspace-actions{margin-top:20px}.employee-report-card .report-feedback-status{flex-shrink:0}
 @media(max-width:600px){.employee-report-card>summary{padding:16px;flex-wrap:wrap}.employee-report-content{padding:16px}.employee-report-columns{grid-template-columns:minmax(0,1fr);gap:24px}.employee-report-card .report-feedback-status{font-size:12px}.employee-report-content .button{max-width:100%;white-space:normal}}
 </style><section class="heading"><div><div class="eyebrow">WORK REPORT</div><h1 data-report-heading>주간업무보고 작성</h1><p data-report-intro>캘린더 일정을 참고해 이번 주 진행 업무와 다음 주 예정 업무를 작성하세요.</p></div></section>
-<aside class="workspace-notice" data-weekly-guide><p>캘린더에 등록한 이번 주·다음 주 일정을 참고해 내용을 불러옵니다. 실제 진행 결과와 변경된 계획을 확인해 수정하고, 빠진 업무는 추가해 주세요.</p><p><strong>제출 기한: 매주 금요일 업무 마감 전 · 오후 5시까지</strong></p><p>주중에도 작성·저장·제출할 수 있으며, 주말 업무가 있으면 함께 정리해 주세요. 저장한 보고 내용은 이후 캘린더 변경으로 자동 수정되지 않습니다.</p></aside><div method="post" enctype="multipart/form-data" class="detail task-form" data-report-today="2026-11-12" data-new-report="true"><input type="hidden" name="revision" value="0" id="id_revision"><div class="workspace-field"><div class="workspace-field-heading"><label for="id_report_type">보고 구분:</label><span class="required-badge">필수</span></div><select name="report_type" aria-describedby="id_report_type_helptext" id="id_report_type">
+<aside class="workspace-notice" data-weekly-guide><p>캘린더에 등록한 이번 주·다음 주 일정을 참고해 내용을 불러옵니다. 실제 진행 결과와 변경된 계획을 확인해 수정하고, 빠진 업무는 추가해 주세요.</p><p><strong>제출 기한: 매주 금요일 업무 마감 전 · 오후 5시까지</strong></p><p>주중에도 작성·저장·제출할 수 있으며, 주말 업무가 있으면 함께 정리해 주세요. 저장한 보고 내용은 이후 캘린더 변경으로 자동 수정되지 않습니다.</p></aside><div method="post" enctype="multipart/form-data" class="detail task-form" data-report-today="2026-11-12" data-new-report="true"><input type="hidden" name="draft_cache" id="id_draft_cache" value=""><input type="hidden" name="revision" value="0" id="id_revision"><div class="workspace-field"><div class="workspace-field-heading"><label for="id_report_type">보고 구분:</label><span class="required-badge">필수</span></div><select name="report_type" aria-describedby="id_report_type_helptext" id="id_report_type">
   <option value="daily">일일 보고</option>
 
   <option value="weekly" selected>주간 보고</option>
@@ -307,7 +307,7 @@
 <h2>기간별 업무 불러오기 · 선택</h2><p>보고 시작일과 종료일을 선택한 뒤, 필요하면 해당 기간의 본인 업무를 불러오세요. 불러오지 않고 직접 작성해도 됩니다.</p>
 <button disabled class="button" name="action" value="calendar" formnovalidate>선택한 기간의 업무 불러오기</button><p data-calendar-file-warning hidden>업무 내용을 먼저 불러온 뒤 첨부파일을 선택해 주세요.</p>
 
-<div class="report-group-preview"><h3>불러온 업무 미리보기 · 1건</h3><p>적용하면 현재 본문과 관련 업무 선택을 이 내용으로 바꿉니다. 적용 전까지 작성 중인 내용은 유지됩니다.</p><textarea rows="8" readonly data-calendar-preview aria-label="불러온 업무 미리보기">- [정기점검] 선택한 기간의 업무 · 예시</textarea><input type="hidden" data-calendar-task value="1"><button class="button" type="button" data-calendar-apply>이 내용으로 본문 채우기</button></div>
+<div class="report-group-preview"><h3>불러온 업무 미리보기 · 1건</h3><p>2026-11-01~2026-11-30</p><p data-calendar-stale-warning hidden>기간이 변경되었습니다. 업무를 다시 불러와 주세요.</p><p>적용하면 현재 본문과 관련 업무 선택을 이 내용으로 바꿉니다. 적용 전까지 작성 중인 내용은 유지됩니다.</p><textarea rows="8" readonly data-calendar-preview data-calendar-start="2026-11-01" data-calendar-end="2026-11-30" aria-label="불러온 업무 미리보기">- [정기점검] 선택한 기간의 업무 · 예시</textarea><input type="hidden" data-calendar-task value="1"><button class="button" type="button" data-calendar-apply>이 내용으로 본문 채우기</button></div>
 </section><input type="hidden" name="calendar_applied" value="0" id="calendar-applied">
 <div class="workspace-field"><div class="workspace-field-heading"><label for="id_summary">이번 주 진행 업무:</label><span class="required-badge">필수</span></div><textarea name="summary" cols="40" rows="8" required id="id_summary">
 - [11.12] [일반 업무] 주간 캘린더 업무 · 예시 (예정 · 0%)</textarea></div>
@@ -339,6 +339,7 @@
   const fields=['summary','next_week_plan','report_issues'].map(name=>document.getElementById('id_'+name));
   const checks=Array.from(form.querySelectorAll('input[name="tasks"]'));
   const applied=document.getElementById('calendar-applied');
+  const cache=document.getElementById('id_draft_cache');
   const panel=document.querySelector('[data-period-calendar]');
   const guide=document.querySelector('[data-weekly-guide]');
   const heading=document.querySelector('[data-report-heading]');
@@ -355,6 +356,11 @@
   }
   const capture=()=>({text:fields.map(field=>field?.value||''),tasks:checks.filter(field=>field.checked).map(field=>field.value),dates:[start.value,end.value],applied:applied?.value||'0'});
   let previous=kind.value;
+  try {
+    for(const [key,value] of JSON.parse(cache?.value||'[]')) {
+      if(['daily','weekly','monthly','individual','period'].includes(key)&&value&&Array.isArray(value.text)&&value.text.length===3&&value.text.every(v=>typeof v==='string')&&Array.isArray(value.tasks)&&value.tasks.every(v=>typeof v==='string')&&Array.isArray(value.dates)&&value.dates.length===2&&value.dates.every(v=>typeof v==='string')) drafts.set(key,value);
+    }
+  } catch (_) {}
   function update(){
     if(panel)panel.hidden=kind.value!=='period';
     if(guide)guide.hidden=kind.value!=='weekly';
@@ -377,12 +383,17 @@
     if(kind.value!=='period')return;
     const preview=document.querySelector('[data-calendar-preview]');
     if(!preview||!fields[0])return;
+    if(preview.dataset.calendarStart && (start.value!==preview.dataset.calendarStart||end.value!==preview.dataset.calendarEnd)){
+      const warning=document.querySelector('[data-calendar-stale-warning]');if(warning)warning.hidden=false;return;
+    }
+    const stale=document.querySelector('[data-calendar-stale-warning]');if(stale)stale.hidden=true;
     fields[0].value=preview.value;
     const ids=Array.from(document.querySelectorAll('[data-calendar-task]')).map(field=>field.value);
     checks.forEach(field=>{field.checked=ids.includes(field.value);});
     if(applied)applied.value='1';
   });
   form.addEventListener('submit',event=>{
+    if(fresh&&cache){drafts.set(kind.value,capture());cache.value=JSON.stringify(Array.from(drafts.entries()));}
     if(event.submitter?.value!=='calendar')return;
     const file=form.querySelector('input[type="file"]');
     if(file?.files?.length){event.preventDefault();const warning=document.querySelector('[data-calendar-file-warning]');if(warning)warning.hidden=false;}

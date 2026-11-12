@@ -6,6 +6,7 @@
   const fields=['summary','next_week_plan','report_issues'].map(name=>document.getElementById('id_'+name));
   const checks=Array.from(form.querySelectorAll('input[name="tasks"]'));
   const applied=document.getElementById('calendar-applied');
+  const cache=document.getElementById('id_draft_cache');
   const panel=document.querySelector('[data-period-calendar]');
   const guide=document.querySelector('[data-weekly-guide]');
   const heading=document.querySelector('[data-report-heading]');
@@ -22,6 +23,11 @@
   }
   const capture=()=>({text:fields.map(field=>field?.value||''),tasks:checks.filter(field=>field.checked).map(field=>field.value),dates:[start.value,end.value],applied:applied?.value||'0'});
   let previous=kind.value;
+  try {
+    for(const [key,value] of JSON.parse(cache?.value||'[]')) {
+      if(['daily','weekly','monthly','individual','period'].includes(key)&&value&&Array.isArray(value.text)&&value.text.length===3&&value.text.every(v=>typeof v==='string')&&Array.isArray(value.tasks)&&value.tasks.every(v=>typeof v==='string')&&Array.isArray(value.dates)&&value.dates.length===2&&value.dates.every(v=>typeof v==='string')) drafts.set(key,value);
+    }
+  } catch (_) {}
   function update(){
     if(panel)panel.hidden=kind.value!=='period';
     if(guide)guide.hidden=kind.value!=='weekly';
@@ -44,12 +50,17 @@
     if(kind.value!=='period')return;
     const preview=document.querySelector('[data-calendar-preview]');
     if(!preview||!fields[0])return;
+    if(preview.dataset.calendarStart && (start.value!==preview.dataset.calendarStart||end.value!==preview.dataset.calendarEnd)){
+      const warning=document.querySelector('[data-calendar-stale-warning]');if(warning)warning.hidden=false;return;
+    }
+    const stale=document.querySelector('[data-calendar-stale-warning]');if(stale)stale.hidden=true;
     fields[0].value=preview.value;
     const ids=Array.from(document.querySelectorAll('[data-calendar-task]')).map(field=>field.value);
     checks.forEach(field=>{field.checked=ids.includes(field.value);});
     if(applied)applied.value='1';
   });
   form.addEventListener('submit',event=>{
+    if(fresh&&cache){drafts.set(kind.value,capture());cache.value=JSON.stringify(Array.from(drafts.entries()));}
     if(event.submitter?.value!=='calendar')return;
     const file=form.querySelector('input[type="file"]');
     if(file?.files?.length){event.preventDefault();const warning=document.querySelector('[data-calendar-file-warning]');if(warning)warning.hidden=false;}
