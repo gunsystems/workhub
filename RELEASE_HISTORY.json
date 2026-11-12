@@ -3,6 +3,22 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.9",
+      "status": "live_verified_staff_management_navigation",
+      "release_notes": "releases/v0.17.9.md",
+      "source_commit": "6aa0e99a62a103170ff8042f6642bb8215767835",
+      "deploy_id": "dep-dbqhlmqfngtc73fkibs0",
+      "live_at": "2026-11-12T10:49:12+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43136970964",
+      "scope": "Move leave entry from sidebar into shared employee-management tabs: employees, departments, leave, employment/annual-leave settings. Remove duplicate shortcuts and maintain parent selection/breadcrumbs. Existing URLs, privileges and HR data retained.",
+      "validation": "Staff/leave related33 tests passed, final22 leave tests including navigation regression passed; final full automatic workflow succeeded. Authenticated administrator UI verified tab navigation/current selection and sidebar absence;360px tabs44px with no overflow. Previously entered two employment dates read back unchanged. No production data written during this UI verification.",
+      "screenshots": [
+        "outputs/Workhub_v0179_직원관리메뉴_PC.jpg",
+        "outputs/Workhub_v0179_직원관리메뉴_모바일.jpg"
+      ]
+    },
+    {
       "version": "0.17.8",
       "status": "live_verified_admin_leave_ui",
       "release_notes": "releases/v0.17.8.md",
