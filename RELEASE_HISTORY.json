@@ -3,6 +3,23 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.8",
+      "status": "live_verified_admin_leave_ui",
+      "release_notes": "releases/v0.17.8.md",
+      "source_commit": "69abfcf534c69f4b5746a001b82deb5820ef794b",
+      "deploy_id": "dep-dbqhd349v7es73cjplbg",
+      "live_at": "2026-11-12T10:30:51+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43134856838",
+      "scope": "Leave preview filters44px/font14px; table14px and aligned numeric columns; scoped headings, setting forms and mobile spacing. Administrator-only preview and all business calculations unchanged.",
+      "validation": "Existing21 leave tests passed and full automatic regression succeeded. Synthetic actual-template PC controls44px/top-aligned/font14px;360px overview/settings controls bounded, internal table scroll allowed. Production employment data not read because inspection browser session expired.",
+      "screenshots": [
+        "outputs/Workhub_v0178_휴가관리_PC.jpg",
+        "outputs/Workhub_v0178_휴가관리_모바일.jpg",
+        "outputs/Workhub_v0178_휴가설정_모바일.jpg"
+      ]
+    },
+    {
       "version": "0.17.7",
       "status": "live_verified_survey_typography",
       "release_notes": "releases/v0.17.7.md",
