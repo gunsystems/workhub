@@ -3,6 +3,19 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.3",
+      "status": "live_verified",
+      "release_notes": "releases/v0.19.3.md",
+      "source_commit": "c9b4ea88f11762792bf80e2da3b1deb0e1dcd128",
+      "deploy_id": "dep-dbqonrtckfvc73d2l9mg",
+      "live_at": "2026-11-12T18:51:44+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43194556745",
+      "validation": {
+        "ci": "631 Django tests and seven Node checks passed",
+        "ui": "Desktop and 320/360px address lookup, road/jibun selection, automatic fields, detail focus, close and cancel verified; no production address saved"
+      }
+    },
+    {
       "version": "0.19.2",
       "status": "live_verified_private_address_tenure_profile_layout",
       "release_notes": "releases/v0.19.2.md",
