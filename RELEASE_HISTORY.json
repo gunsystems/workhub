@@ -3,6 +3,19 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.5",
+      "status": "live",
+      "release_notes": "releases/v0.19.5.md",
+      "source_commit": "e75126264fa55b4372919c22b79125150befaa7b",
+      "deploy_id": "dep-dbqpbprm8hqs73egsc70",
+      "live_at": "2026-11-12T19:34:07+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43201293008",
+      "validation": {
+        "local": "10 address and permission tests passed",
+        "ui": "Production staff directory inspection requires renewed administrator login"
+      }
+    },
+    {
       "version": "0.19.4",
       "status": "live_verified",
       "release_notes": "releases/v0.19.4.md",
