@@ -3,6 +3,18 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.18.1",
+      "status": "live_verified_filter_alignment",
+      "release_notes": "releases/v0.18.1.md",
+      "source_commit": "eaeb484886fac8e90a856a122cebb2e82006f636",
+      "deploy_id": "dep-dbqm29mc6qcc73fovqc0",
+      "live_at": "2026-11-12T15:49:16+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43170093181",
+      "scope": "Align offboarding status select and query button; CSS only.",
+      "validation": "CI passed. Actual authenticated PC controls both 46px, identical top/bottom. 320px/360px controls 46px with no horizontal overflow. healthz 0.18.1 eaeb484 status ok."
+    },
+    {
       "version": "0.18.0",
       "status": "live_verified_offboarding_workflow",
       "release_notes": "releases/v0.18.0.md",
