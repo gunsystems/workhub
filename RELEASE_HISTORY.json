@@ -3,6 +3,23 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.4",
+      "status": "live_verified_synthetic_ui",
+      "release_notes": "releases/v0.17.4.md",
+      "migrations": [],
+      "source_commit": "a29f6af036b7784dbc7cc8f5e8b34a5e0a974c6f",
+      "deploy_id": "dep-dbqgdr6c6qcc73f8muq0",
+      "live_at": "2026-11-12T09:24:11+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43126469941",
+      "scope": "Blank case reports; optional date-range calendar import preview and explicit apply; preserve per-kind drafts; remove confusing default-period button.",
+      "validation": "548 full CI tests and Node checks passed; related21 tests passed. Range authorization, no-save previews, invalid dates, stale apply and attachment preservation checked.",
+      "browser_verification": "Deployed actual-template synthetic example: individual blank with no selected references; period blank until explicit apply; case and weekly drafts restored; stale range blocked. Desktop and390/360px no control overflow. Real production reports unchanged; backend import verified by automated tests.",
+      "screenshots": [
+        "outputs/Workhub_v0174_기간보고_PC.jpg",
+        "outputs/Workhub_v0174_기간보고_모바일.jpg"
+      ]
+    },
+    {
       "version": "0.17.3",
       "status": "live_verified_quick_ui",
       "release_notes": "releases/v0.17.3.md",
