@@ -68,9 +68,14 @@ def notifications(request):
     from .models import QuickDelivery
     from .quick import visible as visible_quick
     quick_items=QuickDelivery.objects.filter(user=request.user,channel='app',event__request__in=visible_quick(request.user)).select_related('event__request').order_by('-event__created_at')
-    from .models import OffboardingNotice
+    from .models import OffboardingNotice, OffboardingEvent
+    from django.db.models import Exists, OuterRef
     from .offboarding import visible_items
-    followups=OffboardingNotice.objects.filter(user=request.user,item__in=visible_items(request.user)).select_related('item')[:100]
+    followups=OffboardingNotice.objects.filter(user=request.user,item__in=visible_items(request.user)).select_related('item__case__employee').annotate(cancel_ack=Exists(OffboardingEvent.objects.filter(item_id=OuterRef('item_id'),actor_id=OuterRef('item__assignee_id'),action='퇴사 취소 확인')))[:100]
+    for row in followups:
+        cancelled=row.item.case.state=='cancelled'
+        row.closed=(cancelled and row.cancel_ack) or row.item.case.state=='done' or (not cancelled and row.item.state=='approved')
+        row.current_state=('취소 확인 완료' if row.cancel_ack else '퇴사 처리 취소 · 확인 필요') if cancelled else ('확인 완료' if row.closed else row.item.get_state_display())
     return render(request,'tasks/notifications.html',{'followup_notifications':followups,'quick_notifications':quick_items[:100],'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
 
 

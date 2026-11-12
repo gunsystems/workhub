@@ -12,3 +12,5 @@
 .offboarding-page .off-boxes{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 20px}
 .offboarding-page .off-actions form{margin:0;min-width:0}
 @media(max-width:720px){.offboarding-page .off-cases{grid-template-columns:minmax(0,1fr)}.offboarding-page .off-boxes .button{flex:1 1 130px}}
+
+.off-history-list{list-style:none;margin:16px 0 0;padding:0}.off-history-list li{display:grid;grid-template-columns:minmax(0,1fr) auto 145px;gap:16px;align-items:center;padding:16px 0;border-top:1px solid #e1e8e6;min-width:0}.off-history-list strong{display:block;font-size:15px;line-height:1.6;overflow-wrap:anywhere}.off-history-list li>div>span{display:block;font-size:13px;color:#718295;margin-top:4px}.offboarding-page .off-history-list time{font-size:13px;margin:0;white-space:nowrap}.off-history-list .off-status{justify-self:start}@media(max-width:720px){.off-history-list li{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px}.off-history-list li>div{grid-column:1/-1}.offboarding-page .off-history-list time{text-align:right}}

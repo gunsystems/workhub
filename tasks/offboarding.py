@@ -8,7 +8,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction, IntegrityError
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Q, Exists, OuterRef, Subquery, F
+from django.db.models.functions import Coalesce
 from django.http import FileResponse, HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -239,7 +240,11 @@ def assignments(request):
     if box=='active':items=qs.filter(active)
     elif box=='cancelled':items=qs.filter(cancelled)
     else:items=qs.filter(Q(case__state='done')|Q(state='approved',case__state='active')|Q(case__state='cancelled',cancel_ack=True))
-    return render(request,'tasks/offboarding_assignments.html',{'items':items.order_by('due_at')[:200],
+    if box=='history':
+        latest=OffboardingEvent.objects.filter(item_id=OuterRef('pk'),action__in=['퇴사 취소 확인','확인 완료','해당 없음 · 관리자 확인']).order_by('-created_at','-pk').values('created_at')[:1]
+        items=items.annotate(recorded_at=Coalesce(Subquery(latest),F('case__completed_at'))).order_by(F('recorded_at').desc(nulls_last=True),'-pk')
+    else:items=items.order_by('due_at')
+    return render(request,'tasks/offboarding_assignments.html',{'items':items[:200],
         'box':box,'active_count':qs.filter(active).count(),'cancelled_count':qs.filter(cancelled).count()})
 
 @login_required

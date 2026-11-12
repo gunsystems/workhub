@@ -168,6 +168,8 @@ class OffboardingTests(TestCase):
         self.assertFalse(OffboardingEvidence.objects.exists())
         response=self.client.get('/work/offboarding/assigned/?box=history')
         self.assertEqual(len(response.context['items']),1);self.assertContains(response,'취소 확인 완료')
+        self.assertNotContains(response,'>내용 확인</a>')
+        self.assertIsNotNone(response.context['items'][0].recorded_at)
         self.assertEqual(response.context['cancelled_count'],0)
 
     def test_cancel_ack_denies_other_admin_and_active_case(self):
@@ -177,3 +179,17 @@ class OffboardingTests(TestCase):
         with self.assertRaises(Http404):self.change('ack_cancel',self.other)
         with self.assertRaises(ValidationError):o.change_item(self.item.pk,self.worker,'ack_cancel',999)
         self.assertFalse(self.item.events.filter(action='퇴사 취소 확인').exists())
+
+    def test_notification_reflects_cancel_ack_without_old_assignment_action(self):
+        OffboardingNotice.objects.create(item=self.item,user=self.worker,key='assigned-worker',message='퇴사 후속 조치가 배정되었습니다.')
+        self.case.state='cancelled';self.case.save()
+        self.client.force_login(self.worker)
+        response=self.client.get('/work/notifications/')
+        self.assertContains(response,'퇴사 처리 취소 · 확인 필요')
+        self.assertContains(response,'취소 내용 확인')
+        self.change('ack_cancel')
+        response=self.client.get('/work/notifications/')
+        self.assertContains(response,'취소 확인 완료')
+        self.assertNotContains(response,'>배정 항목 확인</a>')
+        self.assertNotContains(response,'>취소 내용 확인</a>')
+        self.assertNotContains(response,'퇴사 후속 조치가 배정되었습니다.')
