@@ -8,7 +8,9 @@ from . import quick
 from . import schedule_control,requests as work_requests
 from . import leave_views,task_trash
 from . import offboarding
+from . import calendar_quick
 urlpatterns=[
+    path('calendar/quick/',calendar_quick.create,name='calendar_quick_create'),
     path('offboarding/',offboarding.case_list,name='offboarding_list'),
     path('offboarding/new/',offboarding.case_new,name='offboarding_new'),
     path('offboarding/assigned/',offboarding.assignments,name='offboarding_assignments'),

@@ -6,8 +6,11 @@ from .employee_views import manage_account
 from .reset_views import restore
 from .administrator_views import administrators
 from . import idle
+from . import profile_views
 
 urlpatterns = [
+    path('me/', profile_views.my_information, name='my_information'),
+    path('employees/<int:employee_id>/profile/', profile_views.my_information, name='employee_information'),
     path('session/activity/', idle.activity, name='session_activity'),
     path('session/status/', idle.status, name='session_status'),
     path('hiworks/access/', access_views.retry, name='hiworks_access_retry'),

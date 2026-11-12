@@ -28,14 +28,26 @@ class ApplicationForm(forms.Form):
     reason=forms.CharField(label='신청 사유',max_length=1000,widget=forms.Textarea(attrs={'rows':3}))
 
 class EmploymentForm(forms.ModelForm):
+    def __init__(self,*args,**kwargs):
+        instance=kwargs.get('instance')
+        if args and args[0] is not None and instance and instance.pk:
+            data=args[0].copy()
+            for name in ['job_title','birth_date','phone']:
+                if name not in data:data[name]=getattr(instance,name) or ''
+            args=(data,*args[1:])
+        super().__init__(*args,**kwargs)
     class Meta:
         model=StaffEmployment
-        fields=['employee','joined_on','ended_on','staff_number']
+        fields=['employee','joined_on','ended_on','staff_number','job_title','birth_date','phone']
         labels={'employee':'직원'}
-        widgets={'joined_on':forms.DateInput(attrs={'type':'date'}),'ended_on':forms.DateInput(attrs={'type':'date'})}
+        widgets={'joined_on':forms.DateInput(format='%Y-%m-%d',attrs={'type':'date'}),'ended_on':forms.DateInput(format='%Y-%m-%d',attrs={'type':'date'}),'birth_date':forms.DateInput(format='%Y-%m-%d',attrs={'type':'date'})}
     def clean(self):
         data=super().clean()
         if data.get('ended_on') and data.get('joined_on') and data['ended_on']<data['joined_on']:raise ValidationError('퇴사일은 입사일 이후여야 합니다.')
+        if data.get('birth_date') and data['birth_date']>timezone.localdate():self.add_error('birth_date','생년월일을 확인해 주세요.')
+        number=(data.get('staff_number') or '').strip().upper()
+        if number and StaffEmployment.objects.filter(staff_number__iexact=number).exclude(pk=self.instance.pk).exists():self.add_error('staff_number','다른 직원에게 등록된 사번입니다.')
+        data['staff_number']=number
         return data
 
 class GrantForm(forms.Form):

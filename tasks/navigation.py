@@ -53,7 +53,8 @@ def navigation(request):
             for entry in group['items']:
                 if entry['href']=='/work/':entry['active']=False
     current=next((i['label'] for group in groups for i in group['items'] if i['active']),'업무 공간')
-    if path=='/work/register/': current='업무 등록'
+    if path=='/accounts/me/': current='내 정보'
+    elif path=='/work/register/': current='업무 등록'
     elif path=='/work/calendar/subscription/': current='하이웍스 일정 연결'
     elif path=='/work/calendar/': current='Google Calendar 연결'
     if path.startswith(('/work/surveys/','/work/assessments/','/work/quick/')):

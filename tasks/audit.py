@@ -48,6 +48,9 @@ def values(obj):
     for field in obj._meta.concrete_fields:
         if name=='AccountEvent' and field.attname not in ACCOUNT_FIELDS: continue
         value=getattr(obj,field.attname)
+        if name=='StaffEmployment' and field.name in ['birth_date','phone']:
+            result[str(field.verbose_name)]='등록됨' if value else '미등록'
+            continue
         if field.get_internal_type() in ['DateTimeField','DateField','TimeField']:
             value=value.isoformat() if value else None
         elif field.get_internal_type() == 'FileField': value=bool(value)
@@ -65,11 +68,14 @@ def before_save(sender,instance,raw=False,**kwargs):
     if raw or not tracked(sender): return
     old=sender.objects.filter(pk=instance.pk).first() if instance.pk else None
     instance._audit_before=values(old) if old else {}
+    if sender.__name__=='StaffEmployment' and old:
+        instance._audit_private_changed=[str(sender._meta.get_field(f).verbose_name) for f in ['birth_date','phone'] if getattr(old,f)!=getattr(instance,f)]
 
 
 def after_save(sender,instance,created,raw=False,**kwargs):
     if raw or not tracked(sender): return
     before=getattr(instance,'_audit_before',{}); after=values(instance)
+    if getattr(instance,'_audit_private_changed',[]):after['개인정보 수정 항목']=instance._audit_private_changed
     if before!=after or created:
         write('create' if created else 'update', sender.__name__, instance.pk,label(instance),before,after)
     elif sender.__name__ in PRIVATE:

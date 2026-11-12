@@ -159,7 +159,7 @@ def notify(task, message, external=True,comment_event=None):
 
 @login_required
 @transaction.atomic
-def edit_task(request, task=None, intake_override=None):
+def edit_task(request, task=None, intake_override=None,calendar_prefill=None,on_created=None):
     if not is_company_admin(request.user) and not profile(request.user): raise PermissionDenied
     if task and (not can_edit(request.user,task) or task.status in ['review','done','cancelled']): raise PermissionDenied
     before = snapshot(task) if task else None
@@ -167,6 +167,7 @@ def edit_task(request, task=None, intake_override=None):
     if purpose not in ['self','request']:purpose='self'
     initial={'project':request.GET.get('project'),'purpose':purpose}
     if purpose=='self' and profile(request.user):initial['assignee']=profile(request.user).pk
+    if calendar_prefill and task is None and not intake_override:initial.update(calendar_prefill)
     intake_id=intake_override.pk if intake_override else (request.POST.get('intake') if request.method=='POST' else request.GET.get('intake'))
     intake=None
     if intake_id:
@@ -181,6 +182,7 @@ def edit_task(request, task=None, intake_override=None):
                        due_date=intake.requested_due_date,start_date=intake.requested_start_date or timezone.localdate(),project=intake.project_id,
                        customer=intake.customer,solution=intake.solution,location=intake.location,intake_revision=intake.revision,purpose='request')
     form = OfficialTaskForm(request.POST if request.method=='POST' else None, request.FILES or None, instance=task, user=request.user,initial=initial,request_intake=intake)
+    if calendar_prefill and not form.is_bound and calendar_prefill.get('start_time') is None:form.initial['start_time']=None
     if request.method=='POST' and form.is_valid():
         if intake:
             from .requests import claim
@@ -260,8 +262,9 @@ def edit_task(request, task=None, intake_override=None):
         new_ids=current_ids if is_new or (before and before['status']=='draft') else current_ids-previous_ids
         enqueue_assignment_mail(obj,request.user,new_ids)
         if reference:messages.success(request,'참고 파일 업로드가 완료되었습니다.',extra_tags='upload-success')
+        if on_created and is_new:on_created(obj)
         return redirect('task_detail',pk=obj.pk)
-    return render(request,'tasks/official_form.html',{'form':form,'task':task,'intake':intake,'workload':request_workload(request.user,intake,form) if intake else []})
+    return render(request,'tasks/official_form.html',{'form':form,'task':task,'intake':intake,'calendar_details':getattr(request,'_calendar_quick',False),'workload':request_workload(request.user,intake,form) if intake else []})
 
 
 class ActionForm(forms.Form):

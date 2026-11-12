@@ -2,6 +2,7 @@ import calendar
 from datetime import date, timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
@@ -16,6 +17,7 @@ from .models import Task, Department, Employee, TaskEvent, EmployeeFeedback
 from .forms import TaskForm, ProgressForm, SubmitForm, ReviewForm, FeedbackForm
 
 @login_required
+@never_cache
 def calendar_view(request):
     if not is_company_admin(request.user) and not profile(request.user):
         return render(request, 'tasks/access_pending.html', status=403)
@@ -65,7 +67,10 @@ def calendar_view(request):
         if mode == 'month': day['tasks'] = day['tasks'][:4]
     query=request.GET.copy()
     for key in ['date','view']: query.pop(key,None)
-    return render(request,'tasks/calendar.html',{'days':days,'mode':mode,'selected':selected,'today':today,'prev':prev,'next':nxt,'query':query.urlencode(),'departments':visible_departments(request.user),'employees':visible_employees(request.user).select_related('department'),'department':department,'employee':employee,'status':status,'statuses':Task.STATUS,'count':len(tasks),'overdue':[t for t in tasks if t.deadline=='overdue'],'soon':[t for t in tasks if t.deadline=='soon']})
+    from .calendar_quick import CalendarQuickForm,entry_token
+    person=profile(request.user)
+    quick_form=CalendarQuickForm(user=request.user,auto_id='calendar_quick_%s',initial={'start_date':selected,'due_date':selected,'start_time':'10:00','end_time':'11:00','assignee':person.pk if person else None,'token':entry_token(request.user)})
+    return render(request,'tasks/calendar.html',{'quick_form':quick_form,'days':days,'mode':mode,'selected':selected,'today':today,'prev':prev,'next':nxt,'query':query.urlencode(),'departments':visible_departments(request.user),'employees':visible_employees(request.user).select_related('department'),'department':department,'employee':employee,'status':status,'statuses':Task.STATUS,'count':len(tasks),'overdue':[t for t in tasks if t.deadline=='overdue'],'soon':[t for t in tasks if t.deadline=='soon']})
 
 @login_required
 def detail(request,pk):

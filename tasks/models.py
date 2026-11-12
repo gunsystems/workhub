@@ -700,6 +700,13 @@ class TaskTrash(models.Model):
     restored_by = models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True,related_name='+')
     restored_at = models.DateTimeField(null=True)
 
+class CalendarQuickSave(models.Model):
+    key=models.CharField(max_length=64,unique=True)
+    actor_id_snapshot=models.PositiveBigIntegerField()
+    fingerprint=models.CharField(max_length=64)
+    task=models.ForeignKey(Task,on_delete=models.SET_NULL,null=True)
+    created_at=models.DateTimeField(default=timezone.now)
+
 
 from .document_models import WorkDocument
 from .quick_models import QuickRequest, QuickEvent, QuickDelivery

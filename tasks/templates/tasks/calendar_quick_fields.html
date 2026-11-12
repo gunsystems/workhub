@@ -1,0 +1,9 @@
+{% csrf_token %}{{ quick_form.token }}{{ quick_form.non_field_errors }}
+{% include 'tasks/workspace_field.html' with field=quick_form.title %}
+<div class="calendar-quick-grid">{% include 'tasks/workspace_field.html' with field=quick_form.start_date %}{% include 'tasks/workspace_field.html' with field=quick_form.due_date %}</div>
+<label class="calendar-quick-check">{{ quick_form.all_day }} 종일</label>
+<div class="calendar-quick-grid" data-quick-time>{% include 'tasks/workspace_field.html' with field=quick_form.start_time %}{% include 'tasks/workspace_field.html' with field=quick_form.end_time %}</div>
+<div class="calendar-quick-grid">{% include 'tasks/workspace_field.html' with field=quick_form.assignee %}{% include 'tasks/workspace_field.html' with field=quick_form.category %}</div>
+<details><summary>장소·설명·배정 알림</summary>{% include 'tasks/workspace_field.html' with field=quick_form.location %}{% include 'tasks/workspace_field.html' with field=quick_form.description %}<label class="calendar-quick-check">{{ quick_form.assignment_email }} 이메일로 배정 알림</label><label class="calendar-quick-check">{{ quick_form.assignment_messenger }} 하이웍스로 배정 알림</label></details>
+<p class="calendar-quick-note">일반 업무로 등록합니다. 보고·결재나 첨부파일이 필요하면 상세 입력에서 설정하세요.</p>
+<div class="calendar-quick-actions"><button type="submit" name="action" value="details" class="button" formnovalidate>상세 입력</button><button type="button" class="button" data-quick-cancel>취소</button><button type="submit" name="action" value="save" class="button primary">저장</button></div>
