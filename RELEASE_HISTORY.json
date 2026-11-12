@@ -3,6 +3,29 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.6",
+      "status": "live_verified_existing_feature_stabilization",
+      "release_notes": "releases/v0.19.6.md",
+      "review": "STABILIZATION_REVIEW.md",
+      "source_commit": "c17a3db4d188b13db55c47c089b27d2b2d46d674",
+      "deploy_id": "dep-dbqpqdijnfac739dn3p0",
+      "live_at": "2026-11-12T20:05:22+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43205454223",
+      "validation": {
+        "ci": "640 Django tests and seven Node checks passed",
+        "focused": "Prior baseline631; fixes62; weekly/boundary35; final membership/boundary16 passed",
+        "ui": "Administrator real-service read-only checks;320/360/768/1440px inputs and buttons; survey preview and quick entry closed without saving; live weekly timing and extreme-date recovery verified",
+        "runtime": "healthz0.19.6/c17a3db/ok"
+      },
+      "limitations": [
+        "Role-based mutations validated with isolated synthetic test records; no production tasks/staff/leave modified or external test messages sent",
+        "Responsive Chromium checks; physical iOS Safari and provider final delivery were not newly exercised",
+        "Leave remains administrator preview; external integrations and email migration remain separate follow-up work"
+      ],
+      "rollback_source": "e75126264fa55b4372919c22b79125150befaa7b"
+    },
+    {
       "version": "0.19.5",
       "status": "live",
       "release_notes": "releases/v0.19.5.md",
