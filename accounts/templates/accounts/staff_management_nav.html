@@ -6,4 +6,5 @@
 <a href="{% url 'leave_list' %}" {% if staff_management_section == 'leave' %}class="is-current" aria-current="page"{% endif %}>휴가 관리</a>
 <a href="{% url 'leave_settings' %}" {% if staff_management_section == 'employment' %}class="is-current" aria-current="page"{% endif %}>직원·연차 설정</a>
 {% endif %}
+{% if offboarding_admin %}<a href="{% url 'offboarding_list' %}" {% if staff_management_section == 'offboarding' %}class="is-current" aria-current="page"{% endif %}>퇴사 후속 조치</a>{% endif %}
 </nav>

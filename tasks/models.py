@@ -706,3 +706,4 @@ from .quick_models import QuickRequest, QuickEvent, QuickDelivery
 from .people_models import Survey, SurveyQuestion, SurveyParticipation, SurveySubmission, SurveyDelivery, StaffAssessment, AssessmentRevision
 
 from .leave_models import StaffEmployment, LeaveYear, LeaveHoliday, LeaveEntry, LeaveRequest, LeaveApproval, LeaveEvent
+from .offboarding_models import OffboardingCase, OffboardingItem, OffboardingEvent, OffboardingEvidence, OffboardingNotice

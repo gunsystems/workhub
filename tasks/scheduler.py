@@ -73,6 +73,9 @@ def tick(now=None,sync_google=True):
             deliver_assignment_mail()
             from .quick import deliver_pending as deliver_quick
             deliver_quick(now)
+            from .offboarding import queue_reminders,deliver_notices as deliver_offboarding
+            queue_reminders(now)
+            deliver_offboarding(now)
             return {'created':created}
         finally:
             SchedulerLease.objects.filter(key='personal',token=token).update(expires_at=timezone.now(),heartbeat_at=timezone.now())

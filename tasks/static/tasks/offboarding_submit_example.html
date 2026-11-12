@@ -1,0 +1,66 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workhub · 함께 만드는 업무의 흐름</title><link rel="stylesheet" href="/static/tasks/style.css"><link rel="stylesheet" href="/static/tasks/navigation.css"><link rel="stylesheet" href="/static/tasks/ui_consistency.css"><link rel="stylesheet" href="/static/tasks/file_upload.css"></head>
+<body class="app-shell" data-idle-session><svg xmlns="http://www.w3.org/2000/svg" class="nav-sprite" aria-hidden="true"><defs>
+<symbol id="nav-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3Z M9 20v-7h6v7"/></symbol>
+<symbol id="nav-board" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16M5 8h2m4 0h2m4 0h2m-14 4h2m4 0h2"/></symbol>
+<symbol id="nav-work" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M8 6V3h8v3M3 12h18M10 12v3h4v-3"/></symbol>
+<symbol id="nav-folder" viewBox="0 0 24 24"><path d="M3 7V4h6l3 3h9v13H3Z"/></symbol>
+<symbol id="nav-inbox" viewBox="0 0 24 24"><path d="m3 15 3-10h12l3 10v5H3ZM3 15h5l2 3h4l2-3h5"/></symbol>
+<symbol id="nav-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v5m10-5v5M3 11h18m-14 4h2m4 0h2m-8 3h2"/></symbol>
+<symbol id="nav-bell" viewBox="0 0 24 24"><path d="M5 17h14l-2-4V9a5 5 0 0 0-10 0v4ZM10 21h4"/></symbol>
+<symbol id="nav-flag" viewBox="0 0 24 24"><path d="M5 22V3m0 1c5-3 8 3 14 0v10c-6 3-9-3-14 0"/></symbol>
+<symbol id="nav-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 17v-6m5 6V6m5 11v-9"/></symbol>
+<symbol id="nav-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m0-17a3 3 0 0 1 0 6m4 11v-3a6 6 0 0 0-3-5"/></symbol>
+<symbol id="nav-shield" viewBox="0 0 24 24"><path d="m12 2 8 3v7c0 5-8 10-8 10S4 17 4 12V5Zm-4 9 3 3 5-6"/></symbol>
+<symbol id="nav-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 2v1"/></symbol>
+<symbol id="nav-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="nav-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+</defs></svg>
+<aside class="sidebar app-sidebar">
+<div class="sidebar-top"><div class="sidebar-brand-row"><a class="brand company-logo" href="#" aria-label="GUNSYSTEMS Workhub 홈"><span class="company-wordmark">GUNSYSTEMS</span><span class="company-product">Workhub <small>업무관리 시스템</small></span></a><button disabled type="button" id="nav-toggle" aria-label="메뉴 열기" aria-controls="sidebar-nav" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+</button></div><a class="sidebar-create" href="#"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+업무 등록</a></div>
+<nav class="sidebar-scroll" id="sidebar-nav" aria-label="주 메뉴" data-user="2">
+<section class="nav-group" aria-label="내 공간"><h2>내 공간</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>내 업무</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>개인 보드</span></a><a class="nav active" href="#" aria-current="page"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>배정된 후속 조치</span></a>
+</section><section class="nav-group" aria-label="업무 관리"><h2>업무 관리</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 현황</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 보고</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>간단 업무</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>프로젝트</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 접수함</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>캘린더</span></a>
+</section><section class="nav-group" aria-label="알림"><h2>알림</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>공지사항</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 알림</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>조치 필요</span></a>
+</section></nav>
+<div class="sidebar-foot"><a class="nav nav-help" href="#"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>도움말 · 사용 가이드</span></a><details class="account-menu"><summary><span class="profile-avatar">김</span><span class="profile-name">김담당 · 예시<small>내 계정</small></span><span aria-hidden="true">⌄</span></summary><div class="account-actions"><a href="#">계정 보안 · OTP</a><a href="#">Google Calendar 연결</a><a href="#">하이웍스 일정 연결</a><form onsubmit="return false" action="/logout/" method="post"><button disabled type="submit">로그아웃</button></form></div></details></div>
+</aside><main><header><span>워크스페이스 <b>/</b> 배정된 후속 조치</span><span class="live">● 예시 부서 · 김담당 · 예시 · 일반 직원</span>
+<link rel="stylesheet" href="/static/tasks/page_help.css">
+<button disabled type="button" class="page-help-trigger" data-page-help-open aria-haspopup="dialog" aria-controls="page-help-dialog"><span aria-hidden="true">?</span>도움말</button>
+<dialog id="page-help-dialog" class="page-help-dialog" aria-labelledby="page-help-title" aria-describedby="page-help-purpose">
+<div class="page-help-top"><div><small>WORKHUB GUIDE</small><h2 id="page-help-title">퇴사 후속 조치</h2></div><button disabled type="button" class="page-help-x" data-page-help-close aria-label="도움말 닫기">×</button></div>
+<p id="page-help-purpose" class="page-help-purpose">관리자가 항목별 담당자와 기한을 정하고 실제 처리 증빙을 검토합니다.</p>
+<section class="page-help-visual"><h3>한눈에 보는 흐름</h3>
+<svg class="help-flow" viewBox="0 0 548 164" role="img" aria-label="퇴사 후속 조치 사용 흐름도"><defs><marker id="help-flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#89a994"/></marker></defs><path d="M172 32 H183" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><path d="M352 32 H363" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><path d="M450 56 V80 H90 V93" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><rect x="8" y="8" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="90" y="37" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">화면 · 대상 확인</text><rect x="188" y="8" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="270" y="37" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">내용 확인 · 입력</text><rect x="368" y="8" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="450" y="37" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">필요한 처리</text><rect x="8" y="98" width="164" height="48" rx="9" fill="#286b53" stroke="#d7e6dd"/><text x="90" y="127" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">저장 · 결과 확인</text></svg>
+
+</section>
+<section><h3>이렇게 사용하세요</h3><ol><li>관리자는 직원 관리 → 퇴사 후속 조치에서 퇴사 직원을 등록합니다. 기본 항목은 관리자에게 배정되며 항목별 담당자·기한을 변경할 수 있습니다.</li><li>담당자는 배정된 후속 조치 또는 업무 알림에서 본인 항목을 엽니다. 외부 서비스에서 직접 처리한 뒤 실제 처리 일시·내용과 이미지/PDF 증빙을 제출합니다.</li><li>제출하면 확인 대기로 바뀝니다. 관리자가 증빙을 보고 확인 완료 또는 사유를 적어 보완 요청합니다. 재제출해도 이전 증빙과 검토 이력은 남습니다.</li><li>모든 항목의 확인이 끝나면 관리자가 퇴사 처리 최종 완료를 누릅니다. 해당하지 않는 항목은 관리자가 사유와 함께 해당 없음으로 확인합니다.</li></ol></section>
+
+<section class="page-help-notes"><h3>알아두세요</h3><ul><li>외부 계정 삭제·로그인 중지·라이선스 회수는 자동 실행하지 않습니다. Workhub 계정 중지도 계정 관리에서 별도 처리해야 합니다.</li><li>직원은 배정된 항목만 보며 전체 퇴사 건·다른 담당자의 증빙은 볼 수 없습니다. 증빙은 공개 링크로 공유하지 않습니다.</li><li>처리 기한이 임박하거나 지나면 담당자에게, 증빙 확인이 남으면 관리자에게 업무 알림과 이메일을 보냅니다. 지연·확인 대기는 화면에서도 구분됩니다.</li><li>퇴사일 변경 후 항목별 기한은 별도로 조정하세요. 퇴사 처리 취소는 외부 시스템의 변경을 되돌리지 않습니다.</li><li>비밀번호·인증키와 다른 직원의 개인정보는 증빙에서 가려 주세요.</li></ul></section>
+<div class="page-help-bottom"><a href="#">전체 사용 가이드</a><button disabled type="button" data-page-help-close>확인</button></div>
+</dialog>
+</header>
+<link rel="stylesheet" href="/static/tasks/workspace.css"><link rel="stylesheet" href="/static/tasks/offboarding.css">
+<div class="offboarding-page"><p class="workspace-notice">담당자 제출 화면 · 가상 예시 · 저장·발송은 실행하지 않습니다.</p>
+
+
+<section class="heading"><div><div class="eyebrow">FOLLOW-UP</div><h1>Workhub 계정 중지</h1><p>대상 직원 홍길동 · 가상 직원 · 처리 중</p></div><a class="button" href="#">내 배정 목록</a></section>
+<section class="detail"><ol class="off-steps"><li>업무 배정</li><li aria-current="step">처리·증빙 제출</li><li >관리자 확인</li><li >확인 완료</li></ol><div class="off-facts"><div><strong>처리 담당자</strong><p>김담당 · 예시 · 예시 부서</p></div><div><strong>처리 기한</strong><p>2026-11-15 17:00</p></div></div><p>계정 관리에서 사용 중지하고 기존 로그인 세션 종료 여부를 확인하세요.</p></section>
+<section class="detail"><h2>최근 처리 결과</h2><div class="off-facts"><div><strong>실제 처리 일시</strong><p>2026-11-12 15:09</p></div><div><strong>결과 제출 일시</strong><p>2026-11-12 15:19</p></div></div><p>사용자 삭제와 단말기 반영을 확인했습니다. (가상 예시)</p></section>
+<section class="detail"><h2>처리 결과·증빙 제출</h2><p>삭제 후 조회 화면이나 처리 기록을 첨부하세요. 비밀번호·인증키 및 다른 직원의 개인정보는 가려 주세요.</p><form onsubmit="return false" method="post" enctype="multipart/form-data" class="off-form"><input type="hidden" name="revision" value="0"><input type="hidden" name="action" value="submit"><div><label for="id_processed_at">실제 처리 일시 <span class="off-required">필수</span></label><input type="datetime-local" name="processed_at" value="2026-11-12T15:19" required id="id_processed_at"></div><div><label for="id_body">처리 내용 <span class="off-required">필수</span></label><textarea name="body" cols="40" rows="4" maxlength="5000" required id="id_body">
+</textarea></div><div><label for="id_evidence">처리 증빙 · 이미지 또는 PDF, 최대 20MB <span class="off-required">필수</span></label><input type="file" name="evidence" accept=".png,.jpg,.jpeg,.pdf" data-upload-limit="20971520" required id="id_evidence"></div><div class="off-actions"><button disabled class="button primary">증빙 제출 · 검토 요청</button></div></form></section>
+<section class="detail"><h2>처리·검토 이력</h2><article class="off-event"><strong>처리 결과 제출 · 예시 부서 · 김담당 · 예시</strong><time>2026-11-12 15:19</time><p>실제 처리 2026-11-12 15:09</p><p>사용자 삭제와 단말기 반영을 확인했습니다. (가상 예시)</p></article></section></div><footer>Workhub v0.18.0 · GUNSYSTEMS <span>시간 기준: Asia/Seoul · 마감 임박: 오늘부터 3일 이내</span></footer></main></body></html>

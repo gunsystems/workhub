@@ -38,10 +38,13 @@ def account_allowed(user):
 
 
 def business_counts(employee):
+    from tasks.models import OffboardingCase, OffboardingItem
     from tasks.models import PeriodReport, WorkSeries
     from tasks.models import SurveyParticipation,StaffAssessment,QuickRequest
     user_id = employee.user_id
     return {
+        '퇴사 후속 조치 기록': OffboardingCase.objects.filter(employee=employee).count(),
+        '배정된 퇴사 후속 조치': OffboardingItem.objects.filter(assignee_id=user_id).count() if user_id else 0,
         '담당 간단 업무': QuickRequest.objects.filter(assignee=employee).count(),
         '요청한 간단 업무': QuickRequest.objects.filter(requester_id=user_id).count() if user_id else 0,
         '담당 업무': Task.objects.filter(assignee=employee).count(),
@@ -97,6 +100,11 @@ def change_access(actor, employee_id, action, reason, confirmation=''):
              (user.email if user else '') or (invitation.email if invitation else ''))
     user_id = user.pk if user else None
     if action in ['delete_access', 'delete_employee']:
+        if user:
+            from tasks.models import OffboardingCase,OffboardingItem,OffboardingEvent,OffboardingNotice
+            if (OffboardingCase.objects.filter(creator=user).exists() or OffboardingItem.objects.filter(assignee=user).exists()
+                    or OffboardingEvent.objects.filter(actor=user).exists() or OffboardingNotice.objects.filter(user=user).exists()):
+                raise ValidationError('퇴사 후속 조치의 담당·처리 기록이 있어 계정 삭제 대신 사용 중지를 선택하세요.')
         if user and (user.survey_set.exists() or user.staffassessment_set.exists() or user.assessmentrevision_set.exists()):
             raise ValidationError('작성한 설문·평가의 보존 이력이 있어 계정 삭제 대신 사용 중지를 선택하세요.')
         expected = email or employee.name

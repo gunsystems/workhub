@@ -7,7 +7,17 @@ from . import surveys,assessments
 from . import quick
 from . import schedule_control,requests as work_requests
 from . import leave_views,task_trash
+from . import offboarding
 urlpatterns=[
+    path('offboarding/',offboarding.case_list,name='offboarding_list'),
+    path('offboarding/new/',offboarding.case_new,name='offboarding_new'),
+    path('offboarding/assigned/',offboarding.assignments,name='offboarding_assignments'),
+    path('offboarding/cases/<int:pk>/',offboarding.case_detail,name='offboarding_case'),
+    path('offboarding/cases/<int:case_pk>/items/new/',offboarding.item_edit,name='offboarding_item_new'),
+    path('offboarding/cases/<int:case_pk>/items/<int:pk>/edit/',offboarding.item_edit,name='offboarding_item_edit'),
+    path('offboarding/items/<int:pk>/',offboarding.item_detail,name='offboarding_item'),
+    path('offboarding/evidence/<int:pk>/',offboarding.evidence_file,name='offboarding_evidence'),
+    path('offboarding/evidence/<int:pk>/preview/',offboarding.evidence_file,{'preview':True},name='offboarding_preview'),
     path('trash/',task_trash.listing,name='task_trash'),
     path('tasks/<int:pk>/delete/',task_trash.remove,name='task_delete'),
     path("leave/",leave_views.overview,name="leave_list"),

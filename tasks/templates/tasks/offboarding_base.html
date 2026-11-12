@@ -1,0 +1,5 @@
+{% extends 'tasks/base.html' %}{% load static %}{% block content %}
+<link rel="stylesheet" href="{% static 'tasks/workspace.css' %}"><link rel="stylesheet" href="{% static 'tasks/offboarding.css' %}">
+<div class="offboarding-page">{% if offboarding_admin %}{% include 'accounts/staff_management_nav.html' %}{% endif %}
+{% for message in messages %}<p class="workspace-notice" role="status">{{ message }}</p>{% endfor %}
+{% block offboarding_content %}{% endblock %}</div>{% endblock %}

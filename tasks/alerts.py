@@ -52,6 +52,13 @@ def action_alerts(user):
             add(f'series:{rule.pk}','정기 업무 인계 · 설정 확인',rule.issue,reverse('work_series',args=[rule.template_task_id]),3)
     for report in PeriodReport.objects.filter(reviewer=user,state='submitted'):
         add(f'period-report:{report.pk}','업무보고 검토 대기',f'{report.period_start}~{report.period_end}',reverse('period_report_detail',args=[report.pk]),2)
+    from .offboarding import visible_items
+    from accounts.lifecycle import system_admin
+    for item in visible_items(user).filter(case__state='active').exclude(state='approved'):
+        if item.state=='submitted' and system_admin(user):
+            add(f'offboarding:{item.pk}','후속 조치 증빙 확인 대기',item.title,reverse('offboarding_item',args=[item.pk]),2)
+        elif item.overdue:
+            add(f'offboarding:{item.pk}','퇴사 후속 조치 지연',item.title,reverse('offboarding_item',args=[item.pk]),3)
     return sorted(alerts,key=lambda a:(-a['level'],a['key']))
 
 
