@@ -3,6 +3,23 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.9",
+      "status": "live_verified",
+      "release_notes": "releases/v0.19.9.md",
+      "source_commit": "9adb6e66ca9937494897e0f55ea55caee301c259",
+      "deploy_id": "dep-dbqrk86i0phs73dhjlmg",
+      "live_at": "2026-11-12T22:08:40+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43223695359",
+      "validation": {
+        "focused": "20 offboarding tests passed",
+        "ci": "650 Django tests; full regression workflow passed",
+        "runtime": "Six existing acknowledged cancellations displayed as complete in notifications, without action links; history is a compact list. Read-only production verification.",
+        "layout": "Desktop visual check; physical mobile not newly verified"
+      },
+      "rollback_source": "1d3892a7060370ef45b96452d416dcf433616fdf"
+    },
+    {
       "version": "0.19.8",
       "status": "live_verified",
       "release_notes": "releases/v0.19.8.md",
