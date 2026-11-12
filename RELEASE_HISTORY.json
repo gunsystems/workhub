@@ -3,6 +3,20 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.4",
+      "status": "live_verified",
+      "release_notes": "releases/v0.19.4.md",
+      "source_commit": "104b2b631165d3d9b2a02efa5f70c5d834857de5",
+      "deploy_id": "dep-dbqorugn74is73cr6nf0",
+      "live_at": "2026-11-12T19:00:25+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43196209427",
+      "validation": {
+        "ci": "Full regression workflow passed",
+        "local": "Card export Node check and 10 address tests passed",
+        "ui": "Live v0.19.4; portrait104.3x132.1px at desktop, image600x760 loaded; no personal records changed"
+      }
+    },
+    {
       "version": "0.19.3",
       "status": "live_verified",
       "release_notes": "releases/v0.19.3.md",
