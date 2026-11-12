@@ -137,6 +137,8 @@ def detail(request,pk):
         except ValidationError as exc:error=' / '.join(exc.messages)
         else:return redirect('leave_detail',pk=pk)
         item.refresh_from_db()
+    from .models import LeaveNotice
+    LeaveNotice.objects.filter(event__request=item,user=request.user,read_at__isnull=True).update(read_at=timezone.now())
     e=profile(request.user);step=leave.current(item)
     can_decide=bool(step and e and step.approver_id==e.pk)
     owner=bool(e and item.employee_id==e.pk)
@@ -221,22 +223,22 @@ def approval_portal(request):
     tab=request.GET.get('tab','leave')
     if tab not in ('leave','requests','inbox','calendar'):tab='leave'
     own=LeaveRequest.objects.filter(employee=person,start__year=year).select_related('employee__department') if person else LeaveRequest.objects.none()
-    candidates=leave.visible(person.user).filter(start__year=year) if person and person.user_id else LeaveRequest.objects.none()
-    pending=[]
-    for application in candidates.filter(state__in=['pending','cancel_pending']).prefetch_related('steps'):
-        step=leave.current(application)
-        if step and step.approver_id==person.pk:pending.append(application)
+    pending=list(leave.pending_for(person))
     if person:
         if person.position in ('executive','head'):
-            calendar=LeaveRequest.objects.filter(start__year=year,state='approved').select_related('employee__department')
+            calendar=LeaveRequest.objects.filter(start__year=year,state__in=['approved','cancel_pending']).select_related('employee__department')
         elif person.position=='leader' or person.role=='manager':
-            calendar=LeaveRequest.objects.filter(employee__department=person.department,start__year=year,state='approved').select_related('employee__department')
-        else:calendar=own.filter(state='approved')
+            calendar=LeaveRequest.objects.filter(employee__department=person.department,start__year=year,state__in=['approved','cancel_pending']).select_related('employee__department')
+        else:calendar=own.filter(state__in=['approved','cancel_pending'])
     else:calendar=LeaveRequest.objects.none()
+    annual_rows=[]
+    if person and (person.position in ('leader','head','executive') or person.role=='manager'):
+        annual_rows=[row for row in leave.preparation(year)['rows'] if person.position in ('head','executive') or row['employee'].department_id==person.department_id]
+    for row in annual_rows:row['reserved']=leave.reserved(row['employee'],year)
     entries=LeaveEntry.objects.filter(employee=person,year=year) if person else LeaveEntry.objects.none()
     context={'year':year,'tab':tab,'people':people,'preview_employee':person,'own_items':own[:100],
       'pending_items':pending,'calendar_items':calendar.order_by('start','pk')[:100],
       'balance':leave.balance(person,year) if person else None,'reserved':leave.reserved(person,year) if person else None,
       'has_grant':entries.exclude(key__startswith='leave:').exclude(key__startswith='holiday:').exists(),
-      'portal_preview':True}
+      'portal_preview':True,'annual_rows':annual_rows}
     return render(request,'tasks/approval_portal.html',context)

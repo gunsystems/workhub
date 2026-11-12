@@ -293,3 +293,98 @@ class LeaveTests(TestCase):
         self.assertEqual([r.pk for r in response.context['calendar_items']],[item.pk])
         self.assertNotContains(response,'개인 휴가')
         self.assertNotContains(response,'>신청 내용</a>')
+
+    def test_approval_count_tracks_current_step_and_cancellation_round(self):
+        first=self.submit();second=self.submit(start=date(2027,1,5),end=date(2027,1,5))
+        self.assertEqual(leave.pending_for(self.people['leader']).count(),2)
+        self.assertEqual(leave.pending_for(self.people['executive']).count(),0)
+        self.act(first,'leader');self.act(second,'leader')
+        self.assertEqual(leave.pending_for(self.people['leader']).count(),0)
+        self.assertEqual(leave.pending_for(self.people['executive']).count(),2)
+        self.act(first,'executive')
+        self.assertEqual(leave.pending_for(self.people['executive']).count(),1)
+        self.act(first,'member','cancel')
+        self.assertEqual(leave.pending_for(self.people['leader']).count(),1)
+        self.assertEqual(leave.pending_for(self.people['executive']).count(),1)
+        self.act(first,'leader')
+        self.assertEqual(leave.pending_for(self.people['executive']).count(),2)
+        self.act(first,'executive')
+        self.assertEqual(leave.pending_for(self.people['executive']).count(),1)
+
+    def test_sidebar_count_uses_signed_in_person_not_preview_selection(self):
+        from django.test import RequestFactory
+        from .navigation import navigation
+        item=self.submit();self.act(item,'leader')
+        request=RequestFactory().get('/work/approvals/?employee='+str(self.people['leader'].pk))
+        request.user=self.users['executive']
+        self.assertEqual(navigation(request)['approval_pending_count'],1)
+        request.user=self.admin
+        self.assertEqual(navigation(request)['approval_pending_count'],0)
+        self.users['executive'].is_superuser=True;self.users['executive'].save()
+        self.client.force_login(self.users['executive'])
+        self.assertContains(self.client.get('/work/approvals/'),'aria-label="결재 대기 1건"')
+        self.act(item,'executive')
+        self.assertNotContains(self.client.get('/work/approvals/'),'aria-label="결재 대기 1건"')
+
+    def test_leave_notices_disabled_during_preview(self):
+        from .models import LeaveNotice
+        self.submit()
+        self.assertFalse(LeaveNotice.objects.exists())
+
+    @override_settings(WORKHUB_LEAVE_NOTIFICATIONS_ENABLED=True)
+    def test_leave_mail_waits_for_turn_and_final_result_to_applicant(self):
+        from .models import LeaveNotice
+        from .leave_notifications import deliver_pending
+        from accounts.models import AccessProfile
+        from django.utils import timezone
+        from unittest.mock import patch
+        for role,user in self.users.items():
+            user.email=role+'@gunsystems.co.kr';user.save()
+            AccessProfile.objects.create(user=user,email=user.email,verified_at=timezone.now())
+        item=self.submit()
+        self.assertEqual(list(LeaveNotice.objects.values_list('user_id',flat=True)),[self.users['leader'].pk])
+        self.act(item,'leader')
+        with patch('accounts.services.deliver') as send,patch('accounts.lifecycle.account_allowed',return_value=True):
+            deliver_pending();deliver_pending()
+            self.assertEqual(send.call_count,1)
+            self.assertEqual(send.call_args.args[2],self.users['executive'].email)
+            html=send.call_args.kwargs['html_body']
+            self.assertIn('결재 내용 확인',html)
+            self.assertIn('/work/leave/'+str(item.pk)+'/',html)
+            self.assertNotIn('개인 휴가',html)
+        self.assertEqual(LeaveNotice.objects.get(user=self.users['leader']).mail_state,'skipped')
+        self.act(item,'executive')
+        with patch('accounts.services.deliver') as send,patch('accounts.lifecycle.account_allowed',return_value=True):
+            deliver_pending();self.assertEqual(send.call_count,1)
+            self.assertEqual(send.call_args.args[2],self.users['member'].email)
+            self.assertIn('최종 승인',send.call_args.args[0])
+        self.act(item,'member','cancel');self.act(item,'leader');self.act(item,'executive')
+        self.assertTrue(LeaveNotice.objects.filter(user=self.users['member'],kind='result',message='휴가 취소가 승인되었습니다.').exists())
+
+    @override_settings(WORKHUB_LEAVE_NOTIFICATIONS_ENABLED=True)
+    def test_leave_mail_changed_email_skipped_and_unknown_not_retried(self):
+        from .models import LeaveNotice
+        from .leave_notifications import deliver_pending
+        from accounts.models import AccessProfile
+        from django.utils import timezone
+        from unittest.mock import patch
+        user=self.users['leader'];user.email='leader@gunsystems.co.kr';user.save()
+        AccessProfile.objects.create(user=user,email=user.email,verified_at=timezone.now())
+        first=self.submit()
+        with patch('accounts.services.deliver',side_effect=TimeoutError) as send,patch('accounts.lifecycle.account_allowed',return_value=True):
+            deliver_pending();deliver_pending();self.assertEqual(send.call_count,1)
+        self.assertEqual(LeaveNotice.objects.get(event__request=first).mail_state,'unknown')
+        second=self.submit(start=date(2027,1,5),end=date(2027,1,5))
+        user.email='changed@gunsystems.co.kr';user.save()
+        with patch('accounts.services.deliver') as send,patch('accounts.lifecycle.account_allowed',return_value=True):
+            deliver_pending();send.assert_not_called()
+        self.assertEqual(LeaveNotice.objects.get(event__request=second).mail_state,'skipped')
+
+    def test_portal_executive_annual_summary_and_member_privacy(self):
+        self.client.force_login(self.admin)
+        url='/work/approvals/?year=2027&tab=calendar&employee='
+        response=self.client.get(url+str(self.people['executive'].pk))
+        self.assertEqual(len(response.context['annual_rows']),3)
+        self.assertTrue(all('reserved' in row for row in response.context['annual_rows']))
+        self.assertContains(response,'2027년 직원별 연차 현황')
+        self.assertEqual(self.client.get(url+str(self.people['member'].pk)).context['annual_rows'],[])

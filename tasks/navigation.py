@@ -5,6 +5,8 @@ def navigation(request):
     path=request.path
     user=request.user
     employee=getattr(user,'employee',None)
+    from .leave import pending_for
+    approval_pending_count=pending_for(employee).count() if employee else 0
     def item(label,href,icon,active=False,key=''):
         return {'label':label,'href':href,'icon':icon,'active':active,'key':key}
     groups=[
@@ -26,7 +28,7 @@ def navigation(request):
     if user.is_superuser:
         groups[2]['items'].insert(1,item('설문조사','/work/surveys/','work',path.startswith('/work/surveys/')))
     if user.is_superuser:
-        groups.append({'label':'전자결재','items':[item('전자결재','/work/approvals/','shield',path.startswith('/work/approvals/'))]})
+        groups.append({'label':'전자결재','items':[item('전자결재','/work/approvals/?tab=inbox' if approval_pending_count else '/work/approvals/','shield',path.startswith('/work/approvals/'),key='approvals')]})
     organization=[]
     from .assessments import executive
     if executive(user):organization.append(item('수행 평가','/work/assessments/','chart',path.startswith('/work/assessments/')))
@@ -80,4 +82,4 @@ def navigation(request):
                 if entry['href']=='/work/':entry['active']=False
         current='전자결재 · 관리자 미리보기'
     from .version import VERSION
-    return {'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username(),'staff_management_section':staff_section,'offboarding_admin':offboarding_admin}
+    return {'approval_pending_count':approval_pending_count,'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username(),'staff_management_section':staff_section,'offboarding_admin':offboarding_admin}

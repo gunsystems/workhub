@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, OuterRef, Subquery
 from django.utils import timezone
 from .models import Employee, StaffEmployment, LeaveYear, LeaveHoliday, LeaveEntry, LeaveRequest, LeaveApproval, LeaveEvent, PublicHoliday, HolidaySync
 from .permissions import profile, can_view_company
@@ -123,7 +123,9 @@ def amount(start,end,kind,allow_empty=False):
 
 def event(item,user,action,body=''):
     e=profile(user)
-    LeaveEvent.objects.create(request=item,actor=user,actor_name=str(e) if e else user.get_username(),action=action,body=body)
+    row=LeaveEvent.objects.create(request=item,actor=user,actor_name=str(e) if e else user.get_username(),action=action,body=body)
+    from .leave_notifications import enqueue
+    enqueue(row)
     from .audit import write
     write('change','LeaveRequest',item.pk,'휴가 신청',after={'state':item.state,'revision':item.revision,'action':action},actor=user)
 
@@ -199,3 +201,13 @@ def change(pk,user,action,reason,revision):
     item.save(update_fields=['state','approved_at'])
     event(item,user,{'approve':'승인','reject':'반려','withdraw':'신청 회수','cancel':'취소 신청'}[action],reason.strip())
     return item
+
+
+def pending_for(employee):
+    """Current assignee only, across all years and latest cancellation round."""
+    if not employee or not employee.is_active:return LeaveRequest.objects.none()
+    steps=LeaveApproval.objects.filter(request_id=OuterRef('pk'))
+    return (LeaveRequest.objects.filter(state__in=['pending','cancel_pending'])
+        .annotate(active_round=Subquery(steps.order_by('-round').values('round')[:1]))
+        .annotate(active_approver=Subquery(steps.filter(round=OuterRef('active_round'),decision='').order_by('order').values('approver_id')[:1]))
+        .filter(active_approver=employee.pk).select_related('employee__department'))

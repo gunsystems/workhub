@@ -90,3 +90,6 @@ WORKHUB_DOCUMENT_MAX_BYTES = 20 * 1024 * 1024
 LOGGING = {'version':1,'disable_existing_loggers':False,
     'filters':{'subscription_tokens':{'()':'config.log_filters.SubscriptionTokenFilter'}},
     'loggers':{'django.request':{'filters':['subscription_tokens']},'django.server':{'filters':['subscription_tokens']}}}
+
+# Enable only with the separately scheduled employee leave rollout.
+WORKHUB_LEAVE_NOTIFICATIONS_ENABLED = os.getenv('WORKHUB_LEAVE_NOTIFICATIONS_ENABLED','0') == '1'

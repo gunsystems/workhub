@@ -76,7 +76,12 @@ def notifications(request):
         cancelled=row.item.case.state=='cancelled'
         row.closed=(cancelled and row.cancel_ack) or row.item.case.state=='done' or (not cancelled and row.item.state=='approved')
         row.current_state=('취소 확인 완료' if row.cancel_ack else '퇴사 처리 취소 · 확인 필요') if cancelled else ('확인 완료' if row.closed else row.item.get_state_display())
-    return render(request,'tasks/notifications.html',{'followup_notifications':followups,'quick_notifications':quick_items[:100],'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
+    from .leave_notifications import enabled,actionable
+    from .leave import visible as visible_leave
+    from .models import LeaveNotice
+    leave_items=LeaveNotice.objects.filter(user=request.user,event__request__in=visible_leave(request.user)).select_related('event__request')[:100] if enabled() and request.user.is_superuser else []
+    for row in leave_items:row.actionable=actionable(row)
+    return render(request,'tasks/notifications.html',{'leave_notifications':leave_items,'followup_notifications':followups,'quick_notifications':quick_items[:100],'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
 
 
 @login_required

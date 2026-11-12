@@ -90,3 +90,18 @@ class LeaveEvent(models.Model):
     body=models.CharField(max_length=1000,blank=True)
     created_at=models.DateTimeField(default=timezone.now)
     class Meta: ordering=['-created_at','-pk']
+
+
+class LeaveNotice(models.Model):
+    event=models.ForeignKey(LeaveEvent,on_delete=models.PROTECT,related_name='notices')
+    user=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.PROTECT)
+    kind=models.CharField(max_length=12)
+    message=models.CharField(max_length=200)
+    snapshot=models.JSONField(default=dict)
+    created_at=models.DateTimeField(default=timezone.now)
+    read_at=models.DateTimeField(null=True)
+    mail_state=models.CharField(max_length=12,default='pending')
+    attempted_at=models.DateTimeField(null=True)
+    class Meta:
+        ordering=['-created_at','-pk']
+        constraints=[models.UniqueConstraint(fields=['event','user','kind'],name='unique_leave_notice')]
