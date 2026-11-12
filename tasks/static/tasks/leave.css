@@ -40,3 +40,26 @@
  .leave-page .leave-grid{grid-template-columns:minmax(0,1fr);gap:20px}
  .leave-page :is(th,td){padding:12px}
 }
+
+.leave-page .leave-filters label{margin:0}
+.leave-page .leave-preparation-filter{grid-template-columns:150px auto}
+.leave-check-summary,.leave-preparation-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-bottom:20px}
+.leave-check-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+.leave-check-summary>div,.leave-preparation-card{min-width:0;border:1px solid #dce7e1;border-radius:12px;padding:20px;background:#fff}
+.leave-check-summary p,.leave-preparation-card p{font-size:14px;line-height:1.8;margin:10px 0 18px;overflow-wrap:anywhere}
+.leave-preparation-card header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:20px}
+.leave-preparation-card h3{font-size:17px;line-height:1.6;margin:0}
+.leave-preparation-card header>span{font-size:13px;color:#60756c;background:#edf5f0;padding:4px 8px;border-radius:6px}
+.leave-preparation-card h4{font-size:14px;margin:22px 0 12px}
+.leave-check-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:0}
+.leave-check-facts dt{font-size:13px;color:#64748b;margin-bottom:4px}
+.leave-check-facts dd{font-size:14px;font-weight:600;margin:0;overflow-wrap:anywhere}
+.leave-route-preview{display:flex;flex-wrap:wrap;gap:10px;padding:0;list-style:none;margin:0}
+.leave-route-preview li{display:grid;gap:5px;padding:12px;border-radius:8px;background:#f1f5f8;min-width:0;flex:1 1 110px;font-size:13px;overflow-wrap:anywhere}
+.leave-route-preview strong{font-size:14px}.leave-route-preview span{color:#276b54}
+.leave-check-issues{font-size:14px;line-height:1.8;background:#fff7e9;border-radius:8px;padding:16px 16px 16px 34px;margin:20px 0}
+.leave-process{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;list-style:none;padding:0;margin:0 0 20px;counter-reset:leave-step}
+.leave-process li{padding:18px;background:#f2f6f4;border-radius:10px;counter-increment:leave-step;min-width:0}
+.leave-process strong{display:block;font-size:15px;margin-bottom:8px}.leave-process strong:before{content:counter(leave-step) ' · '}
+.leave-process span{font-size:14px;line-height:1.8;overflow-wrap:anywhere}
+@media(max-width:720px){.leave-page .leave-preparation-filter,.leave-preparation-cards,.leave-check-summary,.leave-process{grid-template-columns:minmax(0,1fr)}.leave-preparation-card{padding:16px}.leave-check-summary{gap:12px}.leave-page .leave-preparation-filter input{font-size:16px}}

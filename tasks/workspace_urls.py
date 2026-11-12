@@ -23,6 +23,7 @@ urlpatterns=[
     path("leave/",leave_views.overview,name="leave_list"),
     path("leave/new/",leave_views.new,name="leave_new"),
     path("leave/settings/",leave_views.settings_view,name="leave_settings"),
+    path("leave/preparation/",leave_views.preparation_view,name="leave_preparation"),
     path("leave/<int:pk>/",leave_views.detail,name="leave_detail"),
     path('quick/',quick.listing,name='quick_list'),
     path('quick/new/',quick.new,name='quick_new'),

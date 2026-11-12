@@ -23,6 +23,40 @@ def balance(employee,year):
 def reserved(employee,year):
     return LeaveRequest.objects.filter(employee=employee,start__year=year,state='pending').aggregate(v=Sum('days'))['v'] or Decimal('0')
 
+def preparation(year):
+    """Read-only opening checklist; never infer entitlement from tenure alone."""
+    staff=Employee.objects.filter(is_active=True).select_related('department','user','employment')
+    rows=[]
+    entries={}
+    for entry in LeaveEntry.objects.filter(year=year):
+        data=entries.setdefault(entry.employee_id,{'granted':Decimal('0'),'used':Decimal('0'),'has_grant':False})
+        if entry.key.startswith('leave:'):
+            data['used']-=entry.amount
+        else:
+            data['granted']+=entry.amount
+            data['has_grant']=True
+    for employee in staff:
+        issues=[]
+        employment=getattr(employee,'employment',None)
+        ledger=entries.get(employee.pk,{'granted':Decimal('0'),'used':Decimal('0'),'has_grant':False})
+        if not employment:issues.append('입사일 등록 필요')
+        elif employment.ended_on and employment.ended_on.year<year:issues.append('재직 상태 확인 필요')
+        elif employment.joined_on.year>year:issues.append('해당 연도 입사 전')
+        if not employee.user_id or not employee.user.is_active:issues.append('사용 가능한 로그인 계정 연결 필요')
+        chain=[]
+        representative=employee.position=='executive'
+        if not representative:
+            try:chain=route(employee)
+            except ValidationError as exc:issues.extend(exc.messages)
+        if not ledger['has_grant']:issues.append('연차 부여·적용 대상 확인 필요')
+        rows.append({'employee':employee,'employment':employment,'chain':chain,'issues':issues,
+                     'representative':representative,**ledger,'balance':ledger['granted']-ledger['used']})
+    calendar=LeaveYear.objects.filter(year=year).first()
+    return {'rows':rows,'year':year,'calendar':calendar,
+            'calendar_ready':bool(calendar and calendar.calendar_confirmed),
+            'holiday_count':LeaveHoliday.objects.filter(date__year=year).count(),
+            'needs_count':sum(bool(row['issues']) for row in rows)}
+
 def route(employee):
     def one(position,team=None):
         qs=Employee.objects.filter(is_active=True,position=position,user__is_active=True)

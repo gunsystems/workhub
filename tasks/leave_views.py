@@ -69,6 +69,14 @@ def year_value(request):
 @never_cache
 @preview_only
 @require_http_methods(['GET'])
+def preparation_view(request):
+    year=year_value(request) if 'year' in request.GET else timezone.localdate().year+1
+    return render(request,'tasks/leave_preparation.html',leave.preparation(year))
+
+@login_required
+@never_cache
+@preview_only
+@require_http_methods(['GET'])
 def overview(request):
     year=year_value(request);e=profile(request.user)
     qs=leave.visible(request.user).filter(start__year=year)

@@ -115,3 +115,73 @@ class LeaveTests(TestCase):
         self.assertEqual(response.context['staff_management_section'],'employment')
         self.assertContains(response,'aria-label="직원 관리 메뉴"')
         self.assertContains(response,'href="/work/leave/settings/" class="is-current" aria-current="page"')
+
+    def test_preparation_is_read_only_admin_preview(self):
+        before=(LeaveEntry.objects.count(),LeaveRequest.objects.count(),LeaveYear.objects.count())
+        self.client.force_login(self.admin)
+        response=self.client.get('/work/leave/preparation/?year=2027')
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'휴가 운영 준비 점검')
+        member=next(row for row in response.context['rows'] if row['employee']==self.people['member'])
+        self.assertEqual(member['balance'],15)
+        self.assertEqual(member['issues'],[])
+        self.assertEqual([role for role,person,delegated in member['chain']],['leader','head','executive'])
+        self.assertEqual(self.client.post('/work/leave/preparation/',{}).status_code,405)
+        self.assertEqual(before,(LeaveEntry.objects.count(),LeaveRequest.objects.count(),LeaveYear.objects.count()))
+        for role in ['member','leader','executive']:
+            self.client.force_login(self.users[role])
+            self.assertEqual(self.client.get('/work/leave/preparation/').status_code,403)
+
+    def test_preparation_identifies_missing_join_date_grant_and_team_leader(self):
+        StaffEmployment.objects.filter(employee=self.people['member']).delete()
+        LeaveEntry.objects.all().delete()
+        self.people['leader'].is_active=False;self.people['leader'].save()
+        row=next(r for r in leave.preparation(2027)['rows'] if r['employee']==self.people['member'])
+        self.assertIn('입사일 등록 필요',row['issues'])
+        self.assertIn('연차 부여·적용 대상 확인 필요',row['issues'])
+        self.assertTrue(any('팀장' in issue for issue in row['issues']))
+
+    def test_preparation_ledger_handles_charge_restore_and_manual_adjustment(self):
+        item=self.submit();self.act(item,'leader');self.act(item,'executive')
+        row=next(r for r in leave.preparation(2027)['rows'] if r['employee']==item.employee)
+        self.assertEqual((row['granted'],row['used'],row['balance']),(15,1,14))
+        self.act(item,'member','cancel');self.act(item,'leader');self.act(item,'executive')
+        LeaveEntry.objects.create(employee=item.employee,year=2027,amount=-2,actor=self.admin,reason='관리자 조정',key='grant:adjustment')
+        row=next(r for r in leave.preparation(2027)['rows'] if r['employee']==item.employee)
+        self.assertEqual((row['granted'],row['used'],row['balance']),(13,0,13))
+
+    def test_head_own_leave_uses_only_representative_approval(self):
+        u=get_user_model().objects.create_user('leave_head')
+        head=Employee.objects.create(user=u,name='head',department=self.team,position='head')
+        StaffEmployment.objects.create(employee=head,joined_on=date(2020,1,1))
+        item=leave.submit(u,date(2027,1,4),date(2027,1,4),'annual','개인 휴가')
+        self.assertEqual(list(item.steps.values_list('role',flat=True)),['executive'])
+        self.act(item,'executive');self.assertEqual(leave.balance(head,2027),-1)
+
+    def test_actual_head_separate_approval_and_cancellation_rejection(self):
+        u=get_user_model().objects.create_user('active_head')
+        head=Employee.objects.create(user=u,name='head',department=self.team,position='head')
+        item=self.submit();self.act(item,'leader')
+        with self.assertRaises(PermissionDenied):self.act(item,'executive')
+        item.refresh_from_db();leave.change(item.pk,u,'approve','검토 완료',item.revision)
+        self.assertEqual(leave.balance(item.employee,2027),15)
+        self.act(item,'executive');self.act(item,'member','cancel');self.act(item,'leader','reject')
+        self.assertEqual(leave.balance(item.employee,2027),14)
+        self.assertEqual(leave.reserved(item.employee,2027),0)
+
+    def test_half_day_deduction_restoration_and_negative_balance(self):
+        item=self.submit('am');self.act(item,'leader');self.act(item,'executive')
+        self.assertEqual(leave.balance(item.employee,2027),Decimal('14.5'))
+        self.act(item,'member','cancel');self.act(item,'leader');self.act(item,'executive')
+        self.assertEqual(leave.balance(item.employee,2027),15)
+
+    def test_preparation_does_not_claim_unregistered_calendar_is_ready(self):
+        data=leave.preparation(2028)
+        self.assertFalse(data['calendar_ready'])
+        self.assertEqual(data['holiday_count'],0)
+        self.assertFalse(LeaveYear.objects.filter(year=2028).exists())
+
+    def test_preparation_representative_excluded_from_application_route(self):
+        row=next(r for r in leave.preparation(2027)['rows'] if r['representative'])
+        self.assertFalse(row['chain'])
+        self.assertFalse(any('대표 본인' in issue for issue in row['issues']))
