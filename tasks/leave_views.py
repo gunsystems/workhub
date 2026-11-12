@@ -31,6 +31,7 @@ class EmploymentForm(forms.ModelForm):
     class Meta:
         model=StaffEmployment
         fields=['employee','joined_on','ended_on','staff_number']
+        labels={'employee':'직원'}
         widgets={'joined_on':forms.DateInput(attrs={'type':'date'}),'ended_on':forms.DateInput(attrs={'type':'date'})}
     def clean(self):
         data=super().clean()
@@ -154,4 +155,6 @@ def settings_view(request):
                 else:form.save()
             return redirect(request.path+'?year='+str(year)+'&saved=1')
     if request.GET.get('saved'):success='저장했습니다.'
+    for form,prefix in [(employment,'employment'),(grant,'grant'),(year_form,'year'),(holiday,'holiday')]:
+        form.auto_id='leave_'+prefix+'_%s'
     return render(request,'tasks/leave_settings.html',{'employment_form':employment,'grant_form':grant,'year_form':year_form,'holiday_form':holiday,'year':year,'success':success,'holidays':LeaveHoliday.objects.filter(date__year=year).order_by('date'),'staff':StaffEmployment.objects.select_related('employee__department'),'entries':LeaveEntry.objects.filter(year=year).select_related('employee','actor')[:100]})

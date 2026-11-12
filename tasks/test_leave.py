@@ -185,3 +185,15 @@ class LeaveTests(TestCase):
         row=next(r for r in leave.preparation(2027)['rows'] if r['representative'])
         self.assertFalse(row['chain'])
         self.assertFalse(any('대표 본인' in issue for issue in row['issues']))
+
+    def test_settings_form_labels_target_distinct_controls(self):
+        import re
+        self.client.force_login(self.admin)
+        response=self.client.get('/work/leave/settings/?year=2027')
+        html=response.content.decode()
+        ids=re.findall(r'\bid="([^"]+)"',html)
+        self.assertEqual(len(ids),len(set(ids)))
+        self.assertContains(response,'for="leave_employment_employee"')
+        self.assertContains(response,'for="leave_grant_employee"')
+        self.assertContains(response,'for="leave_year_year"')
+        self.assertNotContains(response,'Employee:')
