@@ -3,6 +3,30 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.0",
+      "status": "live_verified_profile_card_calendar_quick",
+      "release_notes": "releases/v0.19.0.md",
+      "source_commit": "b35f971a4810cdf108f01dc3f4865673b1cb293e",
+      "deploy_id": "dep-dbqnqs2jnfac7398tc1g",
+      "live_at": "2026-11-12T17:49:51+09:00",
+      "migrations": [
+        "0047_employee_profile_calendar_quick"
+      ],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43185701575",
+      "scope": "Self/private employee profile and downloadable digital card; calendar blank-date quick entry and preserved full-form continuation.",
+      "validation": {
+        "local": "47 combined leave/profile/quick tests; targeted26 profile/calendar/permissions passed; migration consistency and JS syntax passed",
+        "ci": "613 Django tests and all five Node checks passed",
+        "ui": "Authenticated administrator preview and private data persistence verified; actual1080x680PNG downloaded and decoded; PC and320/360px card/dialog bounds checked; blank-date/plus/cancel/Escape/time controls/detail continuation verified",
+        "runtime": "healthz0.19.0/b35f971/ok"
+      },
+      "limitations": [
+        "Production task creation and notifications not exercised; isolated tests verify saves and idempotency",
+        "Only existing registered staff information updated; no new accounts, invitations, roles or leave grants created",
+        "Digital card is informational and does not grant physical access"
+      ]
+    },
+    {
       "version": "0.18.3",
       "status": "live_verified_official_public_holidays",
       "release_notes": "releases/v0.18.3.md",
