@@ -1,4 +1,11 @@
 (() => {
+// Login in another tab rotates the shared CSRF cookie. Use its current value
+// for this explicit logout POST while retaining Django's server-side checks.
+document.querySelectorAll('form[action="/logout/"]').forEach(form=>form.addEventListener('submit',()=>{
+ const token=document.cookie.split(';').map(x=>x.trim()).find(x=>x.startsWith('csrftoken='))?.slice('csrftoken='.length);
+ const input=form.querySelector('input[name="csrfmiddlewaretoken"]');
+ if(input&&token&&/^[A-Za-z0-9]{32}$/.test(token))input.value=token;
+}));
 const toggle=document.getElementById('nav-toggle');
 function closeNav(){document.body.classList.remove('nav-open');if(toggle){toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','메뉴 열기');}}
 toggle?.addEventListener('click',()=>{const open=document.body.classList.toggle('nav-open');toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'메뉴 닫기':'메뉴 열기');});

@@ -1,0 +1,78 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Workhub · 함께 만드는 업무의 흐름</title><link rel="stylesheet" href="/static/tasks/style.css"><link rel="stylesheet" href="/static/tasks/navigation.css"><link rel="stylesheet" href="/static/tasks/ui_consistency.css"><link rel="stylesheet" href="/static/tasks/file_upload.css"></head>
+<body class="app-shell" data-idle-session><svg xmlns="http://www.w3.org/2000/svg" class="nav-sprite" aria-hidden="true"><defs>
+<symbol id="nav-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10H3Z M9 20v-7h6v7"/></symbol>
+<symbol id="nav-board" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16M5 8h2m4 0h2m4 0h2m-14 4h2m4 0h2"/></symbol>
+<symbol id="nav-work" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="15" rx="2"/><path d="M8 6V3h8v3M3 12h18M10 12v3h4v-3"/></symbol>
+<symbol id="nav-folder" viewBox="0 0 24 24"><path d="M3 7V4h6l3 3h9v13H3Z"/></symbol>
+<symbol id="nav-inbox" viewBox="0 0 24 24"><path d="m3 15 3-10h12l3 10v5H3ZM3 15h5l2 3h4l2-3h5"/></symbol>
+<symbol id="nav-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v5m10-5v5M3 11h18m-14 4h2m4 0h2m-8 3h2"/></symbol>
+<symbol id="nav-bell" viewBox="0 0 24 24"><path d="M5 17h14l-2-4V9a5 5 0 0 0-10 0v4ZM10 21h4"/></symbol>
+<symbol id="nav-flag" viewBox="0 0 24 24"><path d="M5 22V3m0 1c5-3 8 3 14 0v10c-6 3-9-3-14 0"/></symbol>
+<symbol id="nav-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 17v-6m5 6V6m5 11v-9"/></symbol>
+<symbol id="nav-users" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m0-17a3 3 0 0 1 0 6m4 11v-3a6 6 0 0 0-3-5"/></symbol>
+<symbol id="nav-shield" viewBox="0 0 24 24"><path d="m12 2 8 3v7c0 5-8 10-8 10S4 17 4 12V5Zm-4 9 3 3 5-6"/></symbol>
+<symbol id="nav-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 2v1"/></symbol>
+<symbol id="nav-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="nav-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+</defs></svg>
+<aside class="sidebar app-sidebar">
+<div class="sidebar-top"><div class="sidebar-brand-row"><a class="brand company-logo" href="#" aria-label="GUNSYSTEMS Workhub 홈"><span class="company-wordmark">GUNSYSTEMS</span><span class="company-product">Workhub <small>업무관리 시스템</small></span></a><button type="button" id="nav-toggle" aria-label="메뉴 열기" aria-controls="sidebar-nav" aria-expanded="false"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+</button></div><a class="sidebar-create" href="#"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+업무 등록</a></div>
+<nav class="sidebar-scroll" id="sidebar-nav" aria-label="주 메뉴" data-user="2">
+<section class="nav-group" aria-label="내 공간"><h2>내 공간</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>내 업무</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>개인 보드</span></a>
+</section><section class="nav-group" aria-label="업무 관리"><h2>업무 관리</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 현황</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 보고</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>간단 업무</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>프로젝트</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 접수함</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>캘린더</span></a>
+</section><section class="nav-group" aria-label="알림"><h2>알림</h2><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>공지사항</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>업무 알림</span></a><a class="nav" href="#" ><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>조치 필요</span></a>
+</section></nav>
+<div class="sidebar-foot"><a class="nav nav-help" href="#"><svg class="nav-icon" aria-hidden="true" focusable="false"><use href="#"></use></svg>
+<span>도움말 · 사용 가이드</span></a><details class="account-menu"><summary><span class="profile-avatar">직</span><span class="profile-name">직원 · 예시<small>내 계정</small></span><span aria-hidden="true">⌄</span></summary><div class="account-actions"><a href="#">계정 보안 · OTP</a><a href="#">Google Calendar 연결</a><a href="#">하이웍스 일정 연결</a><form action="/logout/" method="post"><button disabled type="submit">로그아웃</button></form></div></details></div>
+</aside><main><header><span>워크스페이스 <b>/</b> 설문조사</span><span class="live">● 예시 부서 · 직원 · 예시 · 일반 직원</span>
+<link rel="stylesheet" href="/static/tasks/page_help.css">
+<button type="button" class="page-help-trigger" data-page-help-open aria-haspopup="dialog" aria-controls="page-help-dialog"><span aria-hidden="true">?</span>도움말</button>
+<dialog id="page-help-dialog" class="page-help-dialog" aria-labelledby="page-help-title" aria-describedby="page-help-purpose">
+<div class="page-help-top"><div><small>WORKHUB GUIDE</small><h2 id="page-help-title">설문조사</h2></div><button type="button" class="page-help-x" data-page-help-close aria-label="도움말 닫기">×</button></div>
+<p id="page-help-purpose" class="page-help-purpose">대상 직원의 의견을 기명 또는 익명으로 취합합니다.</p>
+<section class="page-help-visual"><h3>한눈에 보는 흐름</h3>
+<svg class="help-flow" viewBox="0 0 548 164" role="img" aria-label="설문조사 사용 흐름도"><defs><marker id="help-flow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#89a994"/></marker></defs><path d="M172 32 H183" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><path d="M352 32 H363" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><path d="M450 56 V80 H90 V93" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><path d="M172 122 H183" fill="none" stroke="#89a994" stroke-width="2" marker-end="url(#help-flow-arrow)"/><rect x="8" y="8" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="90" y="37" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">설문 배포</text><rect x="188" y="8" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="270" y="37" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">내 응답 작성</text><rect x="368" y="8" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="450" y="37" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">제출</text><rect x="8" y="98" width="164" height="48" rx="9" fill="#edf5f0" stroke="#d7e6dd"/><text x="90" y="127" text-anchor="middle" fill="#40634d" font-size="13" font-weight="600">미응답자 독려</text><rect x="188" y="98" width="164" height="48" rx="9" fill="#286b53" stroke="#d7e6dd"/><text x="270" y="127" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="600">결과 집계</text></svg>
+
+</section>
+<section><h3>이렇게 사용하세요</h3><ol><li>관리자는 질문·응답 기간·기명 여부·대상을 작성하고 미리보기와 검토 후 메일로 배포합니다.</li><li>설문조사 메뉴는 관리자 전용입니다. 직원은 안내 메일의 응답 버튼으로 설문에 들어와 임시 저장 또는 제출합니다. 제출 후에는 변경하지 않습니다.</li><li>관리자는 참여 현황과 문항별 결과를 확인합니다. 미응답자만 독려 알림을 받습니다.</li></ol></section>
+
+<section class="page-help-notes"><h3>알아두세요</h3><ul><li>배포 후 질문·대상·기명 여부는 고정됩니다. 응답 마감은 연장할 수 있습니다.</li><li>최초 안내 이후 최소 24시간 간격으로 마감 3일 전·1일 전 독려합니다. 이미 제출했거나 마감된 설문에는 발송하지 않습니다.</li><li>익명 설문은 답변에 직원 연결과 개별 제출 시각을 저장하지 않습니다. 자유 의견에 본인을 식별할 내용을 쓰지 마세요. 소수 대상 설문은 내용만으로 추측될 수 있습니다.</li></ul></section>
+<div class="page-help-bottom"><a href="#">전체 사용 가이드</a><button type="button" data-page-help-close>확인</button></div>
+</dialog>
+</header><link rel="stylesheet" href="/static/tasks/people.css"><link rel="stylesheet" href="/static/tasks/surveys.css"><div class="survey-page"><aside class="workspace-notice">단일 선택 설문 · 가상 예시 (저장·제출되지 않습니다)</aside>
+<section class="heading"><div><div class="eyebrow">SURVEY</div><h1>사내 추천 간식</h1><p>기명 설문 · 관리자는 개인별 답변을 확인할 수 있습니다.</p></div><a class="button" href="#">내 업무로</a></section>
+
+<section class="detail"><p class="people-copy">직원들이 함께 즐길 간식을 추천해 주세요.
+선호하는 종류와 추가 의견을 남겨 주세요.</p><dl class="survey-period"><div><dt>응답 시작</dt><dd>2026.11.12 09:07</dd></div><div><dt>응답 마감</dt><dd>2026.11.19 10:07 · 한국 시간</dd></div></dl><p class="survey-guidance">제출 후에는 답변을 변경할 수 없습니다.</p></section>
+
+<section class="detail"><h2>내 응답</h2><form method="post" class="people-form survey-response-form"><div class="survey-question"><div class="workspace-field"><div class="workspace-field-heading"><label>함께 먹고 싶은 간식을 골라 주세요.</label><span class="required-badge">필수</span></div><div id="id_1"><div>
+    <label for="id_1_0"><input type="radio" name="1" value="견과류와 건강 간식" required id="id_1_0">
+ 견과류와 건강 간식</label>
+
+</div><div>
+    <label for="id_1_1"><input type="radio" name="1" value="과일과 요거트" required id="id_1_1">
+ 과일과 요거트</label>
+
+</div><div>
+    <label for="id_1_2"><input type="radio" name="1" value="쿠키와 빵" required id="id_1_2">
+ 쿠키와 빵</label>
+
+</div>
+</div><span class="helptext">하나만 선택해 주세요.</span></div>
+</div><div class="survey-question"><div class="workspace-field"><div class="workspace-field-heading"><label for="id_2">추천 이유나 추가 의견을 알려주세요.</label></div><textarea name="2" cols="40" rows="4" maxlength="4000" id="id_2">
+</textarea></div>
+</div><div class="workspace-actions"><button disabled class="button primary" name="action" value="submit">응답 제출</button><button disabled class="button" name="action" value="draft" formnovalidate>임시 저장</button></div></form></section>
+</div><footer>Workhub v0.17.6 · GUNSYSTEMS <span>시간 기준: Asia/Seoul · 마감 임박: 오늘부터 3일 이내</span></footer></main></body></html>

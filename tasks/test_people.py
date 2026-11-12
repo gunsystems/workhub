@@ -167,3 +167,28 @@ class PeopleTests(TestCase):
         s.closes_at=timezone.now()+timedelta(hours=23);s.save()
         queue_notifications();self.assertFalse(SurveyDelivery.objects.filter(stage='day1').exists())
         queue_notifications(now=s.closes_at+timedelta(seconds=1));self.assertEqual(SurveyDelivery.objects.count(),2)
+
+    def test_single_choice_default_radio_and_forged_multiple_rejection(self):
+        from .surveys import QuestionForm,answer_form
+        from django.http import QueryDict
+        self.assertEqual(QuestionForm().initial['kind'],'single')
+        s,q=self.survey();publish(s.pk,self.admin)
+        self.client.force_login(self.worker)
+        response=self.client.get(f'/work/surveys/{s.pk}/')
+        self.assertContains(response,'type="radio"',count=2)
+        self.assertContains(response,'하나만 선택해 주세요.')
+        forged=QueryDict(mutable=True);forged.setlist(str(q.pk),['서울','부산'])
+        form=answer_form(s,forged)
+        self.assertFalse(form.is_valid())
+        self.assertIn('하나만 선택해 주세요.',form.errors[str(q.pk)])
+        self.assertIsNotNone(submit(s.pk,self.worker,forged))
+        self.assertFalse(SurveySubmission.objects.filter(survey=s).exists())
+        self.assertIsNone(submit(s.pk,self.worker,{str(q.pk):'서울'}))
+
+    def test_existing_multiple_choice_is_not_silently_changed(self):
+        from .surveys import QuestionForm
+        s,q=self.survey();q.kind='multiple';q.save()
+        self.assertEqual(QuestionForm(instance=q).initial['kind'],'multiple')
+        publish(s.pk,self.admin)
+        self.assertIsNone(submit(s.pk,self.worker,{str(q.pk):['서울','부산']}))
+        self.assertEqual(s.submissions.get().answers[str(q.pk)],['서울','부산'])

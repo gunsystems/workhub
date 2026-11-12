@@ -67,7 +67,10 @@ class LogoutPageTests(TestCase):
                 self.assertIn('_auth_user_id',self.client.session)
 
     def test_get_logout_cannot_end_session(self):
-        self.assertEqual(self.client.get('/logout/',**self.proxy).status_code,405)
+        response=self.client.get('/logout/',**self.proxy)
+        self.assertEqual(response.status_code,200)
+        self.assertContains(response,'로그아웃 확인')
+        self.assertContains(response,'method="post"')
         self.assertIn('_auth_user_id',self.client.session)
 
     def test_logout_from_other_app_pages_without_origin(self):
@@ -79,3 +82,18 @@ class LogoutPageTests(TestCase):
                 response=self.client.post('/logout/',{'csrfmiddlewaretoken':token},HTTP_REFERER='https://testserver'+path,**self.proxy)
                 self.assertEqual(response.status_code,302)
                 self.assertNotIn('_auth_user_id',self.client.session)
+
+    def test_stale_logout_token_recovers_with_fresh_post_not_get(self):
+        _,old_token=self.open_page('/work/')
+        # A login in another tab rotates the cookie shared with this old page.
+        from django.middleware.csrf import _get_new_csrf_string
+        self.client.cookies['csrftoken'] = _get_new_csrf_string()
+        response=self.client.post('/logout/',{'csrfmiddlewaretoken':old_token},HTTP_ORIGIN='https://testserver',**self.proxy)
+        self.assertEqual(response.status_code,403)
+        self.assertIn('_auth_user_id',self.client.session)
+        self.assertContains(response,'로그아웃 확인',status_code=403)
+        self.assertNotContains(response,'다시 시도하기',status_code=403)
+        token=re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"',response.content.decode()).group(1)
+        success=self.client.post('/logout/',{'csrfmiddlewaretoken':token},HTTP_ORIGIN='https://testserver',**self.proxy)
+        self.assertEqual(success.status_code,302)
+        self.assertNotIn('_auth_user_id',self.client.session)

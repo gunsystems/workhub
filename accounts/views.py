@@ -31,6 +31,17 @@ def page(request, title, form=None, **context):
 
 @never_cache
 def csrf_failure(request, reason=''):
+    import logging
+    category = ('token_mismatch' if 'incorrect' in reason else
+                'cookie_missing' if 'cookie not set' in reason else
+                'token_missing' if 'token missing' in reason else
+                'origin_rejected' if 'Origin' in reason else
+                'referer_rejected' if 'Referer' in reason else 'other')
+    # Never log cookies, submitted values, credentials, or tokenized paths.
+    logging.getLogger('django.request').warning('csrf_rejected category=%s logout=%s', category, request.path == '/logout/')
+    if request.path == '/logout/':
+        from .logout_views import confirmation
+        return confirmation(request, status=403)
     # No provider details, tokens, submitted credentials or internal error text.
     response = page(request, '다시 시도해 주세요',
                     notice='요청을 확인하는 과정에서 문제가 발생했습니다. 아래 버튼을 눌러 입력 페이지로 이동한 후 다시 진행해 주세요. 입력하신 비밀번호와 인증 코드는 처리되지 않았습니다.',

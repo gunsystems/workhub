@@ -44,6 +44,13 @@ class QuestionForm(forms.ModelForm):
         model=SurveyQuestion
         fields=['label','kind','options','required']
         widgets={'options':forms.Textarea(attrs={'rows':3})}
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['kind'].choices = [('', '응답 방식을 선택하세요'), ('single', '단일 선택 · 하나만 선택'),
+            ('multiple', '복수 선택 · 여러 개 선택'), ('text', '자유 의견'), ('rating', '만족도 1~5')]
+        self.fields['kind'].help_text = '하나만 고르게 하려면 단일 선택, 여러 개를 고르게 하려면 복수 선택을 사용하세요.'
+        if not self.is_bound and not self.instance.pk:
+            self.initial['kind'] = 'single'
     def clean(self):
         d=super().clean()
         if d.get('kind') in ['single','multiple'] and d.get('label'):
@@ -78,9 +85,19 @@ def publish(survey_id,actor):
 
 
 def answer_form(survey,data=None,initial=None):
-    form=forms.Form(data=data,initial=initial)
+    class AnswerForm(forms.Form):
+        def clean(self):
+            cleaned = super().clean()
+            if hasattr(self.data, 'getlist'):
+                for question in survey.questions.filter(kind__in=['single', 'rating']):
+                    if len(self.data.getlist(str(question.pk))) > 1:
+                        self.add_error(str(question.pk), '하나만 선택해 주세요.')
+            return cleaned
+    form=AnswerForm(data=data,initial=initial)
     for q in survey.questions.all():
         kw={'label':q.label,'required':q.required}
+        if q.kind=='single':kw['help_text']='하나만 선택해 주세요.'
+        elif q.kind=='multiple':kw['help_text']='해당하는 항목을 여러 개 선택할 수 있습니다.'
         options=[(x,x) for x in q.options.splitlines() if x]
         if q.kind=='text':field=forms.CharField(max_length=4000,widget=forms.Textarea(attrs={'rows':4}),**kw)
         elif q.kind=='multiple':field=forms.MultipleChoiceField(choices=options,widget=forms.CheckboxSelectMultiple,**kw)

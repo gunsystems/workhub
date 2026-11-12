@@ -34,3 +34,5 @@ jobs:
       - run: node tasks/test_file_upload.cjs
       - run: node tasks/test_report_grouping.cjs
       - run: node tasks/test_report_form.cjs
+
+      - run: node accounts/test_logout_browser.cjs
