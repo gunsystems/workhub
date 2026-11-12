@@ -13,7 +13,7 @@
 .survey-page .workspace-field>div[id] input:is([type=checkbox],[type=radio]){margin:4px 0 0;flex:none}
 .survey-page .workspace-actions{display:flex;align-items:center;flex-wrap:wrap;gap:12px;margin:24px 0 0}
 .survey-page .workspace-actions>form{display:flex;margin:0;min-width:0}
-.survey-page .button{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:48px;max-width:100%;margin:0;line-height:1.5;padding:12px 20px;text-align:center;white-space:normal}
+.app-shell main .survey-page .button{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;min-height:48px;max-width:100%;margin:0;line-height:1.5;padding:12px 20px;text-align:center;white-space:normal}
 .survey-page .heading>.button{align-self:flex-start;flex-shrink:0}
 .survey-page .people-form{gap:24px}
 .survey-page .question-editor{margin:0;padding:24px}
@@ -24,7 +24,7 @@
 .survey-page .survey-question .workspace-field-heading{margin-bottom:16px}
 .survey-page .survey-response-form{display:block}
 .survey-page .survey-response-form>.workspace-actions{margin-top:24px}
-.survey-page .survey-period{display:grid;gap:12px;margin:0 0 20px;padding:18px 20px;border:1px solid #e1e9e5;border-radius:10px;background:#f7faf8}
+.survey-page .survey-period{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin:0 0 20px;padding:18px 20px;border:1px solid #e1e9e5;border-radius:10px;background:#f7faf8}
 .survey-page .survey-period>div{display:grid;grid-template-columns:90px minmax(0,1fr);gap:16px}
 .survey-page .survey-period dt{font-weight:600;color:#5c6f65}
 .survey-page .survey-period dd{margin:0;min-width:0;font-variant-numeric:tabular-nums}
