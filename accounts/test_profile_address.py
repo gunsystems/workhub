@@ -57,3 +57,8 @@ class ProfileAddressTests(TestCase):
     def test_csrf_and_technical_account_without_staff(self):
         c=Client(enforce_csrf_checks=True);c.force_login(self.a);self.assertEqual(c.post('/accounts/me/',self.payload()).status_code,403)
         self.client.force_login(self.admin);self.assertEqual(self.client.post('/accounts/me/',self.payload()).status_code,403)
+
+    def test_address_search_controls_are_explicit_and_do_not_replace_manual_fields(self):
+        r=self.client.get('/accounts/me/')
+        self.assertContains(r,'data-postcode-search');self.assertContains(r,'data-postcode-embed');self.assertContains(r,'name="postal_code"');self.assertContains(r,'name="address"');self.assertContains(r,'name="detail"')
+        self.assertNotContains(r,'<script src="https://t1.kakaocdn.net')

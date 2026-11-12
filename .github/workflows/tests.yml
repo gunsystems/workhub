@@ -38,3 +38,5 @@ jobs:
       - run: node accounts/test_logout_browser.cjs
 
       - run: node tasks/test_employee_card.cjs
+
+      - run: node tasks/test_profile_postcode.cjs
