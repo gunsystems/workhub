@@ -3,6 +3,27 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.5",
+      "status": "live_verified_synthetic_ui",
+      "release_notes": "releases/v0.17.5.md",
+      "source_commit": "e773cec3b015c43f3c835ad2ec3de9a0a11627cf",
+      "deploy_id": "dep-dbqgpjp42hec73d389k0",
+      "live_at": "2026-11-12T09:49:19+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43129896981",
+      "scope": "Survey-only spacing and line-height across authoring, review, response, results, list and preview; aligned actions/date windows; redesigned invitation email. Readable multiple-choice named results.",
+      "validation": "Initial34 related tests passed after collecting new static assets; final14 survey tests passed. Final full CI548 tests and Node checks succeeded.",
+      "browser_verification": "Actual-template synthetic views: desktop date rows one line and response buttons48px/gap12px;360px response/results/period management bounded;390px authoring/review/preview bounded and wrapped publish/edit actions equal65px. Survey email checked desktop/mobile. Public synthetic previews do not save/submit/send; no real survey or mail altered. Email-client-specific rendering not independently tested.",
+      "screenshots": [
+        "outputs/Workhub_v0175_설문응답_PC.jpg",
+        "outputs/Workhub_v0175_설문응답_모바일.jpg",
+        "outputs/Workhub_v0175_설문메일_PC.jpg",
+        "outputs/Workhub_v0175_설문메일_모바일.jpg",
+        "outputs/Workhub_v0175_설문미리보기_모바일.jpg",
+        "outputs/Workhub_v0175_설문검토_모바일.jpg"
+      ]
+    },
+    {
       "version": "0.17.4",
       "status": "live_verified_synthetic_ui",
       "release_notes": "releases/v0.17.4.md",
