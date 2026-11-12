@@ -248,3 +248,18 @@ class LeaveTests(TestCase):
         self.act(item,'member','cancel');self.act(item,'leader');self.act(item,'executive')
         row=next(r for r in leave.preparation(2027)['rows'] if r['employee']==item.employee)
         self.assertEqual((row['granted'],row['used'],row['balance']),(15,0,15))
+
+    def test_registered_leader_without_account_is_previewed_but_cannot_approve(self):
+        person=self.people['leader'];person.user=None;person.save()
+        chain=leave.route(self.people['member'],require_account=False)
+        self.assertEqual(chain[0][1],person)
+        with self.assertRaises(ValidationError):self.submit()
+        row=next(r for r in leave.preparation(2027)['rows'] if r['employee']==self.people['member'])
+        self.assertTrue(any('결재 계정 인증 완료 필요' in issue for issue in row['issues']))
+        self.assertFalse(LeaveRequest.objects.exists())
+
+    def test_registered_head_without_account_is_not_treated_as_vacant(self):
+        Employee.objects.create(name='미인증 본부장',department=self.team,position='head')
+        with self.assertRaises(ValidationError):self.submit()
+        chain=leave.route(self.people['member'],require_account=False)
+        self.assertEqual(chain[1][0],'head');self.assertFalse(chain[1][2])

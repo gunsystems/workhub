@@ -66,7 +66,12 @@ def preparation(year):
         chain=[]
         representative=employee.position=='executive'
         if not representative:
-            try:chain=route(employee)
+            try:
+                chain=route(employee,require_account=False)
+                for _,person,_ in chain:
+                    if not person.user_id or not person.user.is_active:
+                        message=f'{person.name} · 결재 계정 인증 완료 필요'
+                        if message not in issues:issues.append(message)
             except ValidationError as exc:issues.extend(exc.messages)
         if not representative and not ledger['has_grant']:issues.append('연차 부여·적용 대상 확인 필요')
         rows.append({'employee':employee,'employment':employment,'chain':chain,'issues':issues,
@@ -79,13 +84,16 @@ def preparation(year):
             'holiday_count':LeaveHoliday.objects.filter(date__year=year).count(),
             'needs_count':sum(bool(row['issues']) for row in rows)}
 
-def route(employee):
+def route(employee,require_account=True):
     def one(position,team=None):
-        qs=Employee.objects.filter(is_active=True,position=position,user__is_active=True)
+        qs=Employee.objects.filter(is_active=True,position=position).select_related('user')
         if team:qs=qs.filter(department=team)
         people=list(qs[:2])
         if len(people)>1:raise ValidationError('결재 담당자가 여러 명입니다. 관리자에게 결재 역할 정리를 요청하세요.')
-        return people[0] if people else None
+        person=people[0] if people else None
+        if person and require_account and (not person.user_id or not person.user.is_active):
+            raise ValidationError(f'{person.name} 결재 담당자의 계정 인증을 먼저 완료해 주세요.')
+        return person
     if employee.position=='executive':raise ValidationError('대표 본인의 휴가 결재 기준은 아직 설정되지 않았습니다.')
     rep=one('executive')
     if not rep:raise ValidationError('대표 결재 담당자를 먼저 지정해 주세요.')
