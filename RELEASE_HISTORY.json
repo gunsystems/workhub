@@ -3,6 +3,25 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.8",
+      "status": "live_verified",
+      "release_notes": "releases/v0.19.8.md",
+      "source_commit": "1d3892a7060370ef45b96452d416dcf433616fdf",
+      "deploy_id": "dep-dbqr2t1srm7s73dnjmqg",
+      "live_at": "2026-11-12T21:32:39+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43218168763",
+      "validation": {
+        "focused": "19 offboarding tests passed",
+        "ci": "649 Django + 7 Node checks passed",
+        "runtime": "Cancelled assignments separated; acknowledgement UI and reason visible; no production acknowledgement performed",
+        "layout": "1280px desktop: document1265px; all six cards473px; narrow viewport not verified",
+        "calendar": "Quick dialog renamed and opened/closed without saving",
+        "favicon": "Hashed SVG icon linked on common page"
+      },
+      "rollback_source": "7b8bc046dda9385336356ae8902bccf3ced18b80"
+    },
+    {
       "version": "0.19.7",
       "status": "live_verified_admin_leave_preview",
       "release_notes": "releases/v0.19.7.md",
