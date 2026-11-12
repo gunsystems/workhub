@@ -3,6 +3,27 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.20.0",
+      "status": "live_verified_admin_preview",
+      "release_notes": "releases/v0.20.0.md",
+      "source_commit": "1f8587ec382d657add9611f9011cfc2480b4192d",
+      "deploy_id": "dep-dbqs8rtbedkc73ej7c40",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43230887676",
+      "migrations": [],
+      "validation": {
+        "focused": "43 leave and help tests passed",
+        "ci": "653 Django tests; regression workflow passed",
+        "runtime": "Administrator production preview: selected employee and2027 retained across four tabs; help verified; no leave requests or grants created",
+        "layout": "1280px desktop visual and overflow check; mobile real device unverified"
+      },
+      "limitations": [
+        "Employee rollout remains disabled",
+        "Selected employee is read-only preview, not impersonation",
+        "Expense and general proposal approval forms are planned, not implemented"
+      ],
+      "rollback_source": "9e1f831b4894eeb4ac444ea91f9382430ee1d2b1"
+    },
+    {
       "version": "0.19.10",
       "status": "live_verified",
       "release_notes": "releases/v0.19.10.md",
