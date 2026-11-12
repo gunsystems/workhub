@@ -73,7 +73,13 @@ class MembershipRetryTests(TestCase):
 
     def test_scheduler_refresh_precedes_unrelated_recurrence_failure(self):
         from tasks.scheduler import tick
-        with patch('accounts.hiworks_access.refresh_directory') as refresh, patch('tasks.models.WorkSeries.objects.filter') as rules, patch('tasks.work_series.process_work_rule',side_effect=RuntimeError('unrelated')):
+        calls=[]
+        def recurrence(*args):
+            calls.append('recurrence')
+            raise RuntimeError('unrelated')
+        with patch('accounts.hiworks_access.refresh_directory',side_effect=lambda:calls.append('refresh')) as refresh, patch('tasks.models.WorkSeries.objects.filter') as rules, patch('tasks.work_series.process_work_rule',side_effect=recurrence), self.assertLogs('tasks.scheduler',level='WARNING'):
             rules.return_value.values_list.return_value=[999]
-            with self.assertRaises(RuntimeError):tick(sync_google=False)
+            result=tick(sync_google=False)
         refresh.assert_called_once()
+        self.assertEqual(calls,['refresh','recurrence'])
+        self.assertEqual(result['failed_stages'],['work_recurrence'])
