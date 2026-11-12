@@ -3,6 +3,31 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.18.3",
+      "status": "live_verified_official_public_holidays",
+      "release_notes": "releases/v0.18.3.md",
+      "source_commit": "b42add0eabb3202d578f2ea4c404c44deb8416c2",
+      "deploy_id": "dep-dbqn8egae00c738too40",
+      "live_at": "2026-11-12T17:10:33+09:00",
+      "migrations": [
+        "0046_public_holiday_sync"
+      ],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43180210806",
+      "scope": "Daily authoritative KASI public holiday synchronization, separate company holidays, explicit audited leave reconciliation, calendar month/week/day holiday labels. Administrator leave preview retained.",
+      "validation": {
+        "local": "50 holiday/leave tests passed",
+        "ci": "597 Django tests and all five Node checks passed; makemigrations check passed",
+        "live_api": "2026 22 dates and 2027 24 dates synchronized successfully at 2026-11-12 17:11 KST; counts include weekend overlaps",
+        "ui": "Authenticated administrator source/list and existing unchanged employment/empty grant ledger verified; real public holiday shown on work calendar;360px day calendar and320px settings had no page/input overflow",
+        "runtime": "healthz 0.18.3 / b42add0 / ok"
+      },
+      "limitations": [
+        "Actual existing leave approval/balance reconciliation tested in isolated data only; production leave/grants untouched",
+        "Refresh follows official API publication; unavailable or partial years retain previous data",
+        "API usage period must be extended in public data portal before expiration; credentials never recorded in source/history"
+      ]
+    },
+    {
       "version": "0.18.2",
       "status": "live_verified_admin_leave_readiness",
       "release_notes": "releases/v0.18.2.md",
