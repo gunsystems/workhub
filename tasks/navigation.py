@@ -34,11 +34,10 @@ def navigation(request):
     from accounts.lifecycle import system_admin
     administration=[]
     if system_admin(user):
-        administration.append(item('직원 관리','/accounts/employees/','users',path.startswith('/accounts/employees/') or path=='/accounts/departments/' or path.startswith('/admin/tasks/employee/')))
+        administration.append(item('직원 관리','/accounts/employees/','users',path.startswith('/accounts/employees/') or path=='/accounts/departments/' or path.startswith('/admin/tasks/employee/') or path.startswith('/work/leave/')))
     if user.is_staff or user.is_superuser:
         administration.append(item('일정 · 업무 휴지통','/work/trash/','folder',path.startswith('/work/trash/')))
     if user.is_superuser:
-        administration.append(item('휴가 관리 · 준비','/work/leave/','calendar',path.startswith('/work/leave/')))
         administration.append(item('시스템 로그','/work/system-log/','shield',path=='/work/system-log/'))
         administration.append(item('관리자 계정','/accounts/administrators/','shield',path=='/accounts/administrators/'))
         administration.append(item('하이웍스 자동 연동','/work/hiworks/','users',path=='/work/hiworks/'))
@@ -57,5 +56,10 @@ def navigation(request):
             for entry in group['items']:
                 if entry['href']=='/work/':entry['active']=False
         current='간단 업무' if path.startswith('/work/quick/') else ('설문조사' if path.startswith('/work/surveys/') else '수행 평가')
+    staff_section = ('employment' if path.startswith('/work/leave/settings/') else
+                     'leave' if path.startswith('/work/leave/') else
+                     'departments' if path == '/accounts/departments/' else 'employees')
+    if path.startswith('/work/leave/'):
+        current = '직원 관리 · ' + ('직원·연차 설정' if staff_section == 'employment' else '휴가 관리')
     from .version import VERSION
-    return {'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username()}
+    return {'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username(),'staff_management_section':staff_section}

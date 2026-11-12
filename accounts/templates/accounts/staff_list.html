@@ -1,4 +1,4 @@
-{% extends 'tasks/base.html' %}{% load static %}{% block content %}
+{% extends 'tasks/base.html' %}{% load static %}{% block content %}{% include 'accounts/staff_management_nav.html' %}
 <link rel="stylesheet" href="{% static 'tasks/workspace.css' %}">
 <style>.staff-directory{max-width:none;min-height:0}.staff-directory td{vertical-align:top}.staff-status{display:inline-block;padding:5px 9px;border-radius:7px;background:#eef4f0;color:#286b57}.staff-directory .workspace-actions{margin:0;gap:8px}.staff-summary{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.staff-note{font-size:12px;color:#748194;line-height:1.8}</style>
 <section class="heading"><div><div class="eyebrow">ADMINISTRATION · 관리자 전용</div><h1>직원 관리</h1><p>하이웍스 직원 목록을 기준으로 Workhub의 부서·직책·직속 상위자와 이용 상태를 관리합니다.</p></div><a class="button primary" href="{% url 'employee_new' %}">＋ 직원 등록 · 초대</a></section>

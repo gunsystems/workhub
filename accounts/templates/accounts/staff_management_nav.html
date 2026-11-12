@@ -1,0 +1,9 @@
+{% load static %}<link rel="stylesheet" href="{% static 'tasks/staff_management.css' %}">
+<nav class="staff-management-nav" aria-label="직원 관리 메뉴">
+<a href="{% url 'employee_list' %}" {% if staff_management_section == 'employees' %}class="is-current" aria-current="page"{% endif %}>직원 목록·정보</a>
+{% if request.user.is_superuser %}
+<a href="{% url 'department_management' %}" {% if staff_management_section == 'departments' %}class="is-current" aria-current="page"{% endif %}>부서 관리</a>
+<a href="{% url 'leave_list' %}" {% if staff_management_section == 'leave' %}class="is-current" aria-current="page"{% endif %}>휴가 관리</a>
+<a href="{% url 'leave_settings' %}" {% if staff_management_section == 'employment' %}class="is-current" aria-current="page"{% endif %}>직원·연차 설정</a>
+{% endif %}
+</nav>

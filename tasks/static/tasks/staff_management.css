@@ -1,0 +1,6 @@
+.staff-management-nav{display:flex;flex-wrap:wrap;gap:10px;padding:16px;background:#fff;border:1px solid #e2e8e4;border-radius:12px;margin:24px 0 0;min-width:0}
+.staff-management-nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 16px;border:1px solid #dce5e0;border-radius:8px;color:#52665b;font-size:14px;font-weight:600;line-height:1.5;text-align:center;overflow-wrap:anywhere}
+.staff-management-nav a:hover{background:#f3f7f5;color:#215c48}
+.staff-management-nav a.is-current{background:#e8f3ec;border-color:#b9d6c5;color:#205e48}
+.leave-page>.staff-management-nav{margin-top:24px}
+@media(max-width:600px){.staff-management-nav{gap:8px;padding:12px}.staff-management-nav a{flex:1 1 130px;min-width:0;padding:10px 12px;font-size:13px}}

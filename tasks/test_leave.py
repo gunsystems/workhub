@@ -102,3 +102,16 @@ class LeaveTests(TestCase):
         self.assertEqual(leave.balance(self.people['member'],2027),Decimal('16.5'))
     def test_no_year_rollover_automatic_grants(self):
         self.client.force_login(self.admin);self.client.get('/work/leave/?year=2028');self.assertEqual(LeaveEntry.objects.filter(year=2028).count(),0)
+
+    def test_leave_is_nested_under_staff_management_navigation(self):
+        self.client.force_login(self.admin)
+        response=self.client.get('/work/leave/settings/')
+        self.assertEqual(response.status_code,200)
+        groups=response.context['nav_groups']
+        entries=[item for group in groups for item in group['items']]
+        self.assertFalse(any(item['href']=='/work/leave/' for item in entries))
+        parent=next(item for item in entries if item['href']=='/accounts/employees/')
+        self.assertTrue(parent['active'])
+        self.assertEqual(response.context['staff_management_section'],'employment')
+        self.assertContains(response,'aria-label="직원 관리 메뉴"')
+        self.assertContains(response,'href="/work/leave/settings/" class="is-current" aria-current="page"')
