@@ -42,6 +42,44 @@ class WeeklyReportTests(TestCase):
         self.assertEqual(response.status_code,200);self.assertFalse(PeriodReport.objects.exists())
         form=response.context['form'];self.assertIn('이번 주 자동 취합',form['summary'].value());self.assertIn('다음 주 자동 취합',form['next_week_plan'].value());self.assertEqual(form['reviewer'].value(),self.leader.pk)
         self.assertEqual(form['period_start'].value(),self.week)
+
+    def test_individual_and_period_get_never_seed_calendar_even_on_weekly_url(self):
+        from unittest.mock import patch
+        for kind in ['individual','period']:
+            with patch('tasks.reports.calendar_draft') as draft:
+                response=self.client.get('/work/reports/weekly/new/',{'week':str(self.week),'report_type':kind})
+            self.assertEqual(response.status_code,200);draft.assert_not_called()
+            self.assertFalse(response.context['form']['summary'].value())
+            self.assertFalse(response.context['calendar_seed'])
+            self.assertNotContains(response,'id="report-default-period"')
+            if kind=='period':self.assertIsNone(response.context['form']['period_start'].value())
+
+    def test_period_preview_is_explicit_owner_scoped_and_does_not_overwrite_or_save(self):
+        own=self.task('기간 끝 업무',date(2026,12,1))
+        self.task('다른 직원 비공개 업무',self.week,assignee=self.peeremp)
+        self.task('취소 제외',self.week,status='cancelled')
+        self.task('초안 제외',self.week,status='draft')
+        response=self.client.post('/work/reports/new/',self.post(report_type='period',period_end=date(2026,12,2),summary='직접 작성 중인 내용',action='calendar'))
+        self.assertEqual(response.status_code,200)
+        self.assertEqual(response.context['form']['summary'].value(),'직접 작성 중인 내용')
+        self.assertIn('기간 끝 업무',response.context['calendar_preview']['current'])
+        self.assertEqual(response.context['calendar_preview']['task_ids'],[own.pk])
+        self.assertFalse(PeriodReport.objects.exists());self.assertFalse(ReportSubmission.objects.exists())
+        self.assertContains(response,'이 내용으로 본문 채우기')
+
+    def test_period_calendar_request_checks_kind_and_date_range(self):
+        for extra in [{'report_type':'individual'},{'report_type':'period','period_end':self.week-timedelta(days=1)},{'report_type':'period','period_end':self.week+timedelta(days=367)}]:
+            response=self.client.post('/work/reports/new/',self.post(action='calendar',**extra))
+            self.assertTrue(response.context['calendar_error']);self.assertIsNone(response.context['calendar_preview'])
+            self.assertFalse(PeriodReport.objects.exists())
+
+    def test_nonweekly_submit_from_weekly_url_preserves_manual_body_without_calendar_flag(self):
+        from unittest.mock import patch
+        with patch('tasks.reports.calendar_draft') as draft:
+            response=self.client.post('/work/reports/weekly/new/',self.post(report_type='individual',summary='직접 쓴 건별 보고',action='submit'))
+        self.assertEqual(response.status_code,302);draft.assert_not_called()
+        report=PeriodReport.objects.get();self.assertFalse(report.calendar_based)
+        self.assertEqual(report.current_submission.snapshot['summary'],'직접 쓴 건별 보고')
     def test_manual_edits_survive_save_and_calendar_changes(self):
         task=self.task('원래 일정',self.week)
         self.client.post('/work/reports/weekly/new/',self.post(tasks=[task.pk]))

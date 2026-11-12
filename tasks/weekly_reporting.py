@@ -21,10 +21,10 @@ def responsible_reviewer(employee):
         if len(ids)>1:return None
     return None
 
-def calendar_draft(user,start):
+def calendar_draft(user,start,period_end=None):
     employee=profile(user)
     if not employee:return {'current':'','next':'','task_ids':[],'count':0,'weekend':False}
-    end=start+timedelta(days=13)
+    end=period_end or start+timedelta(days=13)
     # Date-only and timed events follow the same interval rules as Workhub's calendar.
     qs=Task.objects.filter(performing_employee(employee.pk)).exclude(status__in=['draft','cancelled']).distinct().select_related('project','category')
     qs=qs.filter((Q(activity_start__date__lte=end)&(Q(activity_end__date__gte=start)|Q(activity_end__isnull=True,due_date__gte=start)))|Q(activity_start__isnull=True,start_date__lte=end,due_date__gte=start))
@@ -34,7 +34,8 @@ def calendar_draft(user,start):
         last=timezone.localtime(task.activity_end-timedelta(microseconds=1)).date() if task.activity_end else task.due_date
         if last<start or first>end:continue
         ids.append(task.pk)
-        for bucket,begin,finish in [(current,start,start+timedelta(days=6)),(upcoming,start+timedelta(days=7),end)]:
+        periods=[(current,start,end)] if period_end else [(current,start,start+timedelta(days=6)),(upcoming,start+timedelta(days=7),end)]
+        for bucket,begin,finish in periods:
             lo=max(first,begin);hi=min(last,finish)
             if lo>hi:continue
             label=lo.strftime('%m.%d') if lo==hi else lo.strftime('%m.%d')+'~'+hi.strftime('%m.%d')

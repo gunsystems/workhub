@@ -1,5 +1,6 @@
 """Weekly/period reporting built from existing work and immutable submissions."""
 from datetime import date,timedelta
+from calendar import monthrange
 from pathlib import Path
 from django import forms
 from django.conf import settings
@@ -77,7 +78,7 @@ class ReportForm(forms.ModelForm):
         if kind=='weekly':self.fields['summary'].label='이번 주 진행 업무'
         self.fields['tasks'].help_text='보고 내용의 근거가 되는 원본 업무입니다. 캘린더에서 취합한 업무는 자동으로 선택됩니다.'
         self.fields['next_week_plan'].help_text='다음 주 월요일~일요일의 예정 업무를 정리하세요.'
-        self.fields['report_type'].help_text='건별 보고는 특정 업무나 사안에 대한 보고입니다. 기간 지정 보고는 시작일과 종료일을 직접 선택해 작성합니다.'
+        self.fields['report_type'].help_text='건별 보고는 특정 업무나 사안에 대한 보고입니다. 기간 지정 보고는 기간을 선택하고 직접 작성하거나, 필요할 때 해당 기간의 업무를 불러올 수 있습니다.'
         self.fields['reviewer'].queryset=users().exclude(pk=user.pk)
         self.fields['tasks'].queryset=visible_tasks(user).exclude(status='draft')
         emp=profile(user)
@@ -153,22 +154,42 @@ def report_edit(request,pk=None,calendar_seed=False,team_seed=False):
     today=timezone.localdate();start=today-timedelta(days=today.weekday())
     initial={} if obj else {'report_type':'weekly','period_start':start,'period_end':start+timedelta(days=6),'reviewer':emp.supervisor.user_id if emp and emp.supervisor else None}
     seed=None;group_info=None;group_preview=None;group_error=''
+    if not obj and request.method=='GET':
+        kind=request.GET.get('report_type','weekly')
+        if kind not in dict(PeriodReport.REPORT_TYPES):kind='weekly'
+        initial['report_type']=kind
+        if kind in ['daily','individual']:initial.update(period_start=today,period_end=today)
+        elif kind=='monthly':initial.update(period_start=today.replace(day=1),period_end=today.replace(day=monthrange(today.year,today.month)[1]))
+        elif kind=='period':initial.update(period_start=None,period_end=None)
     if team_seed and not obj and request.method=='GET':
         try:start=week_start(date.fromisoformat(request.GET.get('week','')))
         except ValueError:pass
         selected=weekly_sources(request.user,start,start+timedelta(days=6))
         group_info=grouped_draft(request.user,selected)
         initial.update(report_type='weekly',period_start=start,period_end=start+timedelta(days=6),summary=group_info['current'],next_week_plan=group_info['next'],report_issues=group_info['issues'],sources=[sub.pk for sub in selected],reviewer=responsible_reviewer(emp))
-    if calendar_seed and not obj and request.method=='GET':
+    if calendar_seed and not obj and request.method=='GET' and initial['report_type']=='weekly':
         try:start=week_start(date.fromisoformat(request.GET.get('week','')))
         except ValueError:pass
         seed=calendar_draft(request.user,start)
         initial.update(report_type='weekly',period_start=start,period_end=start+timedelta(days=6),summary=seed['current'],next_week_plan=seed['next'],tasks=seed['task_ids'],reviewer=responsible_reviewer(emp))
     form=ReportForm(request.POST if request.method=='POST' else None,request.FILES or None,instance=obj,user=request.user,initial=initial)
+    weekly_context=form['report_type'].value()=='weekly' and (calendar_seed or bool(obj and obj.calendar_based))
     if team_seed and request.method=='GET':
         ids=initial.get('sources',[])
         form.fields['sources'].queryset=selectable_sources(request.user).filter(pk__in=ids)
 
+    if request.method=='POST' and request.POST.get('action')=='calendar':
+        preview=None;error=''
+        try:
+            if request.POST.get('report_type')!='period':raise ValidationError('기간 지정 보고에서만 기간별 업무를 불러올 수 있습니다.')
+            if request.FILES:raise ValidationError('업무 내용을 먼저 불러온 뒤 첨부파일을 선택해 주세요. 파일은 저장되지 않았습니다.')
+            begin=forms.DateField().clean(request.POST.get('period_start'))
+            finish=forms.DateField().clean(request.POST.get('period_end'))
+            if finish<begin or (finish-begin).days>366:raise ValidationError('종료일은 시작일 이후 1년 이내로 선택하세요.')
+            preview=calendar_draft(request.user,begin,period_end=finish)
+        except ValidationError as exc:error=' '.join(exc.messages)
+        form._errors=ErrorDict();form.cleaned_data={}
+        return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':weekly_context,'calendar_preview':preview,'calendar_error':error})
     if request.method=='POST' and request.POST.get('action')=='group':
         if not aggregation_enabled():raise PermissionDenied('팀 보고 취합은 현재 제공하지 않습니다.')
         if not may_aggregate(request.user):raise PermissionDenied
@@ -190,10 +211,10 @@ def report_edit(request,pk=None,calendar_seed=False,team_seed=False):
             group_preview=grouped_draft(request.user,selected)
         except ValidationError as exc:group_error=' '.join(exc.messages)
         form._errors=ErrorDict();form.cleaned_data={}
-        return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'can_aggregate':True,'team_seed':team_seed or bool(obj and obj.source_submissions.exists()),'group_preview':group_preview,'group_error':group_error})
+        return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':weekly_context,'can_aggregate':True,'team_seed':team_seed or bool(obj and obj.source_submissions.exists()),'group_preview':group_preview,'group_error':group_error})
     if request.method=='POST' and form.is_valid():
         obj=form.save(commit=False);obj.author=request.user;obj.revision+=1
-        if calendar_seed:obj.calendar_based=True
+        obj.calendar_based=(obj.report_type=='weekly' and (calendar_seed or obj.calendar_based)) or (obj.report_type=='period' and request.POST.get('calendar_applied')=='1')
         obj.save()
         obj.source_submissions.set(form.cleaned_data['sources'])
         obj.selected_tasks.set(form.cleaned_data['tasks'])
@@ -203,7 +224,7 @@ def report_edit(request,pk=None,calendar_seed=False,team_seed=False):
                 with transaction.atomic():ReportFile.objects.create(report=obj,file=f,name=Path(f.name).name[:200])
             except RepositoryError as exc:
                 form.add_error('attachment',str(exc))
-                response=render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'seed':seed})
+                response=render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':weekly_context,'seed':seed})
                 transaction.set_rollback(True)
                 return response
         if request.POST.get('action')=='submit':
@@ -219,7 +240,7 @@ def report_edit(request,pk=None,calendar_seed=False,team_seed=False):
             obj.current_submission=submission;obj.state='submitted';obj.submitted_at=timezone.now();obj.save(update_fields=['current_submission','state','submitted_at'])
         if f:messages.success(request,'보고서 첨부파일 업로드가 완료되었습니다.',extra_tags='upload-success')
         return redirect('period_report_detail',pk=obj.pk)
-    return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':calendar_seed or bool(obj and obj.calendar_based),'seed':seed,'can_aggregate':aggregation_enabled() and may_aggregate(request.user),'team_seed':aggregation_enabled() and (team_seed or bool(obj and obj.source_submissions.exists())),'group_info':group_info})
+    return render(request,'tasks/report_form.html',{'form':form,'report':obj,'report_today':today,'calendar_seed':weekly_context,'seed':seed,'can_aggregate':aggregation_enabled() and may_aggregate(request.user),'team_seed':aggregation_enabled() and (team_seed or bool(obj and obj.source_submissions.exists())),'group_info':group_info})
 
 
 @login_required
