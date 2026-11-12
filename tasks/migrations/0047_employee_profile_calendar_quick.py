@@ -20,12 +20,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='staffemployment',
             name='job_title',
-            field=models.CharField(blank=True, max_length=40, verbose_name='직급'),
+            field=models.CharField(blank=True, db_default='', default='', max_length=40, verbose_name='직급'),
         ),
         migrations.AddField(
             model_name='staffemployment',
             name='phone',
-            field=models.CharField(blank=True, max_length=30, verbose_name='연락처'),
+            field=models.CharField(blank=True, db_default='', default='', max_length=30, verbose_name='연락처'),
         ),
         migrations.CreateModel(
             name='CalendarQuickSave',

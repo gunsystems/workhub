@@ -41,6 +41,12 @@ class ProfileCalendarTests(TestCase):
         self.assertTrue(form.is_valid(),form.errors);item=form.save();self.assertEqual(item.phone,'010-0000-1234');self.assertEqual(item.staff_number,'T-001')
         another=EmploymentForm({'employee':self.other.pk,'joined_on':'2020-01-01','staff_number':'T-001'})
         self.assertFalse(another.is_valid())
+    def test_previous_version_insert_can_omit_new_columns(self):
+        from django.db import connection
+        with connection.cursor() as cursor:
+            cursor.execute('INSERT INTO tasks_staffemployment (employee_id,joined_on,ended_on,staff_number,updated_at) VALUES (%s,%s,%s,%s,%s)',[self.other.pk,'2020-01-01',None,'',timezone.now()])
+        info=StaffEmployment.objects.get(employee=self.other)
+        self.assertEqual(info.phone,'');self.assertEqual(info.job_title,'');self.assertIsNone(info.birth_date)
     def test_calendar_entry_markup_and_form_default_self(self):
         response=self.client.get('/?date='+self.day)
         self.assertContains(response,'data-quick-date="2027-01-04"');self.assertContains(response,'calendar-quick-dialog')

@@ -8,9 +8,9 @@ class StaffEmployment(models.Model):
     joined_on=models.DateField('입사일')
     ended_on=models.DateField('퇴사일',null=True,blank=True)
     staff_number=models.CharField('사번',max_length=40,blank=True)
-    job_title=models.CharField('직급',max_length=40,blank=True)
+    job_title=models.CharField('직급',max_length=40,blank=True,default='',db_default='')
     birth_date=models.DateField('생년월일',null=True,blank=True)
-    phone=models.CharField('연락처',max_length=30,blank=True)
+    phone=models.CharField('연락처',max_length=30,blank=True,default='',db_default='')
     updated_at=models.DateTimeField(auto_now=True)
 
 class LeaveYear(models.Model):
