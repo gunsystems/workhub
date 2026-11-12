@@ -19,7 +19,7 @@
     }).catch(error=>{loading=null;throw error});
     return loading;
   }
-  function close(focus=true){generation++;panel.hidden=true;host.replaceChildren();status.textContent='';search.setAttribute('aria-expanded','false');search.disabled=false;if(focus)search.focus()}
+  function close(focus=true){generation++;panel.hidden=true;if(focus)host.replaceChildren();status.textContent='';search.setAttribute('aria-expanded','false');search.disabled=false;if(focus)search.focus()}
   form.querySelector('[data-postcode-close]').addEventListener('click',()=>close());
   panel.addEventListener('keydown',event=>{if(event.key==='Escape'){event.preventDefault();close()}});
   search.addEventListener('click',async()=>{
