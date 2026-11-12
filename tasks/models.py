@@ -725,3 +725,12 @@ class EmployeePhoto(models.Model):
     file=models.FileField(storage=WorkhubStorage(),blank=True,max_length=255)
     uploader=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True)
     created_at=models.DateTimeField(default=timezone.now)
+
+
+class EmployeeAddress(models.Model):
+    employee=models.OneToOneField(Employee,on_delete=models.CASCADE,related_name='private_address')
+    postal_code=models.CharField('우편번호',max_length=5,blank=True,default='',db_default='')
+    address=models.CharField('기본 주소',max_length=255,blank=True,default='',db_default='')
+    detail=models.CharField('상세 주소',max_length=255,blank=True,default='',db_default='')
+    revision=models.PositiveIntegerField(default=0,db_default=0)
+    updated_at=models.DateTimeField(auto_now=True)

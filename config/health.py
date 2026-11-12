@@ -26,8 +26,8 @@ def health(request):
         OffboardingCase.objects.first();OffboardingItem.objects.first();OffboardingEvent.objects.first();OffboardingEvidence.objects.first();OffboardingNotice.objects.first()
         from tasks.models import PublicHoliday, HolidaySync, LeaveCalendarReview
         PublicHoliday.objects.first();HolidaySync.objects.first();LeaveCalendarReview.objects.first()
-        from tasks.models import StaffEmployment,CalendarQuickSave,EmployeePhoto
-        StaffEmployment.objects.first();CalendarQuickSave.objects.first();EmployeePhoto.objects.first()
+        from tasks.models import StaffEmployment,CalendarQuickSave,EmployeePhoto,EmployeeAddress
+        StaffEmployment.objects.first();CalendarQuickSave.objects.first();EmployeePhoto.objects.first();EmployeeAddress.objects.first()
     except DatabaseError:
         return JsonResponse({**data,'status':'database_not_ready'},status=503)
     return JsonResponse({**data,'status':'ok'})
