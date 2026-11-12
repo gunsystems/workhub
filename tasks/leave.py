@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError, PermissionDenied
 from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
-from .models import Employee, StaffEmployment, LeaveYear, LeaveHoliday, LeaveEntry, LeaveRequest, LeaveApproval, LeaveEvent
+from .models import Employee, StaffEmployment, LeaveYear, LeaveHoliday, LeaveEntry, LeaveRequest, LeaveApproval, LeaveEvent, PublicHoliday, HolidaySync
 from .permissions import profile, can_view_company
 
 def visible(user):
@@ -52,8 +52,10 @@ def preparation(year):
         rows.append({'employee':employee,'employment':employment,'chain':chain,'issues':issues,
                      'representative':representative,**ledger,'balance':ledger['granted']-ledger['used']})
     calendar=LeaveYear.objects.filter(year=year).first()
+    from django.conf import settings
+    source_ready=not getattr(settings,'WORKHUB_HOLIDAY_SYNC_ENABLED',True) or HolidaySync.objects.filter(year=year,last_success__gte=timezone.now()-timedelta(hours=48)).exists()
     return {'rows':rows,'year':year,'calendar':calendar,
-            'calendar_ready':bool(calendar and calendar.calendar_confirmed),
+            'calendar_ready':bool(calendar and calendar.calendar_confirmed and source_ready),
             'holiday_count':LeaveHoliday.objects.filter(date__year=year).count(),
             'needs_count':sum(bool(row['issues']) for row in rows)}
 
@@ -79,15 +81,16 @@ def route(employee):
     if any(person.pk==employee.pk for _,person,_ in result):raise ValidationError('본인이 결재자에 포함되어 신청할 수 없습니다.')
     return result
 
-def amount(start,end,kind):
+def amount(start,end,kind,allow_empty=False):
     if end<start or start.year!=end.year:raise ValidationError('같은 연도 안에서 올바른 시작일·종료일을 선택하세요. 연도별로 나누어 신청할 수 있습니다.')
     if (end-start).days>366:raise ValidationError('신청 기간을 확인하세요.')
     if kind not in ('annual','am','pm'):raise ValidationError('휴가 종류를 확인하세요.')
     if kind!='annual' and start!=end:raise ValidationError('반차는 하루씩 신청하세요.')
     days=[start+timedelta(days=i) for i in range((end-start).days+1)]
     holidays=set(LeaveHoliday.objects.filter(date__range=(start,end)).values_list('date',flat=True))
+    holidays.update(PublicHoliday.objects.filter(date__range=(start,end),active=True).values_list('date',flat=True))
     days=[d.isoformat() for d in days if d.weekday()<5 and d not in holidays]
-    if not days:raise ValidationError('선택한 기간에 근무일이 없습니다.')
+    if not days and not allow_empty:raise ValidationError('선택한 기간에 근무일이 없습니다.')
     return Decimal(len(days))*(Decimal('0.5') if kind!='annual' else Decimal('1')),days
 
 def event(item,user,action,body=''):
@@ -114,6 +117,8 @@ def submit(user,start,end,kind,reason):
     if not employment:raise ValidationError('관리자에게 입사일 등록을 요청하세요.')
     if start<employment.joined_on or (employment.ended_on and end>employment.ended_on):raise ValidationError('재직 기간 안에서 신청하세요.')
     if not LeaveYear.objects.filter(year=start.year,calendar_confirmed=True).exists():raise ValidationError('관리자가 해당 연도의 근무일·공휴일 설정을 확인한 후 신청할 수 있습니다.')
+    from django.conf import settings
+    if getattr(settings,'WORKHUB_HOLIDAY_SYNC_ENABLED',True) and not HolidaySync.objects.filter(year=start.year,last_success__gte=timezone.now()-timedelta(hours=48)).exists():raise ValidationError('공휴일 자료 연결 상태를 관리자에게 확인해 주세요. 최신 자료 확인 후 신청할 수 있습니다.')
     value,dates=amount(start,end,kind)
     if not reason.strip():raise ValidationError('신청 사유를 입력하세요.')
     for old in LeaveRequest.objects.filter(employee=e,state__in=['pending','approved','cancel_pending'],start__lte=end,end__gte=start):
@@ -132,6 +137,9 @@ def change(pk,user,action,reason,revision):
     step=current(item)
     if action in ('approve','reject'):
         if not step or not e or step.approver_id!=e.pk:raise PermissionDenied
+        if action=='approve' and hasattr(item,'calendar_review') and item.calendar_review.pending:raise ValidationError('휴무일이 변경되어 일수 확인이 필요합니다. 관리자 확인 후 승인할 수 있습니다.')
+        from django.conf import settings
+        if action=='approve' and getattr(settings,'WORKHUB_HOLIDAY_SYNC_ENABLED',True) and not HolidaySync.objects.filter(year=item.start.year,last_success__gte=timezone.now()-timedelta(hours=48)).exists():raise ValidationError('공휴일 자료 연결 상태를 관리자에게 확인한 후 승인해 주세요.')
         if not reason.strip():raise ValidationError('결재 의견을 입력하세요. 잔여 초과 승인 시에도 의견을 남겨 주세요.')
     elif action=='withdraw':
         if not owner or item.state!='pending':raise PermissionDenied

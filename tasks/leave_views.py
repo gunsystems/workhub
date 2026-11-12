@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 from accounts.lifecycle import system_admin
-from .models import Employee,StaffEmployment,LeaveYear,LeaveHoliday,LeaveEntry,LeaveRequest
+from .models import Employee,StaffEmployment,LeaveYear,LeaveHoliday,LeaveEntry,LeaveRequest,HolidaySync,LeaveCalendarReview
 from .permissions import profile,visible_employees
 from . import leave
 
@@ -57,6 +57,13 @@ class YearForm(forms.ModelForm):
         value=self.cleaned_data['year']
         if not 2020<=value<=2100:raise ValidationError('2020~2100년을 입력하세요.')
         return value
+    def clean(self):
+        data=super().clean()
+        from django.conf import settings
+        from datetime import timedelta
+        if data.get('calendar_confirmed') and getattr(settings,'WORKHUB_HOLIDAY_SYNC_ENABLED',True) and not HolidaySync.objects.filter(year=data.get('year'),last_success__gte=timezone.now()-timedelta(hours=48)).exists():
+            raise ValidationError('공휴일 자동 연결을 먼저 완료해 주세요. 공식 자료 확인 후 운영 기준을 저장할 수 있습니다.')
+        return data
 
 class HolidayForm(forms.ModelForm):
     class Meta:
@@ -72,7 +79,8 @@ def year_value(request):
 @require_http_methods(['GET'])
 def preparation_view(request):
     year=year_value(request) if 'year' in request.GET else timezone.localdate().year+1
-    return render(request,'tasks/leave_preparation.html',leave.preparation(year))
+    from .holidays import calendar_context
+    return render(request,'tasks/leave_preparation.html',{**leave.preparation(year),**calendar_context(year)})
 
 @login_required
 @never_cache
@@ -135,6 +143,17 @@ def settings_view(request):
     error='';success=''
     if request.method=='POST':
         action=request.POST.get('action')
+        if action=='sync_holidays':
+            from .holidays import queue_year
+            queue_year(year)
+            return redirect(request.path+'?year='+str(year)+'&sync=queued')
+        if action=='review_holidays':
+            from .holidays import reconcile
+            try:
+                reconcile(int(request.POST.get('request_id','')),request.user,int(request.POST.get('revision','')))
+            except (ValueError,ValidationError,LeaveRequest.DoesNotExist,LeaveCalendarReview.DoesNotExist):
+                return render(request,'tasks/leave_review_error.html',{'year':year},status=409)
+            return redirect(request.path+'?year='+str(year)+'&saved=1')
         if action=='employment':
             employee_id=request.POST.get('employee')
             obj=StaffEmployment.objects.filter(employee_id=employee_id).first() if str(employee_id).isdigit() else None
@@ -152,9 +171,16 @@ def settings_view(request):
                     data=form.cleaned_data
                     entry,created=LeaveEntry.objects.get_or_create(key='grant:'+str(data['key']),defaults={k:data[k] for k in ['employee','year','amount','reason']}|{'actor':request.user})
                     if not created and any(getattr(entry,k)!=data[k] for k in ['employee','year','amount','reason']):raise PermissionDenied
-                else:form.save()
+                else:
+                    obj=form.save()
+                    if action=='holiday':
+                        from .models import PublicHoliday
+                        if not PublicHoliday.objects.filter(date=obj.date,active=True).exists():
+                            from .holidays import flag_requests
+                            flag_requests({obj.date},timezone.now())
             return redirect(request.path+'?year='+str(year)+'&saved=1')
     if request.GET.get('saved'):success='저장했습니다.'
     for form,prefix in [(employment,'employment'),(grant,'grant'),(year_form,'year'),(holiday,'holiday')]:
         form.auto_id='leave_'+prefix+'_%s'
-    return render(request,'tasks/leave_settings.html',{'employment_form':employment,'grant_form':grant,'year_form':year_form,'holiday_form':holiday,'year':year,'success':success,'holidays':LeaveHoliday.objects.filter(date__year=year).order_by('date'),'staff':StaffEmployment.objects.select_related('employee__department'),'entries':LeaveEntry.objects.filter(year=year).select_related('employee','actor')[:100]})
+    from .holidays import calendar_context
+    return render(request,'tasks/leave_settings.html',{'employment_form':employment,'grant_form':grant,'year_form':year_form,'holiday_form':holiday,'year':year,'success':success,'sync_queued':request.GET.get('sync')=='queued','holidays':LeaveHoliday.objects.filter(date__year=year).order_by('date'),'staff':StaffEmployment.objects.select_related('employee__department'),'entries':LeaveEntry.objects.filter(year=year).select_related('employee','actor')[:100],**calendar_context(year)})

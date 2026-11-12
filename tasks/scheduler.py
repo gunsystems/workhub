@@ -110,6 +110,15 @@ def start():
             except Exception:log.warning('Calendar synchronization will retry on the next cycle.')
             finally:close_old_connections()
     threading.Thread(target=calendars,name='workhub-google-calendar',daemon=True).start()
+    def holidays():
+        while not _stop.wait(30):
+            close_old_connections()
+            try:
+                from .holidays import synchronize_due
+                synchronize_due()
+            except Exception:log.warning('Public holiday synchronization will retry.')
+            finally:close_old_connections()
+    threading.Thread(target=holidays,name='workhub-public-holidays',daemon=True).start()
 
 
 def stop():

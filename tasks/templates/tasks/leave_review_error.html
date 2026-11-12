@@ -1,0 +1,1 @@
+{% extends 'tasks/base.html' %}{% block content %}<section class="detail"><h1>최신 처리 상태를 확인해 주세요</h1><p>휴가 또는 휴무일 정보가 변경되었습니다. 설정 화면에서 현재 일수를 확인한 뒤 다시 진행해 주세요.</p><a href="{% url 'leave_settings' %}?year={{ year }}">직원·연차 설정으로</a></section>{% endblock %}

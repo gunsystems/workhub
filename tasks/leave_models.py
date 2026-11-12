@@ -19,6 +19,28 @@ class LeaveHoliday(models.Model):
     date=models.DateField('휴무일',unique=True)
     name=models.CharField('휴무일 이름',max_length=80)
 
+class PublicHoliday(models.Model):
+    date=models.DateField('공휴일',unique=True)
+    name=models.CharField('공휴일 이름',max_length=200)
+    active=models.BooleanField(default=True)
+    updated_at=models.DateTimeField(default=timezone.now)
+
+class HolidaySync(models.Model):
+    year=models.PositiveSmallIntegerField(unique=True)
+    state=models.CharField(max_length=16,default='waiting')
+    last_success=models.DateTimeField(null=True)
+    last_attempt=models.DateTimeField(null=True)
+    next_attempt=models.DateTimeField(default=timezone.now)
+    lease_until=models.DateTimeField(default=timezone.now)
+    token=models.CharField(max_length=64,blank=True)
+    message=models.CharField(max_length=200,blank=True)
+
+class LeaveCalendarReview(models.Model):
+    request=models.OneToOneField('tasks.LeaveRequest',on_delete=models.PROTECT,related_name='calendar_review')
+    pending=models.BooleanField(default=True)
+    changed_dates=models.JSONField(default=list)
+    updated_at=models.DateTimeField(default=timezone.now)
+
 class LeaveEntry(models.Model):
     employee=models.ForeignKey('tasks.Employee',on_delete=models.PROTECT)
     year=models.PositiveSmallIntegerField()

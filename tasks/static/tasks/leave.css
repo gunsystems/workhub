@@ -63,3 +63,10 @@
 .leave-process strong{display:block;font-size:15px;margin-bottom:8px}.leave-process strong:before{content:counter(leave-step) ' · '}
 .leave-process span{font-size:14px;line-height:1.8;overflow-wrap:anywhere}
 @media(max-width:720px){.leave-page .leave-preparation-filter,.leave-preparation-cards,.leave-check-summary,.leave-process{grid-template-columns:minmax(0,1fr)}.leave-preparation-card{padding:16px}.leave-check-summary{gap:12px}.leave-page .leave-preparation-filter input{font-size:16px}}
+
+.leave-public-holidays .leave-actions{margin:18px 0;gap:16px}.leave-public-holidays .leave-actions form{margin:0;min-width:0}
+.leave-public-holidays details{margin:20px 0}.leave-public-holidays summary{cursor:pointer;font-size:14px;font-weight:600;padding:12px 0}
+.leave-public-list{list-style:none;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px}
+.leave-public-list li{display:flex;gap:14px;padding:10px;border-bottom:1px solid #e5ebe7;font-size:14px;line-height:1.6;min-width:0}
+.leave-public-list time{white-space:nowrap;font-variant-numeric:tabular-nums}.leave-public-list span{overflow-wrap:anywhere}
+@media(max-width:720px){.leave-public-list{grid-template-columns:minmax(0,1fr)}.leave-public-holidays .leave-actions{align-items:stretch}.leave-public-holidays .leave-actions form{flex:1 1 100%}.leave-public-holidays .leave-actions button{width:100%}}

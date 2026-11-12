@@ -24,6 +24,8 @@ def health(request):
         SystemAudit.objects.first();AssignmentMail.objects.first();Notice.objects.first();NoticeDelivery.objects.first()
         from tasks.models import OffboardingCase,OffboardingItem,OffboardingEvent,OffboardingEvidence,OffboardingNotice
         OffboardingCase.objects.first();OffboardingItem.objects.first();OffboardingEvent.objects.first();OffboardingEvidence.objects.first();OffboardingNotice.objects.first()
+        from tasks.models import PublicHoliday, HolidaySync, LeaveCalendarReview
+        PublicHoliday.objects.first();HolidaySync.objects.first();LeaveCalendarReview.objects.first()
     except DatabaseError:
         return JsonResponse({**data,'status':'database_not_ready'},status=503)
     return JsonResponse({**data,'status':'ok'})
