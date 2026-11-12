@@ -187,7 +187,7 @@ def results(request,pk):
             counts=[{'label':o,'count':sum(o in (v if isinstance(v,list) else [v]) for v in vals)} for o in options]
         else:counts=[]
         rows.append({'question':q,'counts':counts,'texts':[v for v in vals if v] if q.kind=='text' else []})
-    named=[{'employee':s.employee,'answers':[{'question':q.label,'value':s.answers.get(str(q.pk))} for q in obj.questions.all()]} for s in subs] if not obj.anonymous else []
+    named=[{'employee':s.employee,'answers':[{'question':q.label,'value':s.answers.get(str(q.pk)),'multiple':q.kind=='multiple'} for q in obj.questions.all()]} for s in subs] if not obj.anonymous else []
     return render(request,'tasks/survey_results.html',{'survey':obj,'rows':rows,'named':named,'count':len(subs)})
 
 
