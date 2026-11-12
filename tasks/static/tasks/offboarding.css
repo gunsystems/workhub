@@ -4,3 +4,11 @@
 .offboarding-page .off-filters select,.offboarding-page .off-filters>.button{height:46px;min-height:46px;margin:0;padding:10px 12px;font-size:14px;line-height:24px}
 .offboarding-page .off-filters>.button{align-self:flex-end;min-width:72px}
 @media(max-width:650px){.offboarding-page .off-filters>label{width:100%}.offboarding-page .off-filters select{font-size:16px}}
+
+/* Grid children must not inherit the generic detail width/min-content track. */
+.offboarding-page .off-cases>.detail{min-width:0;max-width:100%;width:auto;margin:0;box-sizing:border-box}
+.offboarding-page .off-cases{margin-top:20px;align-items:stretch}
+.offboarding-page .off-title h2{min-width:0;flex:1 1 180px;font-size:18px;line-height:1.6;overflow-wrap:anywhere}
+.offboarding-page .off-boxes{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 20px}
+.offboarding-page .off-actions form{margin:0;min-width:0}
+@media(max-width:720px){.offboarding-page .off-cases{grid-template-columns:minmax(0,1fr)}.offboarding-page .off-boxes .button{flex:1 1 130px}}

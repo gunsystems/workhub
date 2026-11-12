@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction, IntegrityError
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from django.http import FileResponse, HttpResponse, Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -118,6 +118,14 @@ def change_item(pk,user,action,version,body='',data=None):
     case=OffboardingCase.objects.select_for_update().get(pk=seed.case_id)
     item=OffboardingItem.objects.select_for_update().get(pk=pk)
     if not system_admin(user) and item.assignee_id!=user.pk:raise PermissionDenied
+    if action=='ack_cancel':
+        if item.assignee_id!=user.pk or case.state!='cancelled':raise PermissionDenied
+        if item.events.filter(actor=user,action='퇴사 취소 확인').exists():return item
+        check_version(item,version)
+        record(case,user,'퇴사 취소 확인',item=item)
+        item.revision+=1;item.save(update_fields=['revision'])
+        OffboardingNotice.objects.filter(item=item,user=user,read_at__isnull=True).update(read_at=timezone.now())
+        return item
     check_version(item,version)
     if case.state!='active':raise ValidationError('종료되거나 취소된 퇴사 처리입니다.')
     reviewer=system_admin(user)
@@ -222,7 +230,17 @@ def item_edit(request,case_pk,pk=None):
 
 @login_required
 def assignments(request):
-    return render(request,'tasks/offboarding_assignments.html',{'items':visible_items(request.user).filter(assignee=request.user).order_by('due_at')[:200]})
+    qs=visible_items(request.user).filter(assignee=request.user).annotate(cancel_ack=Exists(
+        OffboardingEvent.objects.filter(item_id=OuterRef('pk'),actor=request.user,action='퇴사 취소 확인')))
+    box=request.GET.get('box','active')
+    if box not in ['active','cancelled','history']:box='active'
+    active=Q(case__state='active') & ~Q(state='approved')
+    cancelled=Q(case__state='cancelled',cancel_ack=False)
+    if box=='active':items=qs.filter(active)
+    elif box=='cancelled':items=qs.filter(cancelled)
+    else:items=qs.filter(Q(case__state='done')|Q(state='approved',case__state='active')|Q(case__state='cancelled',cancel_ack=True))
+    return render(request,'tasks/offboarding_assignments.html',{'items':items.order_by('due_at')[:200],
+        'box':box,'active_count':qs.filter(active).count(),'cancelled_count':qs.filter(cancelled).count()})
 
 @login_required
 def item_detail(request,pk):
@@ -237,10 +255,12 @@ def item_detail(request,pk):
                 change_item(pk,request.user,action,request.POST.get('revision'),request.POST.get('body',''),form.cleaned_data if action=='submit' else None)
             except (ValidationError,RepositoryError) as exc:
                 messages.error(request,' '.join(exc.messages) if isinstance(exc,ValidationError) else str(exc))
-            else:return redirect('offboarding_item',pk=pk)
+            else:
+                if action=='ack_cancel':return redirect('offboarding_assignments')
+                return redirect('offboarding_item',pk=pk)
     item=get_object_or_404(visible_items(request.user),pk=pk)
     OffboardingNotice.objects.filter(item=item,user=request.user,read_at__isnull=True).update(read_at=timezone.now())
-    return render(request,'tasks/offboarding_item.html',{'item':item,'form':form,'reviewer':reviewer,'events':item.events.prefetch_related('evidence'),'submission':item.events.filter(action='처리 결과 제출').prefetch_related('evidence').first(),'deliveries':OffboardingNotice.objects.filter(item=item).select_related('user')[:30] if reviewer else []})
+    return render(request,'tasks/offboarding_item.html',{'item':item,'cancel_event':item.case.events.filter(action='퇴사 처리 취소',item__isnull=True).first(),'cancel_ack':item.events.filter(actor=item.assignee,action='퇴사 취소 확인').first(),'can_ack_cancel':item.case.state=='cancelled' and item.assignee_id==request.user.pk,'form':form,'reviewer':reviewer,'events':item.events.prefetch_related('evidence'),'submission':item.events.filter(action='처리 결과 제출').prefetch_related('evidence').first(),'deliveries':OffboardingNotice.objects.filter(item=item).select_related('user')[:30] if reviewer else []})
 
 @login_required
 def evidence_file(request,pk,preview=False):

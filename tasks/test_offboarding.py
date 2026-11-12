@@ -4,6 +4,7 @@ from datetime import timedelta
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core import mail
+from django.http import Http404
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, transaction
@@ -147,3 +148,32 @@ class OffboardingTests(TestCase):
         self.assertFalse(any(a['key'].startswith('offboarding:') for a in action_alerts(self.other)))
         self.assertEqual(business_counts(self.target.employee)['퇴사 후속 조치 기록'],1)
         with self.assertRaises(ValidationError):change_access(self.admin,self.worker.employee.pk,'delete_access','삭제',self.worker.email)
+
+    def test_cancel_ack_moves_only_own_item_to_history_and_is_idempotent(self):
+        self.case.state='cancelled';self.case.save()
+        self.client.force_login(self.worker)
+        response=self.client.get('/work/offboarding/assigned/')
+        self.assertEqual(response.context['active_count'],0)
+        self.assertEqual(response.context['cancelled_count'],1)
+        self.assertEqual(len(response.context['items']),0)
+        response=self.client.get('/work/offboarding/assigned/?box=cancelled')
+        self.assertContains(response,'취소 확인 필요');self.assertNotContains(response,'처리 대기')
+        self.assertEqual(len(response.context['items']),1)
+        url=f'/work/offboarding/items/{self.item.pk}/'
+        self.assertContains(self.client.get(url),'취소 확인')
+        for _ in range(2):
+            self.assertEqual(self.client.post(url,{'action':'ack_cancel','revision':0}).status_code,302)
+        self.assertEqual(self.item.events.filter(action='퇴사 취소 확인').count(),1)
+        self.item.refresh_from_db();self.assertEqual(self.item.state,'pending')
+        self.assertFalse(OffboardingEvidence.objects.exists())
+        response=self.client.get('/work/offboarding/assigned/?box=history')
+        self.assertEqual(len(response.context['items']),1);self.assertContains(response,'취소 확인 완료')
+        self.assertEqual(response.context['cancelled_count'],0)
+
+    def test_cancel_ack_denies_other_admin_and_active_case(self):
+        with self.assertRaises(PermissionDenied):self.change('ack_cancel')
+        self.case.state='cancelled';self.case.save()
+        with self.assertRaises(PermissionDenied):self.change('ack_cancel',self.admin)
+        with self.assertRaises(Http404):self.change('ack_cancel',self.other)
+        with self.assertRaises(ValidationError):o.change_item(self.item.pk,self.worker,'ack_cancel',999)
+        self.assertFalse(self.item.events.filter(action='퇴사 취소 확인').exists())
