@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded',()=>{
  const line=(label,content)=>body.append(text('p',label+' '+content,'preview-meta'));
  let opener;
  function show(button){
-  opener=button;body.replaceChildren();const survey=form.dataset.contentPreview==='survey';
+  opener=button;body.replaceChildren();const survey=form.dataset.contentPreview==='survey';dialog.classList.toggle('survey-preview',survey);
   document.getElementById('content-preview-heading').textContent=survey?'설문 미리보기':'공지 미리보기';
   body.append(text('h1',value('title')||'제목을 입력해 주세요.'));
   const audience=value('audience');line('전달 대상:',audience==='all'?'전사':checkedLabels(audience==='team'?'departments':'employees')||'아직 선택하지 않았습니다.');
