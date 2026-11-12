@@ -3,6 +3,29 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.19.1",
+      "status": "live_verified_card_photo_controls",
+      "release_notes": "releases/v0.19.1.md",
+      "source_commit": "b0cd0231ff1024a8349db713d0c9395c00b6b0d3",
+      "deploy_id": "dep-dbqo33e7bikc73am0eh0",
+      "live_at": "2026-11-12T18:07:21+09:00",
+      "migrations": [
+        "0048_employee_card_photo"
+      ],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43188118336",
+      "scope": "Private employee photo upload, normalized portrait, per-user protected reads, default avatar restoration, photo-aware card export.",
+      "validation": {
+        "local": "24 profile/photo/quick tests passed; photo export/fallback/load-failure Node checks passed; no migration drift",
+        "ci": "621 Django tests and six Node checks passed",
+        "ui": "Authenticated administrator card and photo selection/save UI verified;320/360px file input and card remained inside panels",
+        "runtime": "healthz0.19.1/b0cd023/ok"
+      },
+      "limitations": [
+        "No real employee portrait uploaded; storage/upload/read behavior validated with isolated mocked repository and synthetic image data",
+        "Previously stored photo files retained in private repository when replaced or hidden"
+      ]
+    },
+    {
       "version": "0.19.0",
       "status": "live_verified_profile_card_calendar_quick",
       "release_notes": "releases/v0.19.0.md",
