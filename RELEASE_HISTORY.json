@@ -3,6 +3,22 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.7",
+      "status": "live_verified_survey_typography",
+      "release_notes": "releases/v0.17.7.md",
+      "source_commit": "1aaf1d7e1ec49e5d351c09a6720fc6484d9853a7",
+      "deploy_id": "dep-dbqh9dbrjlhs7389pn3g",
+      "live_at": "2026-11-12T10:23:02+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43133957787",
+      "scope": "Survey-only typography: questions11px to15px, choices11px to14px, body15px and help14px. Title/buttons unchanged.",
+      "validation": "Automatic regression workflow succeeded. Deployed actual-template synthetic response measured PC/360px with15px question/14px choices and no page overflow. No production survey data changed.",
+      "screenshots": [
+        "outputs/Workhub_v0177_설문글씨_PC.jpg",
+        "outputs/Workhub_v0177_설문글씨_모바일.jpg"
+      ]
+    },
+    {
       "version": "0.17.6",
       "status": "live_verified_synthetic_survey_and_automated_logout",
       "release_notes": "releases/v0.17.6.md",
