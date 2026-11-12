@@ -263,3 +263,33 @@ class LeaveTests(TestCase):
         with self.assertRaises(ValidationError):self.submit()
         chain=leave.route(self.people['member'],require_account=False)
         self.assertEqual(chain[1][0],'head');self.assertFalse(chain[1][2])
+
+    def test_portal_preview_blocks_employee_and_mutation(self):
+        self.client.force_login(self.users['member'])
+        self.assertEqual(self.client.get('/work/approvals/').status_code,403)
+        self.assertNotContains(self.client.get('/dashboard/'),'href="/work/approvals/"')
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.post('/work/approvals/',{}).status_code,405)
+        self.assertContains(self.client.get('/work/approvals/'),'미리볼 직원을 선택해 주세요.')
+
+    def test_portal_preview_filters_current_approval_and_keeps_balances(self):
+        item=self.submit();before=LeaveEntry.objects.count()
+        self.client.force_login(self.admin)
+        url='/work/approvals/?year=2027&tab=inbox&employee='
+        response=self.client.get(url+str(self.people['leader'].pk))
+        self.assertEqual([r.pk for r in response.context['pending_items']],[item.pk])
+        self.assertEqual(self.client.get(url+str(self.people['executive'].pk)).context['pending_items'],[])
+        self.act(item,'leader')
+        self.assertEqual(self.client.get(url+str(self.people['leader'].pk)).context['pending_items'],[])
+        self.assertEqual([r.pk for r in self.client.get(url+str(self.people['executive'].pk)).context['pending_items']],[item.pk])
+        self.assertEqual(LeaveEntry.objects.count(),before)
+
+    def test_portal_calendar_excludes_unapproved_and_private_reason(self):
+        item=self.submit();self.client.force_login(self.admin)
+        url=f'/work/approvals/?year=2027&tab=calendar&employee={self.people["member"].pk}'
+        self.assertEqual(list(self.client.get(url).context['calendar_items']),[])
+        self.act(item,'leader');self.act(item,'executive')
+        response=self.client.get(url)
+        self.assertEqual([r.pk for r in response.context['calendar_items']],[item.pk])
+        self.assertNotContains(response,'개인 휴가')
+        self.assertNotContains(response,'>신청 내용</a>')

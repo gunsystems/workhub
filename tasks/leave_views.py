@@ -203,3 +203,40 @@ def settings_view(request):
         form.auto_id='leave_'+prefix+'_%s'
     from .holidays import calendar_context
     return render(request,'tasks/leave_settings.html',{'employment_form':employment,'grant_form':grant,'year_form':year_form,'holiday_form':holiday,'year':year,'success':success,'sync_queued':request.GET.get('sync')=='queued','holidays':LeaveHoliday.objects.filter(date__year=year).order_by('date'),'staff':StaffEmployment.objects.select_related('employee__department'),'entries':LeaveEntry.objects.filter(year=year).select_related('employee','actor')[:100],**calendar_context(year)})
+
+
+@login_required
+@never_cache
+@preview_only
+@require_http_methods(['GET'])
+def approval_portal(request):
+    """Read-only employee experience preview; never impersonate a selected employee."""
+    year=year_value(request)
+    people=Employee.objects.filter(is_active=True).select_related('department','user')
+    person=profile(request.user)
+    selected=request.GET.get('employee','')
+    if selected:
+        try: person=get_object_or_404(people,pk=int(selected))
+        except (ValueError,TypeError): person=None
+    tab=request.GET.get('tab','leave')
+    if tab not in ('leave','requests','inbox','calendar'):tab='leave'
+    own=LeaveRequest.objects.filter(employee=person,start__year=year).select_related('employee__department') if person else LeaveRequest.objects.none()
+    candidates=leave.visible(person.user).filter(start__year=year) if person and person.user_id else LeaveRequest.objects.none()
+    pending=[]
+    for application in candidates.filter(state__in=['pending','cancel_pending']).prefetch_related('steps'):
+        step=leave.current(application)
+        if step and step.approver_id==person.pk:pending.append(application)
+    if person:
+        if person.position in ('executive','head'):
+            calendar=LeaveRequest.objects.filter(start__year=year,state='approved').select_related('employee__department')
+        elif person.position=='leader' or person.role=='manager':
+            calendar=LeaveRequest.objects.filter(employee__department=person.department,start__year=year,state='approved').select_related('employee__department')
+        else:calendar=own.filter(state='approved')
+    else:calendar=LeaveRequest.objects.none()
+    entries=LeaveEntry.objects.filter(employee=person,year=year) if person else LeaveEntry.objects.none()
+    context={'year':year,'tab':tab,'people':people,'preview_employee':person,'own_items':own[:100],
+      'pending_items':pending,'calendar_items':calendar.order_by('start','pk')[:100],
+      'balance':leave.balance(person,year) if person else None,'reserved':leave.reserved(person,year) if person else None,
+      'has_grant':entries.exclude(key__startswith='leave:').exclude(key__startswith='holiday:').exists(),
+      'portal_preview':True}
+    return render(request,'tasks/approval_portal.html',context)

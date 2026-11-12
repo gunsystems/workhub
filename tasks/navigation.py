@@ -25,6 +25,8 @@ def navigation(request):
     ]
     if user.is_superuser:
         groups[2]['items'].insert(1,item('설문조사','/work/surveys/','work',path.startswith('/work/surveys/')))
+    if user.is_superuser:
+        groups.append({'label':'전자결재','items':[item('전자결재','/work/approvals/','shield',path.startswith('/work/approvals/'))]})
     organization=[]
     from .assessments import executive
     if executive(user):organization.append(item('수행 평가','/work/assessments/','chart',path.startswith('/work/assessments/')))
@@ -72,5 +74,10 @@ def navigation(request):
                      'departments' if path == '/accounts/departments/' else 'employees')
     if path.startswith('/work/leave/'):
         current = '직원 관리 · ' + ('직원·연차 설정' if staff_section == 'employment' else '휴가 관리')
+    if path.startswith('/work/approvals/'):
+        for group in groups:
+            for entry in group['items']:
+                if entry['href']=='/work/':entry['active']=False
+        current='전자결재 · 관리자 미리보기'
     from .version import VERSION
     return {'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username(),'staff_management_section':staff_section,'offboarding_admin':offboarding_admin}

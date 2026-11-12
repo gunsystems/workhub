@@ -22,6 +22,7 @@ urlpatterns=[
     path('offboarding/evidence/<int:pk>/preview/',offboarding.evidence_file,{'preview':True},name='offboarding_preview'),
     path('trash/',task_trash.listing,name='task_trash'),
     path('tasks/<int:pk>/delete/',task_trash.remove,name='task_delete'),
+    path("approvals/",leave_views.approval_portal,name="approval_portal"),
     path("leave/",leave_views.overview,name="leave_list"),
     path("leave/new/",leave_views.new,name="leave_new"),
     path("leave/settings/",leave_views.settings_view,name="leave_settings"),
