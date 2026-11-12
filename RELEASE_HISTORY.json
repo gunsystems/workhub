@@ -3,6 +3,23 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.17.6",
+      "status": "live_verified_synthetic_survey_and_automated_logout",
+      "release_notes": "releases/v0.17.6.md",
+      "source_commit": "3c5b58261846fb6196d5f4f02f9fe3060b7cc791",
+      "deploy_id": "dep-dbqh4abrjlhs7389dl5g",
+      "live_at": "2026-11-12T10:12:08+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43132421297",
+      "scope": "Synchronize explicit logout POST CSRF cookie and recover rejected requests with a fresh confirmation POST; safe GET confirmation only. New survey questions default to single choice, clearer choice labels/help, server rejects multiple submitted values for single/rating.",
+      "validation": "Related28 tests plus browser-token Node check passed. Full CI551 tests and Node checks succeeded; foreign origins/bad tokens remain rejected, stale-token recovery requires fresh POST, GET preserves session, existing multiple responses unchanged.",
+      "browser_verification": "Deployed actual-template synthetic survey: selecting second radio unchecks first on desktop;390px response and360px authoring bounded with clear single/multiple labels. No production logout or survey data altered during browser verification; logout behavior verified by server/browser-script automated tests.",
+      "screenshots": [
+        "outputs/Workhub_v0176_단일선택_PC.jpg",
+        "outputs/Workhub_v0176_단일선택_모바일.jpg"
+      ]
+    },
+    {
       "version": "0.17.5",
       "status": "live_verified_synthetic_ui",
       "release_notes": "releases/v0.17.5.md",
@@ -61,7 +78,7 @@
     },
     {
       "version": "0.17.2",
-      "status": "live_verified_external_removal_user_check",
+      "status": "live_verified_hiworks_deletion_user_confirmed",
       "release_notes": "releases/v0.17.2.md",
       "migrations": [
         "0043_task_trash"
@@ -77,7 +94,8 @@
         "outputs/Workhub_v0172_관리자삭제_PC.jpg",
         "outputs/Workhub_v0172_관리자삭제_모바일.jpg",
         "outputs/Workhub_v0172_업무보고버튼.jpg"
-      ]
+      ],
+      "hiworks_deletion_user_verification": "2026-11-12: 사용자가 Workhub에서 삭제한 일정이 하이웍스에서도 삭제되는 것을 실제 확인함."
     },
     {
       "version": "0.17.1",
