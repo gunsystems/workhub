@@ -3,6 +3,29 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.18.2",
+      "status": "live_verified_admin_leave_readiness",
+      "release_notes": "releases/v0.18.2.md",
+      "source_commit": "076c6f2a8b8fb6985c0c5c42159c0515c1ca7413",
+      "deploy_id": "dep-dbqmquafngtc7383hl20",
+      "live_at": "2026-11-12T16:41:46+09:00",
+      "migrations": [],
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43176670717",
+      "scope": "Read-only administrator leave readiness checklist; fix settings label/input IDs. No employee rollout, automatic grants, or balance changes.",
+      "validation": {
+        "local": "31 leave tests passed",
+        "ci": "578 Django tests and all five Node checks passed; no migration changes",
+        "ui": "Authenticated real administrator settings/readiness inspected; PC44px query controls aligned; 320px and360px no page/input overflow; settings IDs unique",
+        "runtime": "healthz 0.18.2 / 076c6f2 / ok"
+      },
+      "limitations": [
+        "Only Workhub-registered active staff shown",
+        "Actual grant counts, holiday calendar and designated approvers require administrator confirmation",
+        "Approval and ledger flows tested with isolated data; no production leave application or balance edited",
+        "Root administrator preview restriction retained; annual accrual and employee rollout remain deferred"
+      ]
+    },
+    {
       "version": "0.18.1",
       "status": "live_verified_filter_alignment",
       "release_notes": "releases/v0.18.1.md",
