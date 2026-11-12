@@ -1,7 +1,8 @@
 """Calendar-derived drafts never claim that scheduled work was performed."""
-from datetime import timedelta
+from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Min
 from .models import Task,PeriodReport,Employee
 from .report_grouping import metadata_tags
 from .permissions import profile,performing_employee,can_view_company
@@ -48,14 +49,29 @@ def calendar_draft(user,start,period_end=None):
             if bucket is current and any((lo+timedelta(days=n)).weekday()>=5 for n in range((hi-lo).days+1)):weekend=True
     return {'current':'\n'.join(row[2] for row in sorted(current)), 'next':'\n'.join(row[2] for row in sorted(upcoming)), 'task_ids':ids,'count':len(current),'weekend':weekend}
 
-def submission_board(user,start):
+def submission_deadline(start):
+    return datetime.combine(week_start(start)+timedelta(days=4),time(17),tzinfo=ZoneInfo('Asia/Seoul'))
+
+
+def submission_board(user,start,now=None):
     employee=profile(user)
     if not (can_view_company(user) or (employee and (employee.position=='leader' or employee.role=='manager'))):return []
     staff=Employee.objects.filter(is_active=True,user__is_active=True,position__in=['member','leader']).select_related('user','department')
     if not can_view_company(user):staff=staff.filter(department_id=employee.department_id)
     staff=staff.exclude(user=user)
-    reports=PeriodReport.objects.filter(report_type='weekly',period_start=start,period_end=start+timedelta(days=6)).exclude(state='draft').select_related('author','current_submission').order_by('-submitted_at','-pk')
+    reports=PeriodReport.objects.filter(report_type='weekly',period_start=start,period_end=start+timedelta(days=6)).exclude(state='draft').select_related('author','current_submission').annotate(first_submitted_at=Min('submissions__created_at')).order_by('-submitted_at','-pk')
     if not can_view_company(user):reports=reports.filter(author__employee__department_id=employee.department_id)
     latest={}
     for report in reports:latest.setdefault(report.author_id,report)
-    return [{'employee':person,'report':latest.get(person.user_id),'label':({'submitted':'제출 완료','returned':'보완 요청','approved':'확인 완료'}.get(latest[person.user_id].state,'미제출') if person.user_id in latest else '미제출')} for person in staff.order_by('department__name','name')]
+    deadline=submission_deadline(start)
+    now=now or timezone.now()
+    rows=[]
+    for person in staff.order_by('department__name','name'):
+        report=latest.get(person.user_id)
+        first=(report.first_submitted_at or report.submitted_at) if report else None
+        late=bool(first and first>deadline)
+        overdue=bool(not report and now>deadline)
+        timing=('지연 제출' if late else '기한 내 제출') if first else ('미제출 · 기한 경과' if overdue else '제출 대기')
+        rows.append({'employee':person,'report':report,'label':({'submitted':'제출 완료','returned':'보완 요청','approved':'확인 완료'}.get(report.state,'미제출') if report else '미제출'),
+                     'first_submitted_at':first,'late':late,'overdue':overdue,'timing_label':timing})
+    return rows

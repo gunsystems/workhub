@@ -26,6 +26,16 @@ def user_name(user):
     return f'{employee.name} · {employee.department} · {employee.get_position_display()}' if employee else user.get_username()
 
 
+def refresh_participation_progress(task):
+    """Keep the displayed active-work progress consistent with current performers."""
+    if task.status not in ['todo', 'doing', 'blocked']:
+        return
+    rows = list(task.assignments.values_list('progress', 'accepted_at'))
+    task.progress = min(99, round(sum(row[0] for row in rows) / len(rows))) if rows else 0
+    if any(row[1] is not None for row in rows):
+        task.progress = max(1, task.progress)
+
+
 class UserChoice(forms.ModelChoiceField):
     def label_from_instance(self, obj): return user_name(obj)
 
@@ -228,8 +238,11 @@ def edit_task(request, task=None, intake_override=None,calendar_prefill=None,on_
         ApprovalStep.objects.bulk_create([ApprovalStep(task=obj,approver=u,approver_name=user_name(u),position=n,stage=form.cleaned_data['stages'][n-1])
                                          for n,u in enumerate(form.cleaned_data['reviewers'],1)])
         if task and before['assignee_id'] != str(obj.assignee_id):
-            obj.accepted_at=None; obj.assigned_at=timezone.now(); obj.save(update_fields=['accepted_at','assigned_at'])
+            obj.accepted_at=None; obj.last_report_at=None; obj.assigned_at=timezone.now(); obj.save(update_fields=['accepted_at','last_report_at','assigned_at'])
             obj.assignments.filter(employee=obj.assignee).update(accepted_at=None,progress=0,completed_at=None,assigned_at=obj.assigned_at)
+        if task:
+            refresh_participation_progress(obj)
+            obj.save(update_fields=['progress'])
         record(obj,request.user,'created' if is_new else 'changed',form.cleaned_data.get('change_reason') or '업무 등록 · 참여자 및 결재라인 설정',
                {'before':before,'previous_participation':prior,'previous_approval_line':old_line,
                 'participants':list(members),'approval_line':[user_name(u) for u in form.cleaned_data['reviewers']]})
@@ -438,9 +451,10 @@ def _change(user,pk,kind,data):
         if not replacement or not getattr(replacement,'employee',None) or not replacement.employee.is_active or not replacement.is_active: raise ValidationError('인계받을 직원을 선택하세요.')
         if replacement.employee.pk==task.assignee_id: raise ValidationError('현재 담당자와 다른 직원을 선택하세요.')
         if task.approval_steps.filter(approver=replacement).exists(): raise ValidationError('결재자에게 수행 업무를 인계할 수 없습니다.')
-        old=task.assignee; task.assignee=replacement.employee; task.accepted_at=None; task.assigned_at=timezone.now()
+        old=task.assignee; task.assignee=replacement.employee; task.accepted_at=None; task.last_report_at=None; task.assigned_at=timezone.now()
         TaskParticipation.objects.update_or_create(task=task,employee=task.assignee,defaults={'accepted_at':None,'progress':0,'completed_at':None,'assigned_at':task.assigned_at})
         task.assignments.filter(employee=old).delete()
+        refresh_participation_progress(task)
         data={**data,'body':f'{old} → {task.assignee}\n'+data['body']}; event='handover'
     else: raise ValidationError('지원하지 않는 처리입니다.')
     task.revision+=1; task.save()

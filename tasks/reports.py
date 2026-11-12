@@ -130,6 +130,8 @@ def report_list(request):
         submitted_ids=qs.filter(state__in=['submitted','approved','returned']).values_list('author_id',flat=True)
         missing=visible_employees(request.user).filter(is_active=True,user__is_active=True).exclude(user__isnull=True).exclude(user_id__in=submitted_ids)
     board=submission_board(request.user,start)
+    from .weekly_reporting import submission_deadline
+    deadline=submission_deadline(start)
     employee_reports=[]
     if managing:
         submitted=list(qs.filter(report_type='weekly',current_submission__isnull=False).exclude(author=request.user).exclude(state='draft').order_by('author__employee__department__name','author__employee__name','-submitted_at','-pk')[:100])
@@ -138,7 +140,7 @@ def report_list(request):
             reviews.setdefault(review.submission.report_id,review)
         for report in submitted:
             employee_reports.append({'report':report,'snapshot':report.current_submission.snapshot,'review':reviews.get(report.pk)})
-    return render(request,'tasks/report_list.html',{'reports':qs.order_by('-period_start','-pk')[:100],'start':start,'end':end,'missing':missing,'managing':managing,'report_type':report_type,'report_types':PeriodReport.REPORT_TYPES,'weekly_board':board,'submitted_count':sum(bool(row['report']) for row in board),'employee_reports':employee_reports,'can_aggregate':aggregation_enabled() and may_aggregate(request.user)})
+    return render(request,'tasks/report_list.html',{'reports':qs.order_by('-period_start','-pk')[:100],'start':start,'end':end,'missing':missing,'managing':managing,'report_type':report_type,'report_types':PeriodReport.REPORT_TYPES,'weekly_board':board,'weekly_deadline':deadline,'submitted_count':sum(bool(row['report']) for row in board),'employee_reports':employee_reports,'can_aggregate':aggregation_enabled() and may_aggregate(request.user)})
 
 
 @login_required

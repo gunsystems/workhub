@@ -24,6 +24,8 @@ def calendar_view(request):
     today = timezone.localdate()
     try: selected = date.fromisoformat(request.GET.get('date',''))
     except ValueError: selected = today
+    if not 1900 <= selected.year <= 2100:
+        selected = today
     mode = request.GET.get('view','month')
     if mode not in ['month','week','day']: mode = 'month'
     if mode == 'month':

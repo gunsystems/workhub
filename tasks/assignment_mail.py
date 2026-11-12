@@ -78,7 +78,7 @@ def deliver_pending(limit=10):
         user = employee.user if employee and employee.user_id else None
         access = getattr(user, 'workhub_access', None) if user else None
         still_assigned = task and (task.assignee_id == mail.employee_id or task.participants.filter(pk=mail.employee_id).exists())
-        if not (still_assigned and task.status not in ['draft','cancelled','done'] and employee.is_active and user and
+        if not (still_assigned and task.assignment_email and task.status not in ['draft','cancelled','done'] and employee.is_active and user and
                 user.pk == mail.payload.get('user_id') and access and access.verified_at and
                 access.email == mail.payload.get('email') and user.email.lower() == access.email.lower() and account_allowed(user)):
             mail.state='skipped'; mail.result='현재 배정 또는 인증·재직 상태가 변경되어 발송하지 않았습니다.'

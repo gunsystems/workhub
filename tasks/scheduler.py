@@ -2,7 +2,7 @@
 import logging,secrets,threading
 from datetime import timedelta
 from django.conf import settings
-from django.db import transaction,close_old_connections,OperationalError
+from django.db import transaction,close_old_connections,OperationalError,DatabaseError
 from django.utils import timezone
 from .models import PersonalSchedule,PersonalReminder,SchedulerLease,GoogleCalendarConnection
 from .schedules import next_run,create_occurrence
@@ -39,44 +39,56 @@ def tick(now=None,sync_google=True):
         claimed=SchedulerLease.objects.filter(key='personal',expires_at__lte=now).update(token=token,expires_at=now+timedelta(minutes=5),heartbeat_at=now)
         if not claimed: return {'busy':True}
         created=0
+        failed=[]
+        def run_stage(name, function, *args, default=None):
+            try:
+                return function(*args)
+            except DatabaseError:
+                # Never continue using an unhealthy database connection/transaction.
+                raise
+            except Exception:
+                failed.append(name)
+                # Provider exceptions can contain credentials or private contents.
+                log.warning('Scheduled stage failed; remaining stages continue: %s', name)
+                return default
         try:
             # Access verification must not wait for recurrence or calendar processing.
             from accounts.hiworks_access import refresh_directory
-            refresh_directory()
+            run_stage('membership',refresh_directory)
             from .notices import publish_due,deliver_pending as deliver_notices
-            publish_due(now)
-            deliver_notices()
+            run_stage('notice_publish',publish_due,now)
+            run_stage('notice_delivery',deliver_notices)
             from .surveys import queue_notifications,deliver_notifications
-            queue_notifications(now)
-            deliver_notifications(now)
+            run_stage('survey_queue',queue_notifications,now)
+            run_stage('survey_delivery',deliver_notifications,now)
             from .models import WorkSeries
             from .work_series import process_work_rule
             for pk in WorkSeries.objects.filter(enabled=True,mode='calendar',next_at__lte=now).values_list('pk',flat=True):
-                created+=process_work_rule(pk,now)
+                created+=run_stage('work_recurrence',process_work_rule,pk,now,default=0)
             for pk in PersonalSchedule.objects.filter(enabled=True,mode='calendar',next_at__lte=now+timedelta(days=1)).values_list('pk',flat=True):
-                created+=process_rule(pk,now)
+                created+=run_stage('personal_recurrence',process_rule,pk,now,default=0)
             for reminder in PersonalReminder.objects.filter(delivered_at__isnull=True,notify_at__lte=now,card__state='active').select_related('card__column__board__owner'):
                 if account_allowed(reminder.card.column.board.owner):
                     PersonalReminder.objects.filter(pk=reminder.pk,delivered_at__isnull=True).update(delivered_at=now)
             if sync_google:
                 from .google_calendar import sync_connection
                 for connection in GoogleCalendarConnection.objects.exclude(status__in=['disconnected','reconnect']).select_related('user'):
-                    if account_allowed(connection.user): sync_connection(connection)
+                    if account_allowed(connection.user): run_stage('google_calendar',sync_connection,connection)
                     SchedulerLease.objects.filter(key='personal',token=token).update(expires_at=timezone.now()+timedelta(minutes=5),heartbeat_at=timezone.now())
             from .hiworks import deliver_pending, sync_automatic_links
             from .schedule_control import queue_deadlines,deliver_deadlines
-            queue_deadlines(now)
-            deliver_deadlines(now)
-            sync_automatic_links()
-            deliver_pending()
+            run_stage('deadline_queue',queue_deadlines,now)
+            run_stage('deadline_delivery',deliver_deadlines,now)
+            run_stage('hiworks_links',sync_automatic_links)
+            run_stage('hiworks_delivery',deliver_pending)
             from .assignment_mail import deliver_pending as deliver_assignment_mail
-            deliver_assignment_mail()
+            run_stage('assignment_delivery',deliver_assignment_mail)
             from .quick import deliver_pending as deliver_quick
-            deliver_quick(now)
+            run_stage('quick_delivery',deliver_quick,now)
             from .offboarding import queue_reminders,deliver_notices as deliver_offboarding
-            queue_reminders(now)
-            deliver_offboarding(now)
-            return {'created':created}
+            run_stage('offboarding_queue',queue_reminders,now)
+            run_stage('offboarding_delivery',deliver_offboarding,now)
+            return {'created':created,**({'failed_stages':failed} if failed else {})}
         finally:
             SchedulerLease.objects.filter(key='personal',token=token).update(expires_at=timezone.now(),heartbeat_at=timezone.now())
     except OperationalError:
@@ -104,7 +116,12 @@ def start():
                 try:
                     from .google_calendar import sync_connection
                     for connection in GoogleCalendarConnection.objects.exclude(status__in=['disconnected','reconnect']).select_related('user'):
-                        if account_allowed(connection.user):sync_connection(connection)
+                        try:
+                            if account_allowed(connection.user):sync_connection(connection)
+                        except DatabaseError:
+                            raise
+                        except Exception:
+                            log.warning('Calendar connection failed; remaining connections continue.')
                         SchedulerLease.objects.filter(key='google',token=token).update(expires_at=timezone.now()+timedelta(minutes=10))
                 finally:SchedulerLease.objects.filter(key='google',token=token).update(expires_at=timezone.now())
             except Exception:log.warning('Calendar synchronization will retry on the next cycle.')

@@ -26,7 +26,7 @@ class CalendarQuickForm(forms.Form):
     start_time=forms.TimeField(label='시작 시간',required=False,widget=forms.TimeInput(attrs={'type':'time'}))
     end_time=forms.TimeField(label='종료 시간',required=False,widget=forms.TimeInput(attrs={'type':'time'}))
     assignee=forms.ModelChoiceField(label='담당자',queryset=Employee.objects.none())
-    category=forms.ModelChoiceField(label='업무 종류',queryset=WorkCategory.objects.none(),required=False,empty_label='일반 업무')
+    category=forms.ModelChoiceField(label='업무 종류',queryset=WorkCategory.objects.none(),required=False,empty_label='업무 종류 선택 · 선택 사항')
     location=forms.CharField(label='장소',max_length=200,required=False)
     description=forms.CharField(label='설명',max_length=10000,required=False,widget=forms.Textarea(attrs={'rows':3}))
     assignment_email=forms.BooleanField(label='이메일로 배정 알림',required=False,initial=True)
