@@ -715,3 +715,13 @@ from .people_models import Survey, SurveyQuestion, SurveyParticipation, SurveySu
 from .leave_models import StaffEmployment, LeaveYear, LeaveHoliday, LeaveEntry, LeaveRequest, LeaveApproval, LeaveEvent
 from .leave_models import PublicHoliday, HolidaySync, LeaveCalendarReview
 from .offboarding_models import OffboardingCase, OffboardingItem, OffboardingEvent, OffboardingEvidence, OffboardingNotice
+
+
+from .drive_storage import WorkhubStorage
+
+class EmployeePhoto(models.Model):
+    """Private photo revisions; the latest row determines the current card photo."""
+    employee=models.ForeignKey(Employee,on_delete=models.CASCADE,related_name='card_photos')
+    file=models.FileField(storage=WorkhubStorage(),blank=True,max_length=255)
+    uploader=models.ForeignKey(settings.AUTH_USER_MODEL,on_delete=models.SET_NULL,null=True)
+    created_at=models.DateTimeField(default=timezone.now)

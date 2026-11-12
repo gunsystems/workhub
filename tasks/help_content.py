@@ -253,7 +253,7 @@ OFFBOARDING=topic('퇴사 후속 조치','관리자가 항목별 담당자와 �
 TOPICS.update({name:OFFBOARDING for name in ['offboarding_list','offboarding_new','offboarding_case','offboarding_item_new','offboarding_item_edit','offboarding_assignments','offboarding_item']})
 
 PROFILE=topic('내 정보 · 사원카드','내 계정에 연결된 직원 정보와 디지털 사원카드를 확인합니다.',
- ['왼쪽 아래 계정 메뉴에서 내 정보·사원카드를 엽니다.','사원카드 이미지 저장을 누르면 이름·부서·직급·사번이 담긴 PNG 파일을 저장합니다.','수정이 필요하면 관리자에게 요청합니다. 관리자는 직원·연차 설정에서 기본 정보를 수정합니다.'],
+ ['왼쪽 아래 계정 메뉴에서 내 정보·사원카드를 엽니다.','사진 선택 후 사진 저장을 누르면 카드에 적용합니다. JPG·PNG·WebP 최대 5MB이며, 기본 이미지로 변경하면 이름 첫 글자로 돌아갑니다.','사원카드 이미지 저장을 누르면 사진·이름·부서·직급·사번이 담긴 PNG 파일을 저장합니다.','수정이 필요하면 관리자에게 요청합니다. 관리자는 직원·연차 설정에서 기본 정보를 수정합니다.'],
  ['생년월일·연락처는 본인과 관리자만 확인하며 카드 이미지에는 포함하지 않습니다.','시스템 관리자 계정은 직원 기록과 별개이므로 사원카드가 표시되지 않습니다.'])
 TOPICS.update({'my_information':PROFILE,'employee_information':PROFILE})
 CALENDAR_QUICK=topic('일정 빠른 등록','캘린더에서 필수 정보만 입력해 일반 업무 일정을 등록합니다.',

@@ -9,6 +9,7 @@ from . import idle
 from . import profile_views
 
 urlpatterns = [
+    path('employees/<int:employee_id>/photo/', profile_views.card_photo, name='employee_card_photo'),
     path('me/', profile_views.my_information, name='my_information'),
     path('employees/<int:employee_id>/profile/', profile_views.my_information, name='employee_information'),
     path('session/activity/', idle.activity, name='session_activity'),
