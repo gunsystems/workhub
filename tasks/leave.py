@@ -172,7 +172,7 @@ def change(pk,user,action,reason,revision):
         if action=='approve' and hasattr(item,'calendar_review') and item.calendar_review.pending:raise ValidationError('휴무일이 변경되어 일수 확인이 필요합니다. 관리자 확인 후 승인할 수 있습니다.')
         from django.conf import settings
         if action=='approve' and getattr(settings,'WORKHUB_HOLIDAY_SYNC_ENABLED',True) and not HolidaySync.objects.filter(year=item.start.year,last_success__gte=timezone.now()-timedelta(hours=48)).exists():raise ValidationError('공휴일 자료 연결 상태를 관리자에게 확인한 후 승인해 주세요.')
-        if not reason.strip():raise ValidationError('결재 의견을 입력하세요. 잔여 초과 승인 시에도 의견을 남겨 주세요.')
+        if action=='reject' and not reason.strip():raise ValidationError('반려 사유를 입력하세요.')
     elif action=='withdraw':
         if not owner or item.state!='pending':raise PermissionDenied
     elif action=='cancel':

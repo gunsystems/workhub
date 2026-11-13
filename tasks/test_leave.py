@@ -437,3 +437,20 @@ class LeaveTests(TestCase):
         self.assertTrue(LeaveNotice.objects.get(user=self.users['leader'],event__request=item).read_at)
         self.client.force_login(self.users['member'])
         self.assertNotContains(self.client.get('/work/notifications/'),'휴가 신청 결재가 필요합니다.')
+
+    def test_approval_accepts_blank_opinion_including_final_and_self(self):
+        item=self.submit();self.act(item,'leader',reason='');item=self.act(item,'executive',reason='')
+        self.assertEqual(item.state,'approved');self.assertEqual(leave.balance(self.people['member'],2027),14)
+        own=self.submit(role='executive');own=self.act(own,'executive',reason='')
+        self.assertEqual(own.state,'approved')
+        self.act(own,'executive','cancel','일정 변경');own=self.act(own,'executive',reason='')
+        self.assertEqual(own.state,'cancelled')
+        self.assertEqual(leave.balance(self.people['executive'],2027),0)
+
+    def test_reject_and_cancel_still_require_reason(self):
+        item=self.submit()
+        with self.assertRaises(ValidationError):self.act(item,'leader','reject','')
+        item.refresh_from_db();self.assertEqual(item.revision,0)
+        self.act(item,'leader',reason='');self.act(item,'executive',reason='')
+        with self.assertRaises(ValidationError):self.act(item,'member','cancel','')
+        item.refresh_from_db();self.assertEqual(item.state,'approved')
