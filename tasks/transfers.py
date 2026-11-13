@@ -309,7 +309,9 @@ class TransferForm(forms.Form):
         super().__init__(*args, **kwargs)
         ids = [e.pk for e in task.participants.all() if can_request(user, task, e)]
         self.fields['source'].queryset = Employee.objects.filter(pk__in=ids).select_related('department')
-        self.fields['target'].queryset = eligible_employees().exclude(pk__in=task.participants.values('pk')).select_related('department')
+        self.fields['target'].queryset = eligible_employees().exclude(pk__in=task.participants.values('pk')).exclude(
+            user_id__in=task.approval_steps.exclude(approver=None).values('approver_id')).select_related('department')
+        self.fields['target'].help_text = '현재 수행자와 업무 결재자는 선택 목록에서 제외됩니다.'
         self.initial.update(revision=task.revision, source=task.assignee_id if task.assignee_id in ids else next(iter(ids), None))
 
 

@@ -144,6 +144,9 @@ class TransferTests(TestCase):
         from .models import ApprovalStep
         ApprovalStep.objects.create(task=self.task,approver=self.target.user,position=1)
         with self.assertRaises(ValidationError):self.request()
+        from .transfers import TransferForm
+        form=TransferForm(task=self.task,user=self.admin)
+        self.assertFalse(form.fields['target'].queryset.filter(pk=self.target.pk).exists())
 
     def test_unrelated_employee_cannot_request_or_read(self):
         stranger=self.employee('stranger',team=self.other)
