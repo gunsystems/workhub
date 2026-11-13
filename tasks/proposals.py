@@ -66,7 +66,7 @@ def action(pk,user,kind,revision,body=''):
         if not owner or item.state not in ['draft','rejected','withdrawn']:raise PermissionDenied
         if not item.title.strip() or not item.body.strip():raise ValidationError('제목과 요청 내용을 입력하세요.')
         if item.amount<0 or ((item.stage=='claim' or item.category!='other') and item.amount<=0):raise ValidationError('비용 요청 금액은 0원보다 커야 합니다. 비용 없는 요청은 기타 품의로 작성하세요.')
-        if item.amount>0 and not item.documents.filter(archived_at__isnull=True).exists():raise ValidationError('견적서·영수증 등 파일 또는 증빙 링크를 추가한 뒤 제출하세요.')
+        if item.amount>0 and not item.documents.filter(archived_at__isnull=True).exists():raise ValidationError('증빙자료가 필수입니다. 견적서·영수증 파일 또는 증빙 링크를 1개 이상 추가한 뒤 결재 제출해 주세요.')
         if item.original_id:
             original=Proposal.objects.select_for_update().get(pk=item.original_id)
             if item.stage!='claim' or original.stage!='prior' or original.state!='approved' or original.employee_id!=item.employee_id:raise ValidationError('본인의 승인된 사전 품의만 비용 청구에 연결할 수 있습니다.')

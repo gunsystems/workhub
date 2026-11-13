@@ -222,7 +222,7 @@ class ProposalTests(TestCase):
         self.assertContains(response,'2,030,000원')
         self.assertContains(response,'구매 희망일 2026-11-16')
         self.assertContains(response,'구매처: 예시 구매처')
-        self.assertContains(response,'증빙자료를 추가하면 결재 제출할 수 있습니다.')
+        self.assertContains(response,'증빙자료 필수 · 아직 첨부되지 않았습니다.')
         self.assertContains(response,'disabled aria-describedby="proposal-submission-help"')
         self.assertContains(response,'제출 후 지정된 결재자가 순서대로 검토합니다.')
         self.assertNotContains(response,'대표 본인의 품의')
