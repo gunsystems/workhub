@@ -4,13 +4,27 @@
   "releases": [
     {
       "version": "0.22.1",
-      "status": "prepared",
+      "status": "live_verified",
       "release_notes": "releases/v0.22.1.md",
       "summary": "품의서 텍스트·선택·날짜 입력칸 높이 통일",
       "verification": {
-        "system_check": "pending",
-        "ci": "pending",
-        "deployment": "pending"
+        "system_check": "passed",
+        "full_django_tests": 677,
+        "node_checks": 8,
+        "ci_run": 43354437645,
+        "ci_conclusion": "success",
+        "live_staff_form": "representative form and prior/claim conditional field verified",
+        "live_control_heights": "7 visible controls all 48px outer height",
+        "live_width": "1280px, no form control overflow",
+        "leave_dates": "start and end 11/18 synchronized without submitting",
+        "business_mutations": "none",
+        "mobile": "viewport override not applied; not claimed verified"
+      },
+      "source_commit": "51cc1a0b9aaf5a7b26a8aeb3eb19ad96a51e5482",
+      "deployment": {
+        "id": "dep-dbr7m1dg1s2s73fm3ce0",
+        "status": "live",
+        "finished_at": "2026-11-13T02:51:59.342992Z"
       }
     },
     {
