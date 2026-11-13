@@ -63,6 +63,8 @@ def navigation(request):
     elif path=='/work/register/': current='업무 등록'
     elif path=='/work/calendar/subscription/': current='하이웍스 일정 연결'
     elif path=='/work/calendar/': current='Google Calendar 연결'
+    elif path.startswith('/work/meetings/microsoft/'):current='Teams 연결'
+    elif path.startswith('/work/meetings/'):current='미팅'
     if path.startswith(('/work/surveys/','/work/assessments/','/work/quick/')):
         for group in groups:
             for entry in group['items']:

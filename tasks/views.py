@@ -88,6 +88,9 @@ def calendar_view(request):
 @login_required
 def detail(request,pk):
     task = get_object_or_404(visible_tasks(request.user), pk=pk)
+    from .meetings import meeting_for
+    meeting=meeting_for(task)
+    if meeting:return redirect('meeting_detail',pk=meeting.pk)
     if task.workflow_version == 2:
         from .collaboration_views import official_detail
         return official_detail(request,task)
@@ -110,6 +113,10 @@ def edit(request,pk=None):
         from .collaboration import edit_task
         return edit_task(request)
     task=get_object_or_404(visible_tasks(request.user).select_for_update(),pk=pk) if pk else None
+    if task:
+        from .meetings import meeting_for
+        meeting=meeting_for(task)
+        if meeting:return redirect('meeting_edit',pk=meeting.pk)
     if task and task.workflow_version == 2:
         from .collaboration import edit_task
         return edit_task(request,task)

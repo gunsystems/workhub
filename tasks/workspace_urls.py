@@ -10,7 +10,15 @@ from . import leave_views,task_trash
 from . import offboarding
 from . import proposal_views
 from . import calendar_quick
+from . import meetings, microsoft_meetings
 urlpatterns=[
+    path('meetings/new/',meetings.edit,name='meeting_new'),
+    path('meetings/microsoft/',microsoft_meetings.settings_view,name='microsoft_settings'),
+    path('meetings/microsoft/connect/',microsoft_meetings.connect,name='microsoft_connect'),
+    path('meetings/microsoft/callback/',microsoft_meetings.callback,name='microsoft_callback'),
+    path('meetings/microsoft/disconnect/',microsoft_meetings.disconnect,name='microsoft_disconnect'),
+    path('meetings/<int:pk>/',meetings.detail,name='meeting_detail'),
+    path('meetings/<int:pk>/edit/',meetings.edit,name='meeting_edit'),
     path('calendar/quick/',calendar_quick.create,name='calendar_quick_create'),
     path('offboarding/',offboarding.case_list,name='offboarding_list'),
     path('offboarding/new/',offboarding.case_new,name='offboarding_new'),

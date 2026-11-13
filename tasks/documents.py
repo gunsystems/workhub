@@ -70,6 +70,11 @@ def parent_url(kind, obj):
 
 
 def can_add(user, kind, obj):
+    if kind=='task':
+        from .models import Meeting
+        meeting=Meeting.objects.filter(task_id=obj.pk).first()
+        if meeting:
+            return obj.status not in ['done','cancelled'] and (is_company_admin(user) or meeting.organizer_id==user.pk or meeting.attendees.filter(active=True,employee__user=user,employee__is_active=True).exists())
     if kind == 'proposal':
         return obj.employee.user_id==user.pk and obj.state in ['draft','rejected','withdrawn']
     if kind == 'quick':

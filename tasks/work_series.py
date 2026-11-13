@@ -128,6 +128,8 @@ def completion_followup(task):
 @transaction.atomic
 def series_view(request,pk):
     task=get_object_or_404(visible_tasks(request.user),pk=pk,workflow_version=2)
+    from .meetings import meeting_for
+    if meeting_for(task):raise PermissionDenied('미팅 반복은 아직 지원하지 않습니다.')
     if not can_edit(request.user,task): raise PermissionDenied
     occurrence=WorkOccurrence.objects.filter(task=task).select_related('series').first()
     rule=occurrence.series if occurrence else None

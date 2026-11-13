@@ -19,6 +19,13 @@ def action_alerts(user):
         seen.add(key)
         alerts.append({'key':key,'title':title,'detail':detail,'url':url,'level':level})
     for task in tasks:
+        meeting=getattr(task,'meeting',None)
+        if meeting:
+            if task.status not in ['done','cancelled']:
+                waiting=meeting.attendees.filter(active=True,response='pending')
+                if waiting.filter(employee__user=user).exists():add(f'meeting:{meeting.pk}','미팅 참석 응답 필요',task.title,reverse('meeting_detail',args=[meeting.pk]),2)
+                elif meeting.organizer_id==user.pk and waiting.exists():add(f'meeting-wait:{meeting.pk}','미팅 참석 응답 대기',f'{task.title} · {waiting.count()}명',reverse('meeting_detail',args=[meeting.pk]))
+            continue
         own = task.assignee.user_id == user.pk
         label = f'{task.title} · {task.assignee.name}'
         url = reverse('task_detail',args=[task.pk])

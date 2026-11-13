@@ -93,3 +93,7 @@ LOGGING = {'version':1,'disable_existing_loggers':False,
 
 # Leave workflow opened for employee development/testing.
 WORKHUB_LEAVE_NOTIFICATIONS_ENABLED = os.getenv('WORKHUB_LEAVE_NOTIFICATIONS_ENABLED','1') == '1'
+MICROSOFT_TENANT_ID = os.getenv('MICROSOFT_TENANT_ID','')
+MICROSOFT_CLIENT_ID = os.getenv('MICROSOFT_CLIENT_ID','')
+MICROSOFT_CLIENT_SECRET = os.getenv('MICROSOFT_CLIENT_SECRET','')
+MICROSOFT_TOKEN_ENCRYPTION_KEY = os.getenv('MICROSOFT_TOKEN_ENCRYPTION_KEY','')

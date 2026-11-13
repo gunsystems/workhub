@@ -54,7 +54,7 @@ def visible_tasks(user):
         team = performing_department(employee.department_id) if employee else Q(pk__in=[])
         tasks = tasks.filter(team | involved) if employee else tasks.none()
     tasks = tasks.exclude(Q(status='draft') & ~Q(creator=user))
-    return Task.objects.filter(pk__in=tasks.values('pk')).select_related('assignee__department','assignee__user','project','category').prefetch_related('assignments')
+    return Task.objects.filter(pk__in=tasks.values('pk')).select_related('assignee__department','assignee__user','project','category','meeting').prefetch_related('assignments')
 
 
 def assignable_employees(user):
@@ -67,6 +67,7 @@ def assignable_employees(user):
 
 
 def can_edit(user, task):
+    if getattr(task,'meeting',None):return False
     if task.workflow_version == 2:
         return is_company_admin(user) or (user.is_active and task.creator_id == user.pk)
     return assignable_employees(user).filter(pk=task.assignee_id).exists()
@@ -97,6 +98,7 @@ def can_manage_employee(user, target):
 
 
 def can_report(user, task):
+    if getattr(task,'meeting',None):return False
     if task.workflow_version == 2:
         return user.is_active and task.participants.filter(user=user, is_active=True).exists()
     return user.is_active and task.assignee.user_id == user.pk

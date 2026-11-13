@@ -195,6 +195,7 @@ def control_view(request):
 
 
 def deadline_state(task):
+    if getattr(task,'meeting',None):return None
     if task.status in ['draft','done','cancelled']:return None
     if task.status=='review':
         started=task.review_started_at or task.submitted_at

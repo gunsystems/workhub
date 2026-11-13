@@ -170,6 +170,10 @@ def notify(task, message, external=True,comment_event=None):
 @login_required
 @transaction.atomic
 def edit_task(request, task=None, intake_override=None,calendar_prefill=None,on_created=None):
+    if task:
+        from .meetings import meeting_for
+        meeting=meeting_for(task)
+        if meeting:return redirect('meeting_edit',pk=meeting.pk)
     if not is_company_admin(request.user) and not profile(request.user): raise PermissionDenied
     if task and (not can_edit(request.user,task) or task.status in ['review','done','cancelled']): raise PermissionDenied
     before = snapshot(task) if task else None
@@ -333,6 +337,8 @@ def _change(user,pk,kind,data):
         raise PermissionDenied
     if not data.get('body','').strip(): raise ValidationError('처리 내용과 사유를 입력하세요.')
     task=visible_tasks(user).select_for_update(of=('self',)).get(pk=pk,workflow_version=2)
+    from .meetings import meeting_for
+    if meeting_for(task):raise ValidationError('미팅 화면에서 참석 응답과 종료를 처리하세요.')
     if data.get('revision') != task.revision: raise ValidationError('다른 변경이 반영되었습니다. 화면을 다시 열어 확인하세요.')
     if not Task.objects.filter(pk=pk,revision=task.revision).update(revision=F('revision')+1):
         raise ValidationError('다른 변경이 반영되었습니다. 화면을 다시 열어 확인하세요.')

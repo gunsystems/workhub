@@ -32,7 +32,11 @@ def remove(request,pk):
     task=get_object_or_404(Task.all_objects.select_for_update().select_related('assignee__department'),pk=pk,is_deleted=False)
     form=DeleteForm(request.POST if request.method=='POST' else None,initial={'revision':task.revision})
     if request.method=='POST' and form.is_valid():
-        if form.cleaned_data['revision']!=task.revision:
+        from .models import Meeting
+        meeting=Meeting.objects.filter(task=task).first()
+        if meeting and meeting.provider=='teams' and (task.status!='cancelled' or meeting.sync_state!='synced'):
+            form.add_error(None,'Teams 미팅은 먼저 미팅 취소 후 연결 완료를 확인해 주세요. 외부 회의 초대까지 취소한 뒤 삭제할 수 있습니다.')
+        elif form.cleaned_data['revision']!=task.revision:
             form.add_error(None,'업무가 변경되었습니다. 다시 열어 내용을 확인해 주세요.')
         else:
             TaskTrash.objects.create(task=task,previous_status=task.status,reason=form.cleaned_data['reason'],deleted_by=request.user)

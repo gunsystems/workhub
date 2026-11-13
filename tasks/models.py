@@ -176,6 +176,7 @@ class Task(models.Model):
 
     @property
     def awaiting_acceptance(self):
+        if getattr(self,'meeting',None):return False
         if self.status not in ['todo','doing','blocked']: return False
         if self.workflow_version == 2:
             return any(item.accepted_at is None for item in self.assignments.all())
@@ -183,6 +184,7 @@ class Task(models.Model):
 
     @property
     def acceptance_wait_since(self):
+        if getattr(self,'meeting',None):return None
         if self.workflow_version == 2:
             pending=[item.assigned_at for item in self.assignments.all() if item.accepted_at is None]
             return min(pending) if pending else None
@@ -195,6 +197,7 @@ class Task(models.Model):
 
     @property
     def not_started(self):
+        if getattr(self,'meeting',None):return False
         return self.status == 'todo' and self.start_date < timezone.localdate()
 
     class Meta:
@@ -204,6 +207,7 @@ class Task(models.Model):
     def deadline(self):
         if self.status in ['draft','cancelled']: return 'inactive'
         if self.status == 'done': return 'done'
+        if getattr(self,'meeting',None):return 'normal'
         if self.status == 'review': return 'review'
         today = timezone.localdate()
         if self.due_date < today: return 'overdue'
@@ -736,3 +740,4 @@ class EmployeeAddress(models.Model):
     updated_at=models.DateTimeField(auto_now=True)
 
 from .proposal_models import Proposal, ProposalStep, ProposalEvent, ProposalNotice
+from .meeting_models import MicrosoftConnection, Meeting, MeetingAttendee, MeetingMail
