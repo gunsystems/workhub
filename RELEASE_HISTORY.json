@@ -3,6 +3,30 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.25.1",
+      "status": "live_verified",
+      "summary": "로그인 관리자 문구 제거 및 WORKHUB 브랜드 표기 통일",
+      "release_notes": "releases/v0.25.1.md",
+      "source_commit": "44a5de9fadeb8888806f7ae91ddd6be2042cf8bf",
+      "deployment": {
+        "id": "dep-dbri9kt6e07s73bqdcpg",
+        "status": "live",
+        "finished_at": "2026-11-13T14:56:16.892864Z"
+      },
+      "verification": {
+        "focused_tests": 33,
+        "full_django_tests": 731,
+        "node_checks": 9,
+        "ci_run": 43446930384,
+        "migration": "None",
+        "authentication": "Authentication behavior and administrator-ID login unchanged.",
+        "live_ui": "Heading and browser title WORKHUB 로그인; label 이메일 또는 아이디; password-reset link and expired-session notice present. No login submitted.",
+        "mobile": "Actual 390px viewport, no input/button overflow.",
+        "screenshot": "outputs/Workhub_v0251_로그인.png"
+      },
+      "rollback_commit": "99ff039514d6ee1e32e21fa663e9035ba675cf81"
+    },
+    {
       "version": "0.25.0",
       "status": "live_verified",
       "summary": "승인형 업무 이관 · 소속/인수 부서 승인과 인수 확인",
@@ -1883,3 +1907,4 @@
     }
   ]
 }
+
