@@ -3,6 +3,28 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.24.4",
+      "status": "live_verified",
+      "summary": "같은 화면의 간단 업무 전환·미팅 입력 검사 보완",
+      "release_notes": "releases/v0.24.4.md",
+      "source_commit": "d94af69560deeaf6107f9be5f371b8b7ff01529b",
+      "deployment": {
+        "id": "dep-dbrhci8u01pc73b8q4e0",
+        "status": "live",
+        "finished_at": "2026-11-13T13:54:13.104114Z"
+      },
+      "verification": {
+        "focused_tests": 46,
+        "full_django_tests": 713,
+        "node_checks": 9,
+        "ci_run": 43437081392,
+        "live_work_entry": "Mode switches inline without navigation; title, description and due date retained after returning to report mode; sidebar quick entry absent. No submissions made.",
+        "mobile": "390x844 actual viewport confirmed; quick form and meeting form no visible control overflow. Online URL required, Teams URL disabled with value preserved.",
+        "microsoft_live": "Deferred until Microsoft incident recovery; no live meeting created or invitation sent.",
+        "logos": "Unchanged"
+      }
+    },
+    {
       "version": "0.24.3",
       "status": "live_visual_review_pending",
       "release_notes": "releases/v0.24.3.md",
