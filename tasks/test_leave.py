@@ -99,7 +99,7 @@ class LeaveTests(TestCase):
         for url in ['/work/leave/','/work/leave/settings/','/work/leave/new/',f'/work/leave/{item.pk}/']:
             response=self.client.get(url)
             self.assertEqual(response.status_code,403 if url.endswith('/new/') else 200)
-        self.assertContains(self.client.get('/work/leave/'),'관리자 미리보기')
+        self.assertContains(self.client.get('/work/leave/'),'직원별 연차와 휴가 운영 기준을 관리합니다.')
     def test_admin_technical_account_cannot_approve(self):
         item=self.submit()
         with self.assertRaises(PermissionDenied):leave.change(item.pk,self.admin,'approve','관리자',0)
