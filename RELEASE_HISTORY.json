@@ -3,6 +3,17 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.22.1",
+      "status": "prepared",
+      "release_notes": "releases/v0.22.1.md",
+      "summary": "품의서 텍스트·선택·날짜 입력칸 높이 통일",
+      "verification": {
+        "system_check": "pending",
+        "ci": "pending",
+        "deployment": "pending"
+      }
+    },
+    {
       "version": "0.22.0",
       "status": "live_verified",
       "release_notes": "releases/v0.22.0.md",
@@ -16,7 +27,7 @@
         "live_history": "approved leave records visible",
         "live_calendar": "applicant leave visible",
         "live_date_range": "auto correction and later end preservation verified",
-        "staff_form": "login pending",
+        "staff_form": "representative form opened; claim/prior transition verified without saving",
         "mobile_viewport": "not verified"
       },
       "source_commit": "77cd6fce10b4eb7e68398107dd2f053515fb1d66",
