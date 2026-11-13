@@ -18,7 +18,6 @@ def navigation(request):
         {'label':'업무 관리','items':[
             item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/approvals/','/work/leave/','/work/personal/','/work/notifications/','/work/hiworks/','/work/reports/','/work/calendar/','/work/system-log/','/work/notices/')))),
             item('업무 보고','/work/reports/','work',path.startswith('/work/reports/')),
-            item('간단 업무','/work/quick/','work',path.startswith('/work/quick/')),
             item('프로젝트','/projects/','folder',path.startswith('/projects/')),
             item('업무 접수함','/intake/','inbox',path.startswith('/intake/')),
             item('캘린더','/','calendar',path=='/')]},
@@ -92,3 +91,4 @@ def navigation(request):
         current='전자결재 · 관리자 미리보기' if user.is_superuser else '전자결재'
     from .version import VERSION
     return {'approval_pending_count':approval_pending_count,'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username(),'staff_management_section':staff_section,'offboarding_admin':offboarding_admin}
+

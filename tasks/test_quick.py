@@ -25,6 +25,31 @@ class QuickTests(TestCase):
         self.assertContains(response,'업무 완료 · 요청자 확인');self.assertContains(response,'/work/quick/')
         self.act(item,self.worker,'accept');self.assertContains(self.client.get(f'/work/quick/{item.pk}/'),'현재 · 처리 중')
         self.client.force_login(self.other);self.assertNotContains(self.client.get('/dashboard/?scope=mine'),'고객 확인')
+    def test_inline_quick_creation_keeps_common_fields_and_ignores_standard_dates(self):
+        self.client.force_login(self.sender)
+        response=self.client.post('/work/new/',{'management_mode':'quick','purpose':'request','title':'간단 확인',
+            'description':'자료를 확인해 주세요.','assignee':self.staff[1].pk,'quick_link':'https://example.com/article',
+            'start_date':'invalid','assignment_email':['false','on'],'assignment_messenger':'false'})
+        self.assertEqual(response.status_code,302)
+        item=QuickRequest.objects.get();self.assertEqual(item.body,'자료를 확인해 주세요.')
+        self.assertTrue(item.send_email);self.assertFalse(item.send_hiworks)
+        self.assertEqual(item.documents.get().link,'https://example.com/article')
+        self.assertEqual(Task.objects.count(),0)
+    def test_inline_quick_error_keeps_form_values_without_date_errors(self):
+        self.client.force_login(self.sender)
+        response=self.client.post('/work/new/',{'management_mode':'quick','title':'유지할 제목','description':'유지할 내용','assignee':'99999'})
+        self.assertEqual(response.status_code,200);self.assertContains(response,'유지할 제목');self.assertContains(response,'유지할 내용')
+        self.assertTrue(response.context['quick_mode']);self.assertIn('assignee',response.context['form'].errors)
+        self.assertNotIn('due_date',response.context['form'].errors);self.assertFalse(QuickRequest.objects.exists())
+    def test_quick_entry_remains_accessible_without_sidebar_item(self):
+        self.client.force_login(self.sender)
+        from .navigation import navigation
+        from django.test import RequestFactory
+        q=RequestFactory().get('/dashboard/');q.user=self.sender
+        nav=navigation(q)
+        self.assertFalse(any(i['href']=='/work/quick/' for group in nav['nav_groups'] for i in group['items']))
+        self.assertContains(self.client.get('/work/register/'),'간단 업무 전달')
+
     def setUp(self):
         U=get_user_model();self.admin=U.objects.create_superuser('operator')
         self.team=Department.objects.create(name='영업');self.otherteam=Department.objects.create(name='기술')
@@ -148,3 +173,4 @@ class QuickTests(TestCase):
         self.assertEqual(response.status_code,302);self.assertEqual(item.documents.get().kind,'result')
         self.act(item,self.worker,'accept');self.act(item,self.worker,'reply','결과 자료를 확인하세요.');self.act(item,self.sender,'confirm')
         self.assertEqual(self.client.get(f'/work/documents/quick/{item.pk}/add/').status_code,403)
+

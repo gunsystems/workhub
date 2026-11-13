@@ -43,6 +43,7 @@ class UserChoice(forms.ModelChoiceField):
 class OfficialTaskForm(TaskForm):
     attachment=forms.FileField(widget=forms.ClearableFileInput(attrs={'data-upload-limit':'20971520','accept':'.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.zip'}),label='참고 파일 첨부 · 최대 20MB',required=False,
         help_text='소개자료·업무 요청서 등을 함께 등록합니다. 추가 자료는 업무 상세에서 관리하세요.')
+    quick_link=forms.URLField(label='기사 · 웹페이지 링크 · 선택',required=False,max_length=2000)
     purpose=forms.ChoiceField(choices=[('self','내 업무'),('request','업무 요청')],required=False,widget=forms.HiddenInput)
     intake_revision=forms.IntegerField(required=False,widget=forms.HiddenInput)
     intake = forms.IntegerField(widget=forms.HiddenInput,required=False)
@@ -74,7 +75,7 @@ class OfficialTaskForm(TaskForm):
         self.request_intake=request_intake
         super().__init__(*args, user=user, **kwargs)
         if not self.instance.pk and not request_intake:
-            self.fields['management_mode'].choices=list(self.fields['management_mode'].choices)+[('quick','간단 업무 · 전용 입력 화면')]
+            self.fields['management_mode'].choices=list(self.fields['management_mode'].choices)+[('quick','간단 업무')]
         active = Employee.objects.filter(is_active=True).filter(Q(user__isnull=True)|Q(user__is_active=True)).select_related('department')
         self.fields['assignee'].queryset = active
         self.fields['assignee'].label = '총괄 담당자'
@@ -182,6 +183,26 @@ def edit_task(request, task=None, intake_override=None,calendar_prefill=None,on_
     initial={'project':request.GET.get('project'),'purpose':purpose}
     if purpose=='self' and profile(request.user):initial['assignee']=profile(request.user).pk
     if calendar_prefill and task is None and not intake_override:initial.update(calendar_prefill)
+    if request.method=='POST' and request.POST.get('management_mode')=='quick' and not task and not intake_override and not request.POST.get('intake'):
+        from .quick import create as create_quick
+        from .drive_storage import RepositoryError
+        payload=request.POST.copy()
+        payload.update(body=request.POST.get('description',''),link=request.POST.get('quick_link',''),
+            send_email=request.POST.get('assignment_email','false') not in ('false','','0'),
+            send_hiworks=request.POST.get('assignment_messenger','false') not in ('false','','0'))
+        try:quick_form,item=create_quick(request.user,payload,request.FILES)
+        except RepositoryError as exc:
+            from .quick import QuickForm
+            quick_form=QuickForm(payload,request.FILES);quick_form.is_valid();quick_form.add_error('attachment',str(exc));item=None
+        if item:return redirect('quick_detail',pk=item.pk)
+        form=OfficialTaskForm(request.POST,request.FILES or None,user=request.user,initial=initial)
+        # Render the same fields with QuickForm validation, without validating unrelated dates or approval fields.
+        form._errors=forms.utils.ErrorDict();form.cleaned_data={}
+        for field,errors in quick_form.errors.items():
+            target={'body':'description','link':'quick_link','send_email':'assignment_email','send_hiworks':'assignment_messenger'}.get(field,field)
+            form.add_error(target if target in form.fields else None,errors)
+        return render(request,'tasks/official_form.html',{'form':form,'quick_mode':True})
+
     intake_id=intake_override.pk if intake_override else (request.POST.get('intake') if request.method=='POST' else request.GET.get('intake'))
     intake=None
     if intake_id:
@@ -476,3 +497,4 @@ def _change(user,pk,kind,data):
         completion_followup(task)
     notify(task,('새 의견: ' if kind=='comment' else '대표 직권 처리: ' if kind=='override' else '')+data['body'][:150], external=(task.assignment_messenger if kind in ['handover','comment'] else kind in ['submit','review','override','delegate','cancel']),comment_event=saved_event if kind=='comment' else None)
     return task
+

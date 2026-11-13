@@ -12,6 +12,15 @@ from . import microsoft_meetings as ms
 @override_settings(WORKHUB_REQUIRE_HIWORKS=False,WORKHUB_SCHEDULER_ENABLED=False,
     PASSWORD_HASHERS=['django.contrib.auth.hashers.MD5PasswordHasher'],WORKHUB_BASE_URL='https://workhub.example.test')
 class MeetingTests(TestCase):
+    def test_dormant_meeting_link_does_not_block_offline_or_teams(self):
+        form=MeetingForm(self.payload(mode='office',join_url='invalid link'),user=self.a)
+        self.assertTrue(form.is_valid(),form.errors);self.assertEqual(form.cleaned_data['join_url'],'')
+        self.connection()
+        form=MeetingForm(self.payload(mode='online',provider='teams',join_url='invalid link'),user=self.a)
+        self.assertTrue(form.is_valid(),form.errors);self.assertEqual(form.cleaned_data['join_url'],'')
+        form=MeetingForm(self.payload(mode='online',provider='link',join_url='http://example.com'),user=self.a)
+        self.assertFalse(form.is_valid());self.assertIn('join_url',form.errors)
+
     def setUp(self):
         U=get_user_model();self.a=U.objects.create_user('meeting_a',email='a@example.test');self.b=U.objects.create_user('meeting_b',email='b@example.test');self.c=U.objects.create_user('meeting_c',email='c@example.test')
         one=Department.objects.create(name='미팅 검증팀 A');two=Department.objects.create(name='미팅 검증팀 B')
@@ -176,3 +185,4 @@ class MeetingTests(TestCase):
         self.assertIn('stage=token status=0 reason=timeout',logs.output[0])
         self.assertNotIn('private-auth-code',str(logs.output))
         self.assertFalse(MicrosoftConnection.objects.exists())
+

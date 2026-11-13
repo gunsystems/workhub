@@ -35,7 +35,7 @@ class MeetingForm(forms.Form):
     mode=forms.ChoiceField(label='진행 방식',choices=Meeting._meta.get_field('mode').choices)
     location=forms.CharField(label='장소 · 회의실',max_length=200,required=False)
     provider=forms.ChoiceField(label='온라인 접속',choices=Meeting._meta.get_field('provider').choices,required=False)
-    join_url=forms.URLField(label='미팅 접속 링크',max_length=2000,required=False,assume_scheme='https')
+    join_url=forms.URLField(label='미팅 접속 링크',max_length=2000,required=False,assume_scheme='https',help_text='Teams·Zoom·Google Meet 등에서 만든 https:// 접속 링크를 붙여넣으세요. 주소 형식만 확인하며 실제 접속 여부는 검사하지 않습니다.',widget=forms.URLInput(attrs={'placeholder':'https://… 회의 접속 링크'}))
     description=forms.CharField(label='목적 · 안건',max_length=10000,required=False,widget=forms.Textarea(attrs={'rows':3}))
     guests=forms.CharField(label='외부 참석자 이메일 · 선택',max_length=3000,required=False,widget=forms.Textarea(attrs={'rows':2}),help_text='쉼표 또는 줄바꿈으로 구분합니다. Teams 자동 생성 시 Microsoft 회의 초대를 보냅니다.')
     customer=forms.CharField(label='고객사 · 거래처',max_length=120,required=False)
@@ -45,6 +45,9 @@ class MeetingForm(forms.Form):
     def __init__(self,*args,user,item=None,**kwargs):
         self.user=user;self.item=item
         super().__init__(*args,**kwargs)
+        if self.is_bound and (self.data.get('mode') not in ['online','hybrid'] or self.data.get('provider')=='teams'):
+            self.fields['join_url'].disabled=True
+            self.initial['join_url']=''
         self.fields['attendees'].queryset=Employee.objects.filter(is_active=True,user__is_active=True).exclude(user__email='').select_related('department')
         if item and item.event_id:
             self.fields['provider'].disabled=True
@@ -239,3 +242,4 @@ def remind_upcoming(now=None):
         if row.reminded_revision>=row.meeting.revision or not account_allowed(row.employee.user):continue
         if MeetingAttendee.objects.filter(pk=row.pk,reminded_revision=row.reminded_revision).update(reminded_revision=row.meeting.revision):
             notice=WorkNotification.objects.create(user=row.employee.user,task=row.meeting.task,message=('미팅 시작 15분 전 · '+row.meeting.task.title)[:240]);enqueue(notice)
+

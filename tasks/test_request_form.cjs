@@ -16,3 +16,6 @@ assert.equal(fields.id_coordinator.options[1].disabled,true);assert.equal(fields
 fields.id_coordinator.value='2';fields.id_department.value='1';fields.id_department.handlers.change();assert.equal(fields.id_coordinator.value,'');assert.equal(fields.id_coordinator.options[1].disabled,false);
 fields.id_request_kind.value='cooperation';fields.id_request_kind.handlers.change();assert.equal(fields.id_solution.required,false);assert.equal(fields.id_customer.label.badge.hidden,true);
 console.log('Request form: conditional required fields and team filtering passed');
+
+require('./test_work_form.cjs');
+
