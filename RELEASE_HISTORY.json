@@ -4,14 +4,26 @@
   "releases": [
     {
       "version": "0.22.0",
-      "status": "prepared",
+      "status": "live_verified",
       "release_notes": "releases/v0.22.0.md",
       "summary": "품의서 결재·처리 내역·휴가 캘린더·날짜 보정·사진 서버 캐시",
       "verification": {
         "focused_tests": 120,
-        "date_range_node": "passed",
-        "full_regression": "pending",
-        "deployment": "pending"
+        "full_django_tests": 677,
+        "node_checks": 8,
+        "ci_run": 43350786834,
+        "ci_conclusion": "success",
+        "live_history": "approved leave records visible",
+        "live_calendar": "applicant leave visible",
+        "live_date_range": "auto correction and later end preservation verified",
+        "staff_form": "login pending",
+        "mobile_viewport": "not verified"
+      },
+      "source_commit": "77cd6fce10b4eb7e68398107dd2f053515fb1d66",
+      "deployment": {
+        "id": "dep-dbr76poae00c73eq98p0",
+        "status": "live",
+        "finished_at": "2026-11-13T02:19:12.750824Z"
       }
     },
     {
