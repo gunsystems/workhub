@@ -3,6 +3,25 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.24.3",
+      "status": "live_visual_review_pending",
+      "release_notes": "releases/v0.24.3.md",
+      "summary": "확정 WORKHUB·GUNSYSTEMS 로고 적용",
+      "verification": {
+        "django_check": "passed",
+        "visual": "Live login logo verified; authenticated desktop/mobile header and footer review awaits user login.",
+        "full_django_tests": 709,
+        "node_checks": 9,
+        "ci_run": 43431449096
+      },
+      "source_commit": "499c59b382e6e5b22b215bcd04fd55916e846674",
+      "deployment": {
+        "id": "dep-dbrgqi5ckfvc73e85ing",
+        "status": "live",
+        "finished_at": "2026-11-13T13:15:54.342497Z"
+      }
+    },
+    {
       "version": "0.24.2",
       "status": "live_connection_blocked",
       "release_notes": "releases/v0.24.2.md",
@@ -1811,3 +1830,4 @@
     }
   ]
 }
+
