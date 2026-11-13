@@ -50,9 +50,18 @@ def calendar_view(request):
     status = request.GET.get('status','')
     if status in dict(Task.STATUS): tasks=tasks.filter(status=status)
     tasks=list(tasks)
-    from .models import PublicHoliday,LeaveHoliday
+    from .models import PublicHoliday,LeaveHoliday,LeaveRequest
     public_holidays=dict(PublicHoliday.objects.filter(date__range=(start,end),active=True).values_list('date','name'))
     company_holidays=dict(LeaveHoliday.objects.filter(date__range=(start,end)).values_list('date','name'))
+    # Derive calendar presence from the approved source; no duplicate task or score.
+    leave_items=LeaveRequest.objects.filter(state__in=['approved','cancel_pending'],start__lte=end,end__gte=start).select_related('employee__department')
+    person=profile(request.user)
+    if not can_view_company(request.user):
+        if person and (person.position=='leader' or person.role=='manager'):leave_items=leave_items.filter(employee__department=person.department)
+        else:leave_items=leave_items.filter(employee=person)
+    if department.isdigit():leave_items=leave_items.filter(employee__department_id=department)
+    if employee.isdigit():leave_items=leave_items.filter(employee_id=employee)
+    leave_items=list(leave_items)
     days=[]
     for offset in range((end-start).days+1):
         day=start+timedelta(days=offset)
@@ -62,11 +71,13 @@ def calendar_view(request):
             last=timezone.localtime(t.activity_end-timedelta(microseconds=1)).date() if t.activity_end else t.due_date
             if first<=day<=last:items.append(t)
         items.sort(key=lambda t:(bool(t.activity_start),t.activity_start.isoformat() if t.activity_start else '',t.pk))
-        days.append({'date':day,'today':day==today,'outside':day.month!=selected.month,'tasks':items,'public_holiday':public_holidays.get(day,''),'company_holiday':company_holidays.get(day,''),'weekday':day.weekday()})
+        days.append({'date':day,'today':day==today,'outside':day.month!=selected.month,'tasks':items,'leaves':[item for item in leave_items if day.isoformat() in item.dates],'public_holiday':public_holidays.get(day,''),'company_holiday':company_holidays.get(day,''),'weekday':day.weekday()})
     for day in days:
-        day['total'] = len(day['tasks'])
+        day['total'] = len(day['tasks'])+len(day['leaves'])
         day['more'] = max(0, day['total'] - 4) if mode == 'month' else 0
-        if mode == 'month': day['tasks'] = day['tasks'][:4]
+        if mode == 'month':
+            day['leaves']=day['leaves'][:4]
+            day['tasks'] = day['tasks'][:max(0,4-len(day['leaves']))]
     query=request.GET.copy()
     for key in ['date','view']: query.pop(key,None)
     from .calendar_quick import CalendarQuickForm,entry_token

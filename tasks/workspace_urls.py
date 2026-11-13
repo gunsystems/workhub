@@ -8,6 +8,7 @@ from . import quick
 from . import schedule_control,requests as work_requests
 from . import leave_views,task_trash
 from . import offboarding
+from . import proposal_views
 from . import calendar_quick
 urlpatterns=[
     path('calendar/quick/',calendar_quick.create,name='calendar_quick_create'),
@@ -22,6 +23,9 @@ urlpatterns=[
     path('offboarding/evidence/<int:pk>/preview/',offboarding.evidence_file,{'preview':True},name='offboarding_preview'),
     path('trash/',task_trash.listing,name='task_trash'),
     path('tasks/<int:pk>/delete/',task_trash.remove,name='task_delete'),
+    path("approvals/proposals/new/",proposal_views.edit,name="proposal_new"),
+    path("approvals/proposals/<int:pk>/",proposal_views.detail,name="proposal_detail"),
+    path("approvals/proposals/<int:pk>/edit/",proposal_views.edit,name="proposal_edit"),
     path("approvals/",leave_views.approval_portal,name="approval_portal"),
     path("leave/",leave_views.overview,name="leave_list"),
     path("leave/new/",leave_views.new,name="leave_new"),

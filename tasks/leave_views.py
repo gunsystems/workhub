@@ -10,7 +10,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 from accounts.lifecycle import system_admin
-from .models import Employee,StaffEmployment,LeaveYear,LeaveHoliday,LeaveEntry,LeaveRequest,HolidaySync,LeaveCalendarReview
+from .models import Employee,StaffEmployment,LeaveYear,LeaveHoliday,LeaveEntry,LeaveRequest,HolidaySync,LeaveCalendarReview,Proposal
 from .permissions import profile,visible_employees
 from . import leave
 
@@ -230,7 +230,7 @@ def approval_portal(request):
         try: person=get_object_or_404(people,pk=int(selected))
         except (ValueError,TypeError): person=None
     tab=request.GET.get('tab','leave')
-    if tab not in ('leave','requests','inbox','calendar'):tab='leave'
+    if tab not in ('leave','requests','inbox','calendar','history','proposals'):tab='leave'
     own=LeaveRequest.objects.filter(employee=person,start__year=year).select_related('employee__department') if person else LeaveRequest.objects.none()
     pending=list(leave.pending_for(person))
     if person:
@@ -240,14 +240,32 @@ def approval_portal(request):
             calendar=LeaveRequest.objects.filter(employee__department=person.department,start__year=year,state__in=['approved','cancel_pending']).select_related('employee__department')
         else:calendar=own.filter(state__in=['approved','cancel_pending'])
     else:calendar=LeaveRequest.objects.none()
+    from . import proposals
+    from django.db.models import Q,Max
+    from django.core.paginator import Paginator
+    proposal_pending=list(proposals.pending_for(person))
+    proposal_scope=proposals.visible(request.user)
+    if request.user.is_superuser and person:proposal_scope=Proposal.objects.filter(Q(employee=person)|Q(steps__approver=person)).distinct()
+    proposal_items=proposal_scope.filter(created_at__year=year)
+    if not request.user.is_superuser:proposal_items=proposal_items.filter(employee=person)
+    history_scope=leave.visible(request.user).filter(start__year=year)
+    if person:
+        history_scope=history_scope.filter(Q(employee=person)|Q(steps__approver=person,steps__decision__in=['approve','reject'])).distinct()
+    elif not request.user.is_superuser:history_scope=history_scope.none()
+    leave_history=history_scope.filter(Q(state__in=['approved','rejected','withdrawn','cancelled','cancel_pending'])|Q(steps__decision__in=['approve','reject'])).distinct()
+    proposal_history=proposal_scope.filter(created_at__year=year).filter(Q(state__in=['approved','rejected','withdrawn'])|Q(steps__decision__in=['approve','reject'])).distinct()
+    history=[{'kind':'leave','item':item,'at':item.last_event or item.created_at} for item in leave_history.annotate(last_event=Max('events__created_at'))]
+    history += [{'kind':'proposal','item':item,'at':item.last_event or item.created_at} for item in proposal_history.annotate(last_event=Max('events__created_at'))]
+    history.sort(key=lambda row:(row['at'],row['item'].pk),reverse=True)
+    history_page=Paginator(history,30).get_page(request.GET.get('page'))
     annual_rows=[]
     if person and (person.position in ('leader','head','executive') or person.role=='manager'):
         annual_rows=[row for row in leave.preparation(year)['rows'] if person.position in ('head','executive') or row['employee'].department_id==person.department_id]
     for row in annual_rows:row['reserved']=leave.reserved(row['employee'],year)
     entries=LeaveEntry.objects.filter(employee=person,year=year) if person else LeaveEntry.objects.none()
     context={'year':year,'tab':tab,'people':people,'preview_employee':person,'own_items':own[:100],
-      'pending_items':pending,'calendar_items':calendar.order_by('start','pk')[:100],
+      'pending_items':pending,'proposal_pending':proposal_pending,'approval_total':len(pending)+len(proposal_pending),'proposal_items':proposal_items[:100],'history_page':history_page,'calendar_items':calendar.order_by('start','pk')[:100],
       'balance':leave.balance(person,year) if person else None,'reserved':leave.reserved(person,year) if person else None,
       'has_grant':entries.exclude(key__startswith='leave:').exclude(key__startswith='holiday:').exists(),
-      'portal_preview':request.user.is_superuser,'annual_rows':annual_rows,'can_apply':bool(person and not request.user.is_superuser),'can_approve':bool(person and (person.position in ('leader','head','executive') or person.role=='manager' or pending))}
+      'portal_preview':request.user.is_superuser,'annual_rows':annual_rows,'can_apply':bool(person and not request.user.is_superuser),'can_approve':bool(person and (person.position in ('leader','head','executive') or person.role=='manager' or pending or proposal_pending))}
     return render(request,'tasks/approval_portal.html',context)

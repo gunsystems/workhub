@@ -81,7 +81,10 @@ def notifications(request):
     from .models import LeaveNotice
     leave_items=LeaveNotice.objects.filter(user=request.user,event__request__in=visible_leave(request.user)).select_related('event__request')[:100] if enabled() else []
     for row in leave_items:row.actionable=actionable(row)
-    return render(request,'tasks/notifications.html',{'leave_notifications':leave_items,'followup_notifications':followups,'quick_notifications':quick_items[:100],'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
+    from .models import ProposalNotice
+    from .proposals import visible as visible_proposals
+    proposal_items=ProposalNotice.objects.filter(user=request.user,event__proposal__in=visible_proposals(request.user)).select_related('event__proposal')[:100]
+    return render(request,'tasks/notifications.html',{'proposal_notifications':proposal_items,'leave_notifications':leave_items,'followup_notifications':followups,'quick_notifications':quick_items[:100],'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
 
 
 @login_required

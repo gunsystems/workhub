@@ -8,6 +8,7 @@ class WorkDocument(models.Model):
     work_request = models.ForeignKey('WorkRequest', null=True, blank=True, on_delete=models.PROTECT, related_name='documents')
     project = models.ForeignKey('Project', null=True, blank=True, on_delete=models.PROTECT, related_name='documents')
     quick_request = models.ForeignKey('QuickRequest', null=True, blank=True, on_delete=models.PROTECT, related_name='documents')
+    proposal = models.ForeignKey('Proposal', null=True, blank=True, on_delete=models.PROTECT, related_name='documents')
     file = models.FileField(upload_to='documents', blank=True)
     link = models.URLField(max_length=2000, blank=True)
     name = models.CharField(max_length=200)
@@ -29,7 +30,8 @@ class WorkDocument(models.Model):
     class Meta:
         ordering = ['-created_at','-pk']
         constraints = [models.CheckConstraint(condition=(
-            models.Q(task__isnull=False, work_request__isnull=True, project__isnull=True,quick_request__isnull=True) |
-            models.Q(task__isnull=True, work_request__isnull=False, project__isnull=True,quick_request__isnull=True) |
-            models.Q(task__isnull=True, work_request__isnull=True, project__isnull=False,quick_request__isnull=True) |
-            models.Q(task__isnull=True, work_request__isnull=True, project__isnull=True,quick_request__isnull=False)), name='document_one_parent')]
+            models.Q(task__isnull=False, work_request__isnull=True, project__isnull=True,quick_request__isnull=True,proposal__isnull=True) |
+            models.Q(task__isnull=True, work_request__isnull=False, project__isnull=True,quick_request__isnull=True,proposal__isnull=True) |
+            models.Q(task__isnull=True, work_request__isnull=True, project__isnull=False,quick_request__isnull=True,proposal__isnull=True) |
+            models.Q(task__isnull=True, work_request__isnull=True, project__isnull=True,quick_request__isnull=False,proposal__isnull=True) |
+            models.Q(task__isnull=True,work_request__isnull=True,project__isnull=True,quick_request__isnull=True,proposal__isnull=False)), name='document_one_parent')]

@@ -1,4 +1,4 @@
-import io,warnings,uuid
+import io,warnings,uuid,hashlib
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
@@ -21,6 +21,11 @@ def target_employee(user,employee_id=None):
         if not user.is_superuser:raise PermissionDenied
         return get_object_or_404(Employee.objects.select_related('department','user'),pk=employee_id)
     return profile(user)
+
+def photo_cache_key(photo):
+    identity=f'{photo.employee_id}:{photo.pk}:{photo.created_at.isoformat()}:{photo.file.name}'
+    return 'employee-photo:v2:'+hashlib.sha256(identity.encode()).hexdigest()
+
 
 class PhotoForm(forms.Form):
     photo=forms.FileField(label='사원카드 사진',widget=forms.FileInput(attrs={'accept':'image/jpeg,image/png,image/webp'}))
@@ -102,7 +107,11 @@ def my_information(request,employee_id=None):
             try:
                 if not configured():raise RepositoryError('사진 저장소가 준비되지 않았습니다. 관리자에게 문의하세요.')
                 normalized=form.cleaned_data['photo'];stored=DriveClient().upload(normalized.name,normalized)
-                EmployeePhoto.objects.create(employee=employee,file=stored,uploader=request.user)
+                saved_photo=EmployeePhoto.objects.create(employee=employee,file=stored,uploader=request.user)
+                from django.core.cache import cache
+                try:
+                    normalized.seek(0);cache.set(photo_cache_key(saved_photo),normalized.read(),timeout=3600)
+                except Exception:pass
             except RepositoryError as exc:form.add_error(None,str(exc))
             else:
                 write('update','EmployeePhoto',employee.pk,'사원카드 사진',after={'사진 표시':True},actor=request.user)
@@ -127,9 +136,17 @@ def card_photo(request,employee_id):
     if not request.user.is_superuser and (not own or own.pk!=employee.pk):raise PermissionDenied
     photo=EmployeePhoto.objects.filter(employee=employee).order_by('-pk').first()
     if not photo or not photo.file:raise Http404
+    # Authorize first, then cache the immutable photo revision. Never cache a page/ACL.
+    from django.core.cache import cache
+    key=photo_cache_key(photo)
     try:
-        with photo.file.open('rb') as source:data=source.read(5*1024*1024+1)
-        if len(data)>5*1024*1024:raise Http404
+        try:data=cache.get(key)
+        except Exception:data=None
+        if data is None:
+            with photo.file.open('rb') as source:data=source.read(5*1024*1024+1)
+            if not data or len(data)>5*1024*1024:raise Http404
+            try:cache.set(key,data,timeout=3600)
+            except Exception:pass
     except (FileNotFoundError,RepositoryError):return HttpResponse('사진을 불러오지 못했습니다.',status=503)
     response=HttpResponse(data,content_type='image/jpeg')
     response['X-Content-Type-Options']='nosniff';response['Content-Security-Policy']="default-src 'none'; frame-ancestors 'self'"

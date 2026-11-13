@@ -734,3 +734,5 @@ class EmployeeAddress(models.Model):
     detail=models.CharField('상세 주소',max_length=255,blank=True,default='',db_default='')
     revision=models.PositiveIntegerField(default=0,db_default=0)
     updated_at=models.DateTimeField(auto_now=True)
+
+from .proposal_models import Proposal, ProposalStep, ProposalEvent, ProposalNotice

@@ -3,6 +3,18 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.22.0",
+      "status": "prepared",
+      "release_notes": "releases/v0.22.0.md",
+      "summary": "품의서 결재·처리 내역·휴가 캘린더·날짜 보정·사진 서버 캐시",
+      "verification": {
+        "focused_tests": 120,
+        "date_range_node": "passed",
+        "full_regression": "pending",
+        "deployment": "pending"
+      }
+    },
+    {
       "version": "0.21.1",
       "status": "live_verified",
       "release_notes": "releases/v0.21.1.md",

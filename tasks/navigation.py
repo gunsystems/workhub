@@ -7,6 +7,8 @@ def navigation(request):
     employee=getattr(user,'employee',None)
     from .leave import pending_for
     approval_pending_count=pending_for(employee).count() if employee else 0
+    from .proposals import pending_for as proposal_pending
+    approval_pending_count+=proposal_pending(employee).count() if employee else 0
     def item(label,href,icon,active=False,key=''):
         return {'label':label,'href':href,'icon':icon,'active':active,'key':key}
     groups=[
@@ -14,7 +16,7 @@ def navigation(request):
             item('내 업무','/dashboard/?scope=mine','home',path=='/dashboard/' and request.GET.get('scope')=='mine'),
             item('개인 보드','/work/personal/','board',path.startswith('/work/personal/'))]},
         {'label':'업무 관리','items':[
-            item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/leave/','/work/personal/','/work/notifications/','/work/hiworks/','/work/reports/','/work/calendar/','/work/system-log/','/work/notices/')))),
+            item('업무 현황','/work/','work',path=='/work/' or path.startswith('/tasks/') or (path.startswith('/work/') and not path.startswith(('/work/approvals/','/work/leave/','/work/personal/','/work/notifications/','/work/hiworks/','/work/reports/','/work/calendar/','/work/system-log/','/work/notices/')))),
             item('업무 보고','/work/reports/','work',path.startswith('/work/reports/')),
             item('간단 업무','/work/quick/','work',path.startswith('/work/quick/')),
             item('프로젝트','/projects/','folder',path.startswith('/projects/')),

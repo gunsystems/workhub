@@ -90,6 +90,8 @@ def tick(now=None,sync_google=True):
             run_stage('offboarding_delivery',deliver_offboarding,now)
             from .leave_notifications import deliver_pending as deliver_leave
             run_stage('leave_delivery',deliver_leave,now)
+            from .proposals import deliver_pending as deliver_proposals
+            run_stage('proposal_delivery',deliver_proposals,now)
             return {'created':created,**({'failed_stages':failed} if failed else {})}
         finally:
             SchedulerLease.objects.filter(key='personal',token=token).update(expires_at=timezone.now(),heartbeat_at=timezone.now())

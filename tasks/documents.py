@@ -48,6 +48,9 @@ class DocumentForm(forms.Form):
 
 
 def parent_for(user, kind, pk):
+    if kind == 'proposal':
+        from .proposals import visible
+        return get_object_or_404(visible(user),pk=pk)
     if kind == 'quick':
         from .quick import visible
         return get_object_or_404(visible(user),pk=pk)
@@ -63,10 +66,12 @@ def parent_kwargs(kind, obj):
 
 
 def parent_url(kind, obj):
-    return reverse({'task':'task_detail','request':'intake_detail','project':'project_detail','quick':'quick_detail'}[kind], args=[obj.pk])
+    return reverse({'task':'task_detail','request':'intake_detail','project':'project_detail','quick':'quick_detail','proposal':'proposal_detail'}[kind], args=[obj.pk])
 
 
 def can_add(user, kind, obj):
+    if kind == 'proposal':
+        return obj.employee.user_id==user.pk and obj.state in ['draft','rejected','withdrawn']
     if kind == 'quick':
         return obj.state not in ['done','cancelled'] and (obj.requester_id==user.pk or obj.assignee.user_id==user.pk)
     if is_company_admin(user):
@@ -85,6 +90,10 @@ def can_add(user, kind, obj):
 
 @transaction.atomic
 def add_document(user, kind, parent, data):
+    if kind=='proposal':
+        from .models import Proposal
+        parent=Proposal.objects.select_for_update().get(pk=parent.pk)
+        if not can_add(user,kind,parent):raise PermissionDenied
     from .audit import write
     emp = profile(user)
     f = data.get('file')
@@ -122,6 +131,7 @@ def document_add(request, kind, pk):
 
 
 def document_parent(obj):
+    if obj.proposal_id:return 'proposal',obj.proposal_id
     if obj.quick_request_id:return 'quick',obj.quick_request_id
     if obj.task_id:return 'task',obj.task_id
     if obj.work_request_id:return 'request',obj.work_request_id
@@ -191,6 +201,10 @@ def document_archive(request,pk):
     obj=get_object_or_404(WorkDocument.objects.select_for_update(),pk=pk)
     kind,parent_id=document_parent(obj)
     parent=parent_for(request.user,kind,parent_id)
+    if kind=='proposal':
+        from .models import Proposal
+        parent=Proposal.objects.select_for_update().get(pk=parent.pk)
+        if not can_add(request.user,kind,parent):raise PermissionDenied
     if not is_company_admin(request.user) and obj.uploader_id != request.user.pk:
         raise PermissionDenied
     reason=request.POST.get('reason','').strip()

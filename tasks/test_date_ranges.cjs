@@ -1,0 +1,11 @@
+const assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
+let change;const start={name:'start_date',value:'2027-01-12'},end={name:'due_date',value:'2027-01-10',dispatchEvent(){}};
+const form={querySelector:s=>s.includes('start_date')?start:s.includes('due_date')?end:null};start.form=form;
+const document={forms:[form],addEventListener:(_,fn)=>change=fn};
+vm.runInNewContext(fs.readFileSync('tasks/static/tasks/date_ranges.js','utf8'),{document,Event:class{}});
+change({target:start});assert.equal(end.value,'2027-01-12');assert.equal(end.min,start.value);
+end.value='2027-01-20';start.value='2027-01-15';change({target:start});assert.equal(end.value,'2027-01-20');
+end.value='';change({target:start});assert.equal(end.value,start.value);
+start.value='2027-01-01';change({target:start});assert.equal(end.value,'2027-01-15');
+start.type='datetime-local';start.value='2027-01-12T23:30';end.value='2027-01-12T22:00';change({target:start});assert.equal(end.value,'2027-01-13T00:30');
+console.log('Date ranges: invalid end corrected, later end preserved, empty end initialized.');

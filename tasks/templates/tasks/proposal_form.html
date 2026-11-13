@@ -1,0 +1,7 @@
+{% extends 'tasks/base.html' %}{% load static %}{% block content %}
+<link rel="stylesheet" href="{% static 'tasks/workspace.css' %}"><link rel="stylesheet" href="{% static 'tasks/approval_portal.css' %}">
+<script src="{% static 'tasks/proposal_form.js' %}" defer></script><div class="approval-page proposal-page"><section class="heading"><div><div class="eyebrow">APPROVALS</div><h1>품의서 작성</h1><p>사용 전 승인 또는 사용 후 비용 청구를 선택해 주세요.</p></div></section>
+<form method="post" class="task-form approval-panel" data-proposal-form>{% csrf_token %}{{ form.non_field_errors }}{{ form.revision }}
+<p class="approval-note">먼저 저장한 뒤 견적서·영수증 등 증빙을 추가하고 결재를 제출합니다. 파일 또는 공유 링크로 등록할 수 있습니다.</p>
+<div class="proposal-grid">{% for field in form.visible_fields %}<div class="proposal-field {% if field.name == 'body' or field.name == 'specifics' %}wide{% endif %}">{% include 'tasks/workspace_field.html' %}</div>{% endfor %}</div>
+<div class="proposal-actions"><button class="button primary">임시 저장</button><a class="button" href="{% if item.pk %}{% url 'proposal_detail' item.pk %}{% else %}{% url 'approval_portal' %}?tab=proposals{% endif %}">취소</a></div></form></div>{% endblock %}

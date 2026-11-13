@@ -7,3 +7,5 @@
 .calendar-holiday-label.company{color:#286c50;font-weight:500}
 .calendar .day.outside .calendar-holiday-label{opacity:.75}
 @media(max-width:700px){.calendar-holiday-label{font-size:12px}}
+
+.event.calendar-leave{background:#e9f5ee;border-left:4px solid #27805b;color:#205e48}.calendar-leave-legend{color:#27805b}

@@ -40,3 +40,5 @@ jobs:
       - run: node tasks/test_employee_card.cjs
 
       - run: node tasks/test_profile_postcode.cjs
+
+      - run: node tasks/test_date_ranges.cjs
