@@ -40,14 +40,14 @@ def cipher():
     return Fernet(key.encode())
 
 
-def request_json(path, method='GET', data=None, token=None, oauth=False):
+def request_json(path, method='GET', data=None, token=None, oauth=False, timeout=12):
     # No arbitrary hosts or redirects, including provider-returned web URLs.
     url = ('https://login.microsoftonline.com/'+settings.MICROSOFT_TENANT_ID+'/oauth2/v2.0/token') if oauth else 'https://graph.microsoft.com/v1.0'+path
     body = (urlencode(data).encode() if oauth else json.dumps(data).encode()) if data is not None else None
     headers = {'Accept':'application/json','Content-Type':'application/x-www-form-urlencoded' if oauth else 'application/json'}
     if token: headers['Authorization'] = 'Bearer '+token
     try:
-        with build_opener(NoRedirect()).open(Request(url, data=body, headers=headers, method=method), timeout=12) as response:
+        with build_opener(NoRedirect()).open(Request(url, data=body, headers=headers, method=method), timeout=timeout) as response:
             raw = response.read(2_000_001)
             if len(raw)>2_000_000: raise ValueError
             return json.loads(raw) if raw else {}
@@ -114,7 +114,9 @@ def callback(request):
         email=request.user.email.strip().lower()
         if not email or email not in {str(person.get(k,'') or '').lower() for k in ['mail','userPrincipalName']} or not person.get('id'): raise GraphError()
         stage='calendar'
-        calendar=request_json('/me/calendar?$select=allowedOnlineMeetingProviders',token=result['access_token'])
+        # Exchange may need longer than identity endpoints to open the mailbox.
+        # Only this read gets a longer deadline; never retry calendar writes here.
+        calendar=request_json('/me/calendar?$select=allowedOnlineMeetingProviders',token=result['access_token'],timeout=45)
         stage='teams_provider'
         if 'teamsForBusiness' not in calendar.get('allowedOnlineMeetingProviders',[]): raise GraphError()
         old=MicrosoftConnection.objects.filter(user=request.user).first()

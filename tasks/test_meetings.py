@@ -161,6 +161,7 @@ class MeetingTests(TestCase):
         graph.side_effect=[{'id':'oid-a','mail':self.a.email}, {'allowedOnlineMeetingProviders':['teamsForBusiness']}]
         response=self.client.get('/work/meetings/microsoft/callback/',{'state':state,'code':'test-code'});self.assertEqual(response.status_code,302)
         connection=MicrosoftConnection.objects.get(user=self.a);self.assertNotEqual(connection.encrypted_refresh_token,'refresh')
+        self.assertEqual(graph.call_args.kwargs['timeout'],45)
         self.client.post('/work/meetings/microsoft/connect/');state=self.client.session['microsoft_oauth']['state'];graph.side_effect=[{'id':'someone','mail':'wrong@example.test'}]
         self.client.get('/work/meetings/microsoft/callback/',{'state':state,'code':'test-code'});connection.refresh_from_db();self.assertEqual(connection.subject,'oid-a')
 

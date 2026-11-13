@@ -3,13 +3,26 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
-      "version": "0.24.1",
+      "version": "0.24.2",
       "status": "prepared",
-      "release_notes": "releases/v0.24.1.md",
-      "summary": "Microsoft 연결 실패 안내 및 안전한 단계별 진단",
+      "release_notes": "releases/v0.24.2.md",
+      "summary": "Exchange 일정 제공자 조회 대기시간 보강",
       "verification": {
         "live_connection": "pending"
       }
+    },
+    {
+      "version": "0.24.1",
+      "status": "live_diagnostic",
+      "release_notes": "releases/v0.24.1.md",
+      "summary": "Microsoft 연결 실패 안내 및 안전한 단계별 진단",
+      "verification": {
+        "focused_meeting_tests": 24,
+        "full_django_tests": 709,
+        "node_checks": 9,
+        "live_connection": "calendar GET timed out after 12 seconds"
+      },
+      "source_commit": "cbdeb85540483daf3036177e208f0943a3d704b5"
     },
     {
       "version": "0.24.0",
