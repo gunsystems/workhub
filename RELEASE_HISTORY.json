@@ -3,6 +3,30 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.24.0",
+      "status": "live_awaiting_microsoft_setup",
+      "release_notes": "releases/v0.24.0.md",
+      "summary": "미팅 간편 등록·참석 응답·알림 및 Teams 자동 생성 연결 준비",
+      "source_commit": "f07db661425beef9ba5cda80dbad497ddfc70488",
+      "deployment": {
+        "id": "dep-dbraupdg1s2s73fv4ong",
+        "status": "live",
+        "finished_at": "2026-11-13T06:35:05.97743Z"
+      },
+      "verification": {
+        "focused_meeting_tests": 23,
+        "full_django_tests": 708,
+        "node_checks": 9,
+        "ci_run": 43379281567,
+        "ci_conclusion": "success",
+        "live_entry": "login reached successfully after deployment",
+        "live_ui": "awaiting staff login",
+        "microsoft_live": "application registration and organizer consent pending",
+        "mobile_visual": "not yet verified; local preview browser could not connect",
+        "business_mutations": "none"
+      }
+    },
+    {
       "version": "0.23.3",
       "status": "live_verified",
       "release_notes": "releases/v0.23.3.md",
