@@ -195,3 +195,18 @@ class ProposalTests(TestCase):
             response=self.client.post('/work/approvals/proposals/new/',data)
         self.assertEqual(response.status_code,302)
         self.assertTrue(Proposal.objects.get(title=data['title']).documents.filter(original_name='proof.txt').exists())
+
+    def test_portal_navigation_groups_are_balanced(self):
+        from html.parser import HTMLParser
+        class Navigation(HTMLParser):
+            def __init__(self):super().__init__();self.depth=0;self.low=0
+            def handle_starttag(self,tag,attrs):
+                if tag=='nav':self.depth+=1
+            def handle_endtag(self,tag):
+                if tag=='nav':self.depth-=1;self.low=min(self.low,self.depth)
+        self.client.force_login(self.users['executive'])
+        for tab in ['leave','proposals','inbox','history']:
+            response=self.client.get('/work/approvals/?tab='+tab)
+            parser=Navigation();parser.feed(response.content.decode())
+            self.assertEqual((parser.depth,parser.low),(0,0))
+            self.assertContains(response,'전자결재 메뉴')
