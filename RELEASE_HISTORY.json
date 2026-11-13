@@ -3,6 +3,27 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.23.2",
+      "status": "live_verified",
+      "release_notes": "releases/v0.23.2.md",
+      "summary": "품의 첨부 영역과 제출 직전 증빙 필수 안내 명시",
+      "source_commit": "733ebb4574a8acea07ee191b7c743480deef93e1",
+      "deployment": {
+        "id": "dep-dbr8p2k9v7es73bsh9mg",
+        "status": "live",
+        "finished_at": "2026-11-13T04:06:29.59669Z"
+      },
+      "verification": {
+        "focused_proposal_tests": 19,
+        "full_django_tests": 683,
+        "node_checks": 9,
+        "ci_run": 43362875421,
+        "ci_conclusion": "success",
+        "live_form": "required badge and mandatory evidence notice immediately before submit verified",
+        "business_mutations": "none"
+      }
+    },
+    {
       "version": "0.23.1",
       "status": "live_verified",
       "release_notes": "releases/v0.23.1.md",
