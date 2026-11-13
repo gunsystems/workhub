@@ -3,6 +3,15 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.24.1",
+      "status": "prepared",
+      "release_notes": "releases/v0.24.1.md",
+      "summary": "Microsoft 연결 실패 안내 및 안전한 단계별 진단",
+      "verification": {
+        "live_connection": "pending"
+      }
+    },
+    {
       "version": "0.24.0",
       "status": "live_awaiting_microsoft_setup",
       "release_notes": "releases/v0.24.0.md",

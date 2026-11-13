@@ -163,3 +163,15 @@ class MeetingTests(TestCase):
         connection=MicrosoftConnection.objects.get(user=self.a);self.assertNotEqual(connection.encrypted_refresh_token,'refresh')
         self.client.post('/work/meetings/microsoft/connect/');state=self.client.session['microsoft_oauth']['state'];graph.side_effect=[{'id':'someone','mail':'wrong@example.test'}]
         self.client.get('/work/meetings/microsoft/callback/',{'state':state,'code':'test-code'});connection.refresh_from_db();self.assertEqual(connection.subject,'oid-a')
+
+    @override_settings(MICROSOFT_TENANT_ID='11111111-1111-1111-1111-111111111111',MICROSOFT_CLIENT_ID='22222222-2222-2222-2222-222222222222',MICROSOFT_CLIENT_SECRET='test-only')
+    @patch('tasks.microsoft_meetings.token_request',side_effect=ms.GraphError(0,'timeout'))
+    def test_connection_timeout_is_visible_and_logs_only_safe_stage(self,tokens):
+        self.client.post('/work/meetings/microsoft/connect/')
+        state=self.client.session['microsoft_oauth']['state']
+        with self.assertLogs('tasks.microsoft_meetings',level='WARNING') as logs:
+            response=self.client.get('/work/meetings/microsoft/callback/',{'state':state,'code':'private-auth-code'},follow=True)
+        self.assertContains(response,'Microsoft 응답 시간이 초과되었습니다.')
+        self.assertIn('stage=token status=0 reason=timeout',logs.output[0])
+        self.assertNotIn('private-auth-code',str(logs.output))
+        self.assertFalse(MicrosoftConnection.objects.exists())

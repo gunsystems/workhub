@@ -1,5 +1,5 @@
 """Delegated Graph integration. Only Workhub-created events are mutated."""
-import base64, hashlib, json, secrets, uuid
+import base64, hashlib, json, secrets, uuid, logging, socket
 from datetime import timedelta, timezone as dt_timezone
 from urllib.parse import urlencode, quote, urlsplit
 from urllib.request import Request, build_opener
@@ -16,10 +16,13 @@ from .google_calendar import NoRedirect
 from .models import MicrosoftConnection, Meeting
 
 SCOPES = 'offline_access User.Read Calendars.ReadWrite'
+logger = logging.getLogger(__name__)
 
 
 class GraphError(Exception):
-    def __init__(self, status=0): self.status = status
+    def __init__(self, status=0, reason='unknown'):
+        self.status = status
+        self.reason = reason
 
 
 def configured():
@@ -48,8 +51,12 @@ def request_json(path, method='GET', data=None, token=None, oauth=False):
             raw = response.read(2_000_001)
             if len(raw)>2_000_000: raise ValueError
             return json.loads(raw) if raw else {}
-    except HTTPError as exc: raise GraphError(exc.code) from None
-    except (URLError, OSError, ValueError): raise GraphError() from None
+    except HTTPError as exc: raise GraphError(exc.code, 'http') from None
+    except (TimeoutError, socket.timeout): raise GraphError(0, 'timeout') from None
+    except URLError as exc:
+        raise GraphError(0, 'timeout' if isinstance(exc.reason, (TimeoutError, socket.timeout)) else 'network') from None
+    except OSError: raise GraphError(0, 'network') from None
+    except ValueError: raise GraphError(0, 'response') from None
 
 
 def token_request(data):
@@ -90,26 +97,41 @@ def connect(request):
 @login_required
 @never_cache
 def callback(request):
+    stage='state'
     state=request.session.pop('microsoft_oauth',{})
     valid=(configured() and state.get('user')==request.user.pk and 0<=timezone.now().timestamp()-state.get('at',0)<600
         and bool(state.get('state')) and secrets.compare_digest(state.get('state',''),request.GET.get('state','')))
     try:
         if not valid or request.GET.get('error') or not request.GET.get('code'): raise GraphError()
+        stage='token'
         result=token_request({'grant_type':'authorization_code','code':request.GET['code'],'code_verifier':state['verifier'],'redirect_uri':callback_url()})
+        stage='scope'
         scopes={s.lower() for s in result.get('scope','').split()}
         if not result.get('refresh_token') or not any(s.endswith('calendars.readwrite') for s in scopes): raise GraphError()
+        stage='profile'
         person=request_json('/me?$select=id,mail,userPrincipalName',token=result['access_token'])
+        stage='email'
         email=request.user.email.strip().lower()
         if not email or email not in {str(person.get(k,'') or '').lower() for k in ['mail','userPrincipalName']} or not person.get('id'): raise GraphError()
+        stage='calendar'
         calendar=request_json('/me/calendar?$select=allowedOnlineMeetingProviders',token=result['access_token'])
+        stage='teams_provider'
         if 'teamsForBusiness' not in calendar.get('allowedOnlineMeetingProviders',[]): raise GraphError()
         old=MicrosoftConnection.objects.filter(user=request.user).first()
         if old and old.subject!=person['id'] and Meeting.objects.filter(organizer=request.user).exclude(event_id='').exists(): raise GraphError()
         MicrosoftConnection.objects.update_or_create(user=request.user,defaults={'subject':person['id'],'email':email,
             'encrypted_refresh_token':cipher().encrypt(result['refresh_token'].encode()).decode()})
         messages.success(request,'Microsoft 계정을 연결했습니다. 미팅 등록에서 Teams 자동 생성을 선택할 수 있습니다.')
-    except (GraphError, KeyError, ValueError):
-        messages.error(request,'연결을 완료하지 못했습니다. Workhub와 같은 회사 이메일인지, Teams 회의 생성 권한과 연결 동의를 확인해 주세요.')
+    except (GraphError, KeyError, ValueError) as exc:
+        # Never log tokens, response bodies, URLs, emails or exception text.
+        logger.warning('Microsoft connection failed stage=%s status=%s reason=%s',stage,getattr(exc,'status',0),getattr(exc,'reason','validation'))
+        detail = {
+            'state':'연결 요청이 만료되었거나 유효하지 않습니다. 회사 Microsoft 계정 연결을 다시 눌러 주세요.',
+            'email':'Workhub와 동일한 회사 이메일의 Microsoft 계정으로 연결해 주세요.',
+            'teams_provider':'Microsoft 일정에서 Teams 회의를 만들 수 있는 계정인지 확인해 주세요.',
+        }.get(stage,'Microsoft 연결을 완료하지 못했습니다. 잠시 후 다시 시도해 주세요.')
+        if getattr(exc,'reason','')=='timeout': detail='Microsoft 응답 시간이 초과되었습니다. 잠시 후 다시 연결해 주세요.'
+        messages.error(request,detail)
     response=redirect('microsoft_settings'); response['Referrer-Policy']='no-referrer'; return response
 
 
