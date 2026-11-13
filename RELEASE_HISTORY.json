@@ -4,12 +4,27 @@
   "releases": [
     {
       "version": "0.23.0",
-      "status": "verification_in_progress",
+      "status": "live_verified",
       "release_notes": "releases/v0.23.0.md",
       "summary": "품의 작성 중 증빙 첨부·품목별 자동 합산·조직별 조회·공통 결재 메뉴",
       "verification": {
-        "focused_proposal_tests": 17,
-        "proposal_node_check": "passed"
+        "focused_proposal_tests": 18,
+        "full_django_tests": 682,
+        "node_checks": 9,
+        "ci_run": 43359002332,
+        "ci_conclusion": "success",
+        "live_form": "two item rows, 35000 KRW total and amount synchronized, inline evidence visible",
+        "live_width": "1280px; no form control overflow",
+        "live_navigation": "four common groups, no duplicate fragment",
+        "live_existing_draft": "amount and draft state preserved; evidence label verified",
+        "business_mutations": "none",
+        "mobile": "real-device viewport not verified"
+      },
+      "source_commit": "2e7170a03ee158b0a375567bbfa160163766e5df",
+      "deployment": {
+        "id": "dep-dbr88j3tqb8s73dq8j60",
+        "status": "live",
+        "finished_at": "2026-11-13T03:31:40.660839Z"
       }
     },
     {
