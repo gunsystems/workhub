@@ -4,12 +4,24 @@
   "releases": [
     {
       "version": "0.23.1",
-      "status": "verification_in_progress",
+      "status": "live_verified",
       "release_notes": "releases/v0.23.1.md",
       "summary": "품의 금액 쉼표·구매 정보 라벨·결재순서 안내와 증빙 누락 표시",
       "verification": {
         "focused_proposal_tests": 19,
-        "proposal_node_check": "passed"
+        "full_django_tests": 683,
+        "node_checks": 9,
+        "ci_run": 43362080442,
+        "ci_conclusion": "success",
+        "live_form": "comma-separated amounts, purchase date and vendor labels verified",
+        "live_submission": "existing draft has no evidence; submission blocker visible beside disabled submit button",
+        "business_mutations": "none"
+      },
+      "source_commit": "4b216cf9feb66f2c6a3a42e8d6861d549889df0c",
+      "deployment": {
+        "id": "dep-dbr8lioae00c73eugnjg",
+        "status": "live",
+        "finished_at": "2026-11-13T03:59:02.113021Z"
       }
     },
     {
