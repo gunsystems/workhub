@@ -12,8 +12,11 @@ def visible(user):
     if user.is_superuser:return qs
     person=profile(user)
     if not person:return qs.none()
-    # Financial/benefit details are limited to the applicant and recorded approvers.
-    return qs.filter(Q(employee=person)|Q(steps__approver=person)).distinct()
+    scope=Q(employee=person)|Q(steps__approver=person)
+    submitted=Q(submitted_at__isnull=False)
+    if person.position in ['head','executive']:scope|=submitted
+    elif person.position=='leader' or person.role=='manager':scope|=submitted & Q(employee__department_id=person.department_id)
+    return qs.filter(scope).distinct()
 
 
 def current(item):
@@ -31,6 +34,7 @@ def event(item,user,action,body=''):
     person=profile(user)
     snapshot={key:str(getattr(item,key) or '') for key in ['title','category','stage','body','amount','needed_on','supplier','specifics','state','revision','round','task_id','original_id']}
     snapshot['documents']=list(item.documents.filter(archived_at__isnull=True).values_list('pk',flat=True))
+    snapshot['line_items']=item.line_items
     row=ProposalEvent.objects.create(proposal=item,actor=user,actor_name=str(person) if person else user.get_username(),action=action,body=body,snapshot=snapshot)
     from .audit import write
     write('change','Proposal',item.pk,'품의',after={'상태':item.state,'처리':action,'버전':item.revision},actor=user)

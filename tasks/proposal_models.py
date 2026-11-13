@@ -12,6 +12,7 @@ class Proposal(models.Model):
     stage=models.CharField('신청 목적',max_length=12,choices=[('prior','사용 전 승인 요청'),('claim','사용 후 비용 청구')],default='prior')
     body=models.TextField('요청 내용·필요 사유',max_length=10000)
     amount=models.DecimalField('총 요청 금액 · 원 (부가세 포함)',max_digits=14,decimal_places=0,default=0)
+    line_items=models.JSONField(default=list,blank=True)
     needed_on=models.DateField('구매·지급 희망일',null=True,blank=True)
     supplier=models.CharField('구매처·교육기관·업체',max_length=160,blank=True)
     specifics=models.TextField('품목·수량 / 교육·지원 상세',max_length=3000,blank=True)

@@ -149,3 +149,49 @@ class ProposalTests(TestCase):
         self.assertEqual(self.client.post(reverse('document_archive',args=[doc.pk]),{'reason':'변경'}).status_code,403)
         self.act(item,'member','withdraw')
         self.assertEqual(self.client.post(reverse('document_archive',args=[doc.pk]),{'reason':'변경'}).status_code,302)
+    def test_inline_lines_total_and_direct_submission(self):
+        self.client.force_login(self.users['member'])
+        data={'title':'품목별 구매','category':'purchase','stage':'prior','body':'구입 사유','amount':'999','revision':0,'action':'submit','link':'https://example.test/quote','lines-TOTAL_FORMS':'2','lines-INITIAL_FORMS':'0','lines-0-name':'품목 A','lines-0-quantity':'2','lines-0-price':'100','lines-1-name':'품목 B','lines-1-quantity':'1.5','lines-1-price':'11'}
+        response=self.client.post('/work/approvals/proposals/new/',data)
+        self.assertEqual(response.status_code,302)
+        item=Proposal.objects.get(title='품목별 구매');self.assertEqual(item.amount,217)
+        self.assertEqual(item.state,'pending');self.assertEqual(len(item.line_items),2)
+        self.assertEqual(item.events.first().snapshot['line_items'][1]['total'],'17')
+        self.assertEqual(proposals.pending_for(self.people['leader']).get().pk,item.pk)
+        self.assertTrue(item.documents.filter(link=data['link']).exists())
+        self.assertContains(self.client.get(response.url),'품목 A')
+
+    def test_invalid_inline_submission_rolls_back_and_keeps_old_total(self):
+        self.client.force_login(self.users['member'])
+        data={'title':'증빙 없는 제출','category':'purchase','stage':'prior','body':'구입 사유','amount':'300','revision':0,'action':'submit'}
+        response=self.client.post('/work/approvals/proposals/new/',data)
+        self.assertContains(response,'증빙 링크');self.assertFalse(Proposal.objects.filter(title=data['title']).exists())
+        data['action']='save';response=self.client.post('/work/approvals/proposals/new/',data)
+        self.assertEqual(response.status_code,302);self.assertEqual(Proposal.objects.get(title=data['title']).amount,300)
+        data.update({'lines-TOTAL_FORMS':'1','lines-INITIAL_FORMS':'0','lines-0-name':'품목','lines-0-quantity':'-1','lines-0-price':'10'})
+        response=self.client.post('/work/approvals/proposals/new/',data)
+        self.assertEqual(response.status_code,200);self.assertEqual(Proposal.objects.filter(title=data['title']).count(),1)
+
+    def test_team_monitoring_does_not_grant_approval(self):
+        item=self.draft()
+        self.assertFalse(proposals.visible(self.users['leader']).filter(pk=item.pk).exists())
+        self.act(item,'member','submit')
+        self.client.force_login(self.users['leader'])
+        self.assertContains(self.client.get('/work/approvals/?tab=proposals'),item.title)
+        other_person=self.other.employee if hasattr(self.other,'employee') else Employee.objects.get(user=self.other)
+        external=Proposal.objects.create(employee=other_person,title='다른 팀 제출 품의',category='other',body='내용',submitted_at=__import__('django.utils.timezone',fromlist=['now']).now(),state='pending')
+        self.assertFalse(proposals.visible(self.users['leader']).filter(pk=external.pk).exists())
+        self.assertTrue(proposals.visible(self.users['executive']).filter(pk=external.pk).exists())
+        with self.assertRaises(PermissionDenied):self.act(external,'executive')
+
+    def test_inline_file_validation_and_upload(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.force_login(self.users['member'])
+        data={'title':'첨부 품의','category':'other','stage':'prior','body':'내용','amount':'0','revision':0,'evidence':SimpleUploadedFile('proof.exe',b'bad')}
+        self.assertEqual(self.client.post('/work/approvals/proposals/new/',data).status_code,200)
+        self.assertFalse(Proposal.objects.filter(title=data['title']).exists())
+        data['evidence']=SimpleUploadedFile('proof.txt',b'evidence')
+        with patch('tasks.proposal_views.configured',return_value=True),patch('tasks.drive_storage.WorkhubStorage._save',return_value='drive/test-proof'):
+            response=self.client.post('/work/approvals/proposals/new/',data)
+        self.assertEqual(response.status_code,302)
+        self.assertTrue(Proposal.objects.get(title=data['title']).documents.filter(original_name='proof.txt').exists())

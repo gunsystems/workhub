@@ -1,4 +1,5 @@
 from django import forms
+from decimal import Decimal, ROUND_HALF_UP
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied,ValidationError
 from django.db import transaction
@@ -10,6 +11,30 @@ from .models import Proposal,ProposalNotice,Employee
 from .permissions import profile,visible_tasks
 from .leave_views import employee_access
 from . import proposals
+from .documents import validate_file, add_document
+from .drive_storage import configured, RepositoryError
+
+
+class LineForm(forms.Form):
+    name=forms.CharField(label='품목·내용',max_length=200)
+    quantity=forms.DecimalField(label='수량',max_digits=10,decimal_places=2,min_value=Decimal('0.01'),widget=forms.NumberInput(attrs={'step':'0.01','min':'0.01'}))
+    price=forms.DecimalField(label='단가 · 원',max_digits=14,decimal_places=0,min_value=0,widget=forms.NumberInput(attrs={'step':'1','min':'0'}))
+
+
+LineSet=forms.formset_factory(LineForm,extra=1,can_delete=True,max_num=50,validate_max=True,absolute_max=60)
+
+
+class ReferenceForm(forms.Form):
+    link=forms.URLField(label='참고·증빙 링크',required=False,max_length=2000)
+
+
+def line_values(lines):
+    values=[]
+    for row in lines.cleaned_data:
+        if not row.get('name') or row.get('DELETE'):continue
+        total=(row['quantity']*row['price']).quantize(Decimal('1'),rounding=ROUND_HALF_UP)
+        values.append({'name':row['name'],'quantity':str(row['quantity']),'price':str(row['price']),'total':str(total)})
+    return values
 
 
 class ProposalForm(forms.ModelForm):
@@ -49,17 +74,39 @@ def edit(request,pk=None):
     if not pk and request.GET.get('original','').isdigit():
         old=get_object_or_404(Proposal,pk=request.GET['original'],employee=person,state='approved',stage='prior')
         initial={'original':old.pk,'title':old.title+' · 비용 청구','category':old.category,'stage':'claim','body':old.body,'amount':old.amount,'supplier':old.supplier,'specifics':old.specifics,'task':old.task_id}
-    form=ProposalForm(request.POST if request.method=='POST' else None,user=request.user,instance=item,initial=initial)
-    if request.method=='POST' and form.is_valid():
+    data=request.POST.copy() if request.method=='POST' else None
+    if data is not None and 'lines-TOTAL_FORMS' not in data:
+        data.update({'lines-TOTAL_FORMS':'0','lines-INITIAL_FORMS':'0'})
+    lines=LineSet(data,prefix='lines',initial=item.line_items or (old.line_items if initial else []))
+    references=ReferenceForm(data)
+    form=ProposalForm(data,user=request.user,instance=item,initial=initial)
+    if request.method=='POST' and form.is_valid() and lines.is_valid() and references.is_valid():
         try:
+            values=line_values(lines)
+            if values:
+                total=sum(Decimal(row['total']) for row in values)
+                if total>Decimal('99999999999999'):raise ValidationError('총 요청 금액이 입력 가능한 범위를 초과합니다.')
+                form.instance.amount=total
+            uploads=request.FILES.getlist('evidence')
+            if len(uploads)>10:raise ValidationError('한 번에 첨부할 수 있는 파일은 최대 10개입니다.')
+            for upload in uploads:validate_file(upload)
+            if uploads and not configured():raise ValidationError('자료 저장소 연결을 확인해 주세요.')
+            count=item.documents.filter(archived_at__isnull=True).count() if pk else 0
+            if count+len(uploads)+bool(references.cleaned_data['link'])>100:raise ValidationError('품의서 자료는 최대 100개입니다.')
             with transaction.atomic():
                 if pk:
                     old=Proposal.objects.select_for_update().get(pk=pk)
                     if old.revision!=form.cleaned_data['revision'] or old.state not in ['draft','withdrawn','rejected']:raise ValidationError('다른 변경이 반영되었습니다. 새로고침 후 다시 작성하세요.')
-                item=form.save(commit=False);item.revision+=1;item.save();proposals.event(item,request.user,'임시 저장')
-        except ValidationError as exc:form.add_error(None,exc)
+                item=form.save(commit=False);item.line_items=values;item.revision+=1;item.save()
+                for upload in uploads:add_document(request.user,'proposal',item,{'file':upload,'kind':'reference'})
+                if references.cleaned_data['link']:add_document(request.user,'proposal',item,{'name':'참고·증빙 링크','link':references.cleaned_data['link'],'kind':'reference'})
+                proposals.event(item,request.user,'임시 저장')
+                if request.POST.get('action')=='submit':proposals.action(item.pk,request.user,'submit',item.revision)
+        except (ValidationError,RepositoryError) as exc:
+            form.add_error(None,exc if isinstance(exc,ValidationError) else str(exc))
+            if not pk:item.pk=None;item._state.adding=True
         else:return redirect('proposal_detail',pk=item.pk)
-    return render(request,'tasks/proposal_form.html',{'form':form,'item':item})
+    return render(request,'tasks/proposal_form.html',{'form':form,'item':item,'lines':lines,'references':references})
 
 
 @login_required

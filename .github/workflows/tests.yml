@@ -42,3 +42,5 @@ jobs:
       - run: node tasks/test_profile_postcode.cjs
 
       - run: node tasks/test_date_ranges.cjs
+
+      - run: node tasks/test_proposal_form.cjs

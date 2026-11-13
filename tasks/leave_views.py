@@ -247,7 +247,6 @@ def approval_portal(request):
     proposal_scope=proposals.visible(request.user)
     if request.user.is_superuser and person:proposal_scope=Proposal.objects.filter(Q(employee=person)|Q(steps__approver=person)).distinct()
     proposal_items=proposal_scope.filter(created_at__year=year)
-    if not request.user.is_superuser:proposal_items=proposal_items.filter(employee=person)
     history_scope=leave.visible(request.user).filter(start__year=year)
     if person:
         history_scope=history_scope.filter(Q(employee=person)|Q(steps__approver=person,steps__decision__in=['approve','reject'])).distinct()
