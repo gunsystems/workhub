@@ -31,9 +31,9 @@
     small{color:#5e6c7a}.footer{margin-top:24px}
     @media(max-width:480px){main{padding:24px;margin:24px auto}.form-actions{flex-direction:column}.form-actions button{width:100%}.codes{grid-template-columns:1fr}}
   </style>
-{% if request.user.is_authenticated %}<script src="{% static 'tasks/idle.js' %}" defer></script>{% endif %}</head>
+{% if request.user.is_authenticated %}<script src="{% static 'tasks/idle.js' %}" defer></script>{% endif %}<link rel="stylesheet" href="{% static 'tasks/branding.css' %}"></head>
 <body {% if request.user.is_authenticated %}data-idle-session{% endif %}><main><div style="display:flex;justify-content:flex-end;margin-bottom:12px">{% include 'tasks/page_help.html' %}</div>
-  <div class="brand">GUNSYSTEMS · Workhub</div>
+  <div class="brand auth-brand"><img src="{% static 'tasks/branding/workhub-stacked.svg' %}" alt="WORKHUB 업무관리 시스템"></div>
   <h1>{{ title }}</h1>
   {% if auth_identity %}<p class="notice">인증할 계정: <strong>{{ auth_identity }}</strong></p>{% endif %}
   {% if notice %}<p class="notice">{{ notice }}</p>{% endif %}

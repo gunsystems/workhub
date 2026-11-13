@@ -22,9 +22,9 @@ a{color:#236c59}.back{text-align:center;margin:20px 0 0;font-size:14px}
 form ul{padding-left:20px}.errorlist{color:#a52c2c;font-size:13px;padding-left:20px}
 .footer{margin:26px 0 0;padding-top:20px;border-top:1px solid #e4ebe7;color:#7a8a81;font-size:12px}
 @media(max-width:480px){main{padding:28px 24px;margin:24px auto}h1{font-size:25px}}
-</style></head>
+</style><link rel="stylesheet" href="{% static 'tasks/branding.css' %}"></head>
 <body><main><div style="display:flex;justify-content:flex-end;margin-bottom:12px">{% include 'tasks/page_help.html' %}</div>
-<div class="brand">GUNSYSTEMS · Workhub</div>
+<div class="brand auth-brand"><img src="{% static 'tasks/branding/workhub-stacked.svg' %}" alt="WORKHUB 업무관리 시스템"></div>
 <p class="eyebrow">ACCOUNT SECURITY</p>
 {% if form %}
   {% if form.email %}
