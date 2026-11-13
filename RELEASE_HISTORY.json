@@ -3,6 +3,31 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.21.0",
+      "status": "live_employee_development_testing",
+      "release_notes": "releases/v0.21.0.md",
+      "source_commit": "db285b102c9669a7cc54b114bb9d955295e90a4f",
+      "functional_commit": "754f855727d4ed9920c9a89c7328f3484ca3e7a9",
+      "deploy_id": "dep-dbr66vmi0phs73etrfcg",
+      "live_at": "2026-11-13T10:11:41+09:00",
+      "ci_run": "https://github.com/gunsystems/workhub/actions/runs/43342753231",
+      "migrations": [],
+      "validation": {
+        "focused": "52 leave and help tests passed",
+        "ci": "662 Django tests; regression workflows passed",
+        "runtime": "Representative login verified: menu, enabled application link, balance, self approval guidance. No actual leave request created.",
+        "operations": "2026 annual calendar confirmed after fresh official holiday sync verification; no grant or employee account changes",
+        "permissions": "HTTP tests cover member submission, leader/representative sequencing, owner-only access and representative self approval"
+      },
+      "limitations": [
+        "Team approval requires the designated leader account to complete activation",
+        "Development/test applications are stored in the current database",
+        "No live leave notification email was sent during verification",
+        "Physical mobile not newly verified"
+      ],
+      "rollback_source": "263a4a23b9c8b64d28a409cbc5e917fb89d7eff6"
+    },
+    {
       "version": "0.20.1",
       "status": "live_verified_admin_preview",
       "release_notes": "releases/v0.20.1.md",
