@@ -91,5 +91,5 @@ LOGGING = {'version':1,'disable_existing_loggers':False,
     'filters':{'subscription_tokens':{'()':'config.log_filters.SubscriptionTokenFilter'}},
     'loggers':{'django.request':{'filters':['subscription_tokens']},'django.server':{'filters':['subscription_tokens']}}}
 
-# Enable only with the separately scheduled employee leave rollout.
-WORKHUB_LEAVE_NOTIFICATIONS_ENABLED = os.getenv('WORKHUB_LEAVE_NOTIFICATIONS_ENABLED','0') == '1'
+# Leave workflow opened for employee development/testing.
+WORKHUB_LEAVE_NOTIFICATIONS_ENABLED = os.getenv('WORKHUB_LEAVE_NOTIFICATIONS_ENABLED','1') == '1'

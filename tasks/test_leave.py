@@ -52,8 +52,14 @@ class LeaveTests(TestCase):
         other=self.submit(start=date(2027,1,5),end=date(2027,1,5));self.assertEqual(other.steps.get(role='head').approver,head)
     def test_leader_skips_leader_slot(self):
         item=self.submit(role='leader');self.assertEqual(list(item.steps.values_list('role',flat=True)),['head','executive'])
-    def test_representative_own_application_blocked(self):
-        with self.assertRaises(ValidationError):self.submit(role='executive')
+    def test_representative_own_application_self_approval(self):
+        item=self.submit(role='executive')
+        self.assertEqual(list(item.steps.values_list('role',flat=True)),['executive'])
+        self.assertEqual(leave.pending_for(self.people['executive']).count(),1)
+        self.act(item,'executive')
+        self.assertEqual(leave.balance(self.people['executive'],2027),-1)
+        self.act(item,'executive','cancel');self.act(item,'executive')
+        self.assertEqual(leave.balance(self.people['executive'],2027),0)
     def test_missing_or_multiple_approvers_block(self):
         self.people['leader'].is_active=False;self.people['leader'].save()
         with self.assertRaises(ValidationError):self.submit()
@@ -79,12 +85,15 @@ class LeaveTests(TestCase):
     def test_private_scope_other_department_hidden(self):
         item=self.submit();u=get_user_model().objects.create_user('stranger');team=Department.objects.create(name='다른팀');Employee.objects.create(user=u,name='stranger',department=team)
         self.assertFalse(leave.visible(u).exists());self.assertTrue(leave.visible(self.users['leader']).filter(pk=item.pk).exists())
-    def test_preview_staff_urls_and_post_blocked(self):
+    def test_staff_leave_open_but_administration_blocked(self):
         item=self.submit();self.client.force_login(self.users['member'])
-        for url in ['/work/leave/','/work/leave/settings/','/work/leave/new/',f'/work/leave/{item.pk}/']:
+        for url in ['/work/leave/','/work/leave/settings/','/work/leave/preparation/']:
             self.assertEqual(self.client.get(url).status_code,403)
             self.assertEqual(self.client.post(url,{}).status_code,403)
-        response=self.client.get('/work/');self.assertNotContains(response,'휴가 관리 · 준비')
+        for url in ['/work/leave/new/',f'/work/leave/{item.pk}/','/work/approvals/']:
+            self.assertEqual(self.client.get(url).status_code,200)
+        self.assertContains(self.client.get('/work/approvals/'),'href="/work/leave/new/"')
+
     def test_admin_preview_renders_and_navigation(self):
         item=self.submit();self.client.force_login(self.admin)
         for url in ['/work/leave/','/work/leave/settings/','/work/leave/new/',f'/work/leave/{item.pk}/']:
@@ -264,13 +273,16 @@ class LeaveTests(TestCase):
         chain=leave.route(self.people['member'],require_account=False)
         self.assertEqual(chain[1][0],'head');self.assertFalse(chain[1][2])
 
-    def test_portal_preview_blocks_employee_and_mutation(self):
+    def test_portal_open_and_admin_selection_read_only(self):
         self.client.force_login(self.users['member'])
-        self.assertEqual(self.client.get('/work/approvals/').status_code,403)
-        self.assertNotContains(self.client.get('/dashboard/'),'href="/work/approvals/"')
+        self.assertEqual(self.client.get('/work/approvals/').status_code,200)
+        self.assertContains(self.client.get('/dashboard/'),'href="/work/approvals/"')
+        self.assertNotContains(self.client.get('/work/approvals/'),'미리볼 직원')
+        self.assertEqual(self.client.get('/work/approvals/?employee='+str(self.people['executive'].pk)).status_code,403)
         self.client.force_login(self.admin)
         self.assertEqual(self.client.post('/work/approvals/',{}).status_code,405)
         self.assertContains(self.client.get('/work/approvals/'),'미리볼 직원을 선택해 주세요.')
+        self.assertContains(self.client.get('/work/approvals/?employee='+str(self.people['member'].pk)),'disabled')
 
     def test_portal_preview_filters_current_approval_and_keeps_balances(self):
         item=self.submit();before=LeaveEntry.objects.count()
@@ -326,7 +338,8 @@ class LeaveTests(TestCase):
         self.act(item,'executive')
         self.assertNotContains(self.client.get('/work/approvals/'),'aria-label="결재 대기 1건"')
 
-    def test_leave_notices_disabled_during_preview(self):
+    @override_settings(WORKHUB_LEAVE_NOTIFICATIONS_ENABLED=False)
+    def test_leave_notices_can_be_disabled(self):
         from .models import LeaveNotice
         self.submit()
         self.assertFalse(LeaveNotice.objects.exists())
@@ -388,3 +401,39 @@ class LeaveTests(TestCase):
         self.assertTrue(all('reserved' in row for row in response.context['annual_rows']))
         self.assertContains(response,'2027년 직원별 연차 현황')
         self.assertEqual(self.client.get(url+str(self.people['member'].pk)).context['annual_rows'],[])
+
+    def test_employee_http_application_leader_and_executive_review(self):
+        self.client.force_login(self.users['member'])
+        response=self.client.post('/work/leave/new/',{'kind':'annual','start':'2027-01-04','end':'2027-01-04','reason':'화면 검증'})
+        self.assertEqual(response.status_code,302)
+        item=LeaveRequest.objects.get(reason='화면 검증')
+        url=f'/work/leave/{item.pk}/'
+        self.assertEqual(self.client.post(url,{'action':'approve','revision':0,'body':'본인 승인 불가'}).status_code,403)
+        self.client.force_login(self.users['executive'])
+        self.assertEqual(self.client.post(url,{'action':'approve','revision':0,'body':'선행 승인 불가'}).status_code,403)
+        self.client.force_login(self.users['leader'])
+        self.assertEqual(self.client.post(url,{'action':'approve','revision':0,'body':'팀장 확인'}).status_code,302)
+        self.client.force_login(self.users['executive'])
+        self.assertEqual(self.client.post(url,{'action':'approve','revision':1,'body':'최종 확인'}).status_code,302)
+        item.refresh_from_db();self.assertEqual(item.state,'approved')
+        self.assertEqual(leave.balance(self.people['member'],2027),14)
+
+    def test_representative_http_self_approval_and_private_scope(self):
+        self.client.force_login(self.users['executive'])
+        self.assertEqual(self.client.post('/work/leave/new/',{'kind':'annual','start':'2027-01-05','end':'2027-01-05','reason':'대표 직접 신청'}).status_code,302)
+        item=LeaveRequest.objects.get(reason='대표 직접 신청')
+        self.assertContains(self.client.get(f'/work/leave/{item.pk}/'),'대표 본인 휴가는 신청 후 본인이 승인합니다.')
+        self.assertEqual(self.client.post(f'/work/leave/{item.pk}/',{'action':'approve','revision':0,'body':'본인 확인'}).status_code,302)
+        self.client.force_login(self.users['member'])
+        self.assertEqual(self.client.get(f'/work/leave/{item.pk}/').status_code,404)
+        self.assertNotContains(self.client.get('/work/approvals/?tab=calendar&year=2027'),'대표 직접 신청')
+
+    def test_employee_notice_is_visible_only_to_recipient(self):
+        from .models import LeaveNotice
+        item=self.submit()
+        self.client.force_login(self.users['leader'])
+        self.assertContains(self.client.get('/work/notifications/'),'휴가 신청 결재가 필요합니다.')
+        self.client.get(f'/work/leave/{item.pk}/')
+        self.assertTrue(LeaveNotice.objects.get(user=self.users['leader'],event__request=item).read_at)
+        self.client.force_login(self.users['member'])
+        self.assertNotContains(self.client.get('/work/notifications/'),'휴가 신청 결재가 필요합니다.')

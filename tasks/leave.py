@@ -94,7 +94,9 @@ def route(employee,require_account=True):
         if person and require_account and (not person.user_id or not person.user.is_active):
             raise ValidationError(f'{person.name} 결재 담당자의 계정 인증을 먼저 완료해 주세요.')
         return person
-    if employee.position=='executive':raise ValidationError('대표 본인의 휴가 결재 기준은 아직 설정되지 않았습니다.')
+    if employee.position=='executive':
+        if require_account and (not employee.user_id or not employee.user.is_active):raise ValidationError('대표 계정 인증을 먼저 완료해 주세요.')
+        return [('executive',employee,False)]
     rep=one('executive')
     if not rep:raise ValidationError('대표 결재 담당자를 먼저 지정해 주세요.')
     result=[]

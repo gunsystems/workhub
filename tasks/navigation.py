@@ -27,7 +27,7 @@ def navigation(request):
     ]
     if user.is_superuser:
         groups[2]['items'].insert(1,item('설문조사','/work/surveys/','work',path.startswith('/work/surveys/')))
-    if user.is_superuser:
+    if user.is_superuser or (employee and employee.is_active):
         groups.append({'label':'전자결재','items':[item('전자결재','/work/approvals/?tab=inbox' if approval_pending_count else '/work/approvals/','shield',path.startswith('/work/approvals/'),key='approvals')]})
     organization=[]
     from .assessments import executive
@@ -74,12 +74,17 @@ def navigation(request):
     staff_section = ('offboarding' if path.startswith('/work/offboarding/') else 'employment' if path.startswith('/work/leave/settings/') else
                      'leave' if path.startswith('/work/leave/') else
                      'departments' if path == '/accounts/departments/' else 'employees')
-    if path.startswith('/work/leave/'):
+    if path.startswith('/work/leave/') and not user.is_superuser:
+        for group in groups:
+            for entry in group['items']:
+                if entry.get('key')=='approvals':entry['active']=True
+        current='전자결재 · 휴가 신청'
+    if path.startswith('/work/leave/') and user.is_superuser:
         current = '직원 관리 · ' + ('직원·연차 설정' if staff_section == 'employment' else '휴가 관리')
     if path.startswith('/work/approvals/'):
         for group in groups:
             for entry in group['items']:
                 if entry['href']=='/work/':entry['active']=False
-        current='전자결재 · 관리자 미리보기'
+        current='전자결재 · 관리자 미리보기' if user.is_superuser else '전자결재'
     from .version import VERSION
     return {'approval_pending_count':approval_pending_count,'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username(),'staff_management_section':staff_section,'offboarding_admin':offboarding_admin}

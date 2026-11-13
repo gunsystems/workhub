@@ -21,6 +21,14 @@ def preview_only(view):
         return view(request,*args,**kwargs)
     return guarded
 
+def employee_access(view):
+    @wraps(view)
+    def guarded(request,*args,**kwargs):
+        from accounts.lifecycle import account_allowed
+        if not account_allowed(request.user) or (not request.user.is_superuser and not profile(request.user)):raise PermissionDenied
+        return view(request,*args,**kwargs)
+    return guarded
+
 class ApplicationForm(forms.Form):
     kind=forms.ChoiceField(label='휴가 종류',choices=LeaveRequest._meta.get_field('kind').choices)
     start=forms.DateField(label='시작일',widget=forms.DateInput(attrs={'type':'date'}))
@@ -111,7 +119,7 @@ def overview(request):
 
 @login_required
 @never_cache
-@preview_only
+@employee_access
 @require_http_methods(['GET','POST'])
 def new(request):
     if not profile(request.user):raise PermissionDenied
@@ -120,11 +128,11 @@ def new(request):
         try:item=leave.submit(request.user,**form.cleaned_data)
         except ValidationError as exc:form.add_error(None,exc)
         else:return redirect('leave_detail',pk=item.pk)
-    return render(request,'tasks/leave_form.html',{'form':form,'title':'휴가 신청'})
+    return render(request,'tasks/leave_form.html',{'form':form,'title':'휴가 신청','self_approval':profile(request.user).position=='executive'})
 
 @login_required
 @never_cache
-@preview_only
+@employee_access
 @require_http_methods(['GET','POST'])
 def detail(request,pk):
     item=get_object_or_404(leave.visible(request.user),pk=pk)
@@ -143,7 +151,7 @@ def detail(request,pk):
     can_decide=bool(step and e and step.approver_id==e.pk)
     owner=bool(e and item.employee_id==e.pk)
     bal=leave.balance(item.employee,item.start.year)
-    return render(request,'tasks/leave_detail.html',{'item':item,'steps':item.steps.all(),'events':item.events.all(),'can_decide':can_decide,'owner':owner,'balance':bal,'projected':bal-item.days if item.state=='pending' else bal,'error':error,'current_step':step})
+    return render(request,'tasks/leave_detail.html',{'self_approval':item.employee.position=='executive' and item.steps.filter(approver_id=item.employee_id).exists(),'item':item,'steps':item.steps.all(),'events':item.events.all(),'can_decide':can_decide,'owner':owner,'balance':bal,'projected':bal-item.days if item.state=='pending' else bal,'error':error,'current_step':step})
 
 @login_required
 @never_cache
@@ -209,7 +217,7 @@ def settings_view(request):
 
 @login_required
 @never_cache
-@preview_only
+@employee_access
 @require_http_methods(['GET'])
 def approval_portal(request):
     """Read-only employee experience preview; never impersonate a selected employee."""
@@ -217,7 +225,8 @@ def approval_portal(request):
     people=Employee.objects.filter(is_active=True).select_related('department','user')
     person=profile(request.user)
     selected=request.GET.get('employee','')
-    if selected:
+    if selected and not request.user.is_superuser and selected!=str(person.pk):raise PermissionDenied
+    if selected and request.user.is_superuser:
         try: person=get_object_or_404(people,pk=int(selected))
         except (ValueError,TypeError): person=None
     tab=request.GET.get('tab','leave')
@@ -240,5 +249,5 @@ def approval_portal(request):
       'pending_items':pending,'calendar_items':calendar.order_by('start','pk')[:100],
       'balance':leave.balance(person,year) if person else None,'reserved':leave.reserved(person,year) if person else None,
       'has_grant':entries.exclude(key__startswith='leave:').exclude(key__startswith='holiday:').exists(),
-      'portal_preview':True,'annual_rows':annual_rows}
+      'portal_preview':request.user.is_superuser,'annual_rows':annual_rows,'can_apply':bool(person and not request.user.is_superuser),'can_approve':bool(person and (person.position in ('leader','head','executive') or person.role=='manager' or pending))}
     return render(request,'tasks/approval_portal.html',context)

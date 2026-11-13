@@ -79,7 +79,7 @@ def notifications(request):
     from .leave_notifications import enabled,actionable
     from .leave import visible as visible_leave
     from .models import LeaveNotice
-    leave_items=LeaveNotice.objects.filter(user=request.user,event__request__in=visible_leave(request.user)).select_related('event__request')[:100] if enabled() and request.user.is_superuser else []
+    leave_items=LeaveNotice.objects.filter(user=request.user,event__request__in=visible_leave(request.user)).select_related('event__request')[:100] if enabled() else []
     for row in leave_items:row.actionable=actionable(row)
     return render(request,'tasks/notifications.html',{'leave_notifications':leave_items,'followup_notifications':followups,'quick_notifications':quick_items[:100],'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
 
