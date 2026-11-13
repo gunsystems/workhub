@@ -15,7 +15,7 @@
 </div></div>{% endif %}
 {% if can_edit or can_export_calendar or executive or owner %}<div class="task-action-group"><h3>일정 · 업무 관리</h3><div class="actions workspace-actions">
 {% if can_edit %}<a class="button" href="{% url 'work_series' task.pk %}">정기 업무 · 회차 설정</a>{% endif %}{% if can_export_calendar %}<a class="button" href="{% url 'google_export_task' task.pk %}">{% if calendar_registered %}Google 캘린더 등록 설정{% else %}Google 캘린더에 일정 등록{% endif %}</a>{% endif %}
-{% if can_edit and task.status != 'draft' %}<a class="button" href="{% url 'official_action' task.pk 'handover' %}">총괄 인계</a>{% endif %}
+{% if can_transfer %}<a class="button" href="{% url 'transfer_new' task.pk %}">업무 이관 요청</a>{% endif %}
 {% if owner and task.status != 'done' and task.status != 'review' and task.status != 'cancelled' %}<a class="button" href="{% url 'official_action' task.pk 'cancel' %}">업무 취소</a>{% endif %}
 {% if executive %}<a class="button danger-outline" href="{% url 'official_action' task.pk 'override' %}">대표 직권 처리 · 사유 기록</a>{% endif %}
 </div></div>{% endif %}
@@ -26,5 +26,6 @@
 </section>{% endif %}
 </section>
 {% if group_tasks %}<section class="detail"><h3>함께 배정된 개별 업무</h3>{% for other in group_tasks %}<p><a href="{% url 'task_detail' other.pk %}">{{ other.assignee }} · {{ other.get_status_display }}</a></p>{% endfor %}</section>{% endif %}
+{% if transfers %}<section class="detail"><h3>업무 이관</h3>{% for transfer in transfers %}<p><a href="{% url 'transfer_detail' transfer.pk %}">{{ transfer.source.name }} → {{ transfer.target.name }}</a> · {{ transfer.get_state_display }}</p>{% endfor %}</section>{% endif %}
 <section class="detail timeline"><h3>보고 · 결재 · 정정 이력</h3>{% for event in events %}<article class="timeline-item"><b>{{ event.get_kind_display }}{% if event.snapshot.progress_report_number %} {{ event.snapshot.progress_report_number }}차{% endif %}</b> · {{ event.author|work_identity:event.author_name }} <time class="event-time" datetime="{{ event.created_at|date:'c' }}">{{ event.created_at|date:'Y-m-d H:i' }}</time><p>{{ event.body|linebreaksbr }}</p>{% if event.snapshot.round %}<small>{{ event.snapshot.round }}회차 {% if event.snapshot.step %}· {{ event.snapshot.step }}차 결재{% endif %}</small>{% endif %}</article>{% empty %}<p>아직 기록이 없습니다.</p>{% endfor %}</section>
 {% work_documents 'task' task %}{% if request.user.is_superuser or request.user.is_staff %}<section class="detail"><h3>관리자 전용</h3><div class="workspace-actions"><a class="button danger-outline" href="{% url 'task_delete' task.pk %}">일정 · 업무 삭제</a><a class="button" href="{% url 'task_trash' %}">휴지통</a></div></section>{% endif %}{% endblock %}

@@ -130,6 +130,12 @@ class OfficialTaskForm(TaskForm):
             self.add_error(None, '본인 수행 업무의 셀프 결재를 막기 위해 수행자와 결재자는 구분해 주세요.')
         if self.instance.pk and data.get('revision') != self.instance.revision:
             self.add_error(None, '다른 변경이 반영되었습니다. 화면을 새로 열어 다시 작성하세요.')
+        if self.instance.pk and self.instance.status != 'draft':
+            original=Task.objects.get(pk=self.instance.pk)
+            if data.get('assignee') and data['assignee'].pk != original.assignee_id:
+                self.add_error('assignee','총괄 담당자는 업무 이관 요청에서 승인 후 변경하세요.')
+            if original.assignments.exclude(employee_id__in=members).exists():
+                self.add_error('collaborators','기존 수행자는 업무 이관 요청에서 승인 후 변경하세요.')
         data['member_ids'], data['reviewers'] = members, reviewers
         data['stages']=[data.get(f'stage_{n}') or n for n in range(1,6) if data.get(f'approver_{n}')]
         if self.request_intake:
@@ -320,6 +326,7 @@ def action(request,pk,kind):
             'comment':'질문 · 의견','override':'대표 직권 처리','cancel':'업무 취소','recall':'완료 보고 회수',
             'delegate':'결재 인계 · 대결','handover':'총괄 담당자 인계'}
     if kind not in titles: raise PermissionDenied
+    if kind=='handover': return redirect('transfer_new',task_pk=pk)
     task=get_object_or_404(visible_tasks(request.user),pk=pk,workflow_version=2)
     if kind=='submit': titles['submit']='완료 보고 제출' if task.approval_steps.exists() else '업무 완료'
     from .progress_reporting import next_report_number
@@ -404,6 +411,9 @@ def _change(user,pk,kind,data):
             if task.status=='done': task.completed_at=task.submitted_at
             event='submitted'
         participant.save()
+        if kind=='accept':
+            from .transfers import accepted
+            accepted(task, participant.employee, user)
         task.progress=round(sum(task.assignments.values_list('progress',flat=True))/task.assignments.count())
         if task.assignments.filter(accepted_at__isnull=False).exists(): task.progress=max(task.progress,1)
         if active and task.status not in ['review','done']:
@@ -472,19 +482,12 @@ def _change(user,pk,kind,data):
         old=current.approver_name; current.approver=replacement; current.approver_name=user_name(replacement); current.save()
         data={**data,'body':f'{old} → {current.approver_name}\n'+data['body']}; event='handover'
     elif kind=='handover':
-        if not (owner or executive): raise PermissionDenied
-        if task.status not in ['todo','doing','blocked']: raise ValidationError('결재·완료 업무는 회수·재개 후 인계하세요.')
-        replacement=data.get('replacement')
-        if not replacement or not getattr(replacement,'employee',None) or not replacement.employee.is_active or not replacement.is_active: raise ValidationError('인계받을 직원을 선택하세요.')
-        if replacement.employee.pk==task.assignee_id: raise ValidationError('현재 담당자와 다른 직원을 선택하세요.')
-        if task.approval_steps.filter(approver=replacement).exists(): raise ValidationError('결재자에게 수행 업무를 인계할 수 없습니다.')
-        old=task.assignee; task.assignee=replacement.employee; task.accepted_at=None; task.last_report_at=None; task.assigned_at=timezone.now()
-        TaskParticipation.objects.update_or_create(task=task,employee=task.assignee,defaults={'accepted_at':None,'progress':0,'completed_at':None,'assigned_at':task.assigned_at})
-        task.assignments.filter(employee=old).delete()
-        refresh_participation_progress(task)
-        data={**data,'body':f'{old} → {task.assignee}\n'+data['body']}; event='handover'
+        raise ValidationError('업무 이관 요청에서 승인 후 담당자를 변경할 수 있습니다.')
     else: raise ValidationError('지원하지 않는 처리입니다.')
     task.revision+=1; task.save()
+    if task.status=='cancelled':
+        from .transfers import close_for_task
+        close_for_task(task,user)
     if kind=='handover':
         from .assignment_mail import enqueue as enqueue_assignment_mail
         enqueue_assignment_mail(task,user,{task.assignee_id})
@@ -497,4 +500,3 @@ def _change(user,pk,kind,data):
         completion_followup(task)
     notify(task,('새 의견: ' if kind=='comment' else '대표 직권 처리: ' if kind=='override' else '')+data['body'][:150], external=(task.assignment_messenger if kind in ['handover','comment'] else kind in ['submit','review','override','delegate','cancel']),comment_event=saved_event if kind=='comment' else None)
     return task
-

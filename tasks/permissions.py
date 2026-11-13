@@ -50,7 +50,7 @@ def visible_tasks(user):
     tasks = Task.objects.all()
     if not can_view_company(user):
         employee = profile(user)
-        involved = Q(creator=user) | Q(participants__user=user) | Q(watchers=user) | Q(approval_steps__approver=user)
+        involved = Q(creator=user) | Q(participants__user=user) | Q(watchers=user) | Q(approval_steps__approver=user) | Q(transfers__state="pending", transfers__steps__approver__user=user)
         team = performing_department(employee.department_id) if employee else Q(pk__in=[])
         tasks = tasks.filter(team | involved) if employee else tasks.none()
     tasks = tasks.exclude(Q(status='draft') & ~Q(creator=user))

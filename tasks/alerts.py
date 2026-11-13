@@ -66,6 +66,14 @@ def action_alerts(user):
             add(f'offboarding:{item.pk}','후속 조치 증빙 확인 대기',item.title,reverse('offboarding_item',args=[item.pk]),2)
         elif item.overdue:
             add(f'offboarding:{item.pk}','퇴사 후속 조치 지연',item.title,reverse('offboarding_item',args=[item.pk]),3)
+    from .transfers import visible as visible_transfers, can_decide
+    for item in visible_transfers(user).filter(state__in=['pending','acceptance'],task__is_deleted=False):
+        if can_decide(user,item):
+            add(f'transfer:{item.pk}','업무 이관 승인 필요',f'{item.task.title} · {item.source.name} → {item.target.name}',reverse('transfer_detail',args=[item.pk]),2)
+        elif item.state=='acceptance' and item.target.user_id==user.pk:
+            add(f'transfer:{item.pk}','이관 업무 인수 확인',item.task.title,reverse('transfer_detail',args=[item.pk]),2)
+        elif item.requester_id==user.pk or item.source.user_id==user.pk:
+            add(f'transfer:{item.pk}',item.get_state_display(),item.task.title,reverse('transfer_detail',args=[item.pk]),1)
     return sorted(alerts,key=lambda a:(-a['level'],a['key']))
 
 

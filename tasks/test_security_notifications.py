@@ -105,8 +105,10 @@ class SecurityNotificationTests(TestCase):
 
     def test_handover_queues_for_new_assignee_only(self):
         from .collaboration import change
-        change(self.root,self.task.pk,'handover',{'revision':0,'replacement':self.helper,'body':'인계'})
-        self.assertEqual(AssignmentMail.objects.get().employee_id,self.assist.pk)
+        from django.core.exceptions import ValidationError
+        with self.assertRaises(ValidationError):
+            change(self.root,self.task.pk,'handover',{'revision':0,'replacement':self.helper,'body':'인계'})
+        self.assertFalse(AssignmentMail.objects.exists())
 
     def test_queue_rolls_back_with_task_transaction(self):
         try:

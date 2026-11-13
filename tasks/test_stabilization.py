@@ -8,6 +8,14 @@ from accounts.models import AccessProfile
 from . import test_assignment_ack as ack_fixtures
 from .models import Employee, TaskParticipation, WorkSeries
 from .collaboration import change
+from .transfers import request_transfer, decide
+
+def approved_transfer(owner,task,target):
+    user=get_user_model().objects.create_user("transfer-leader-"+str(task.pk))
+    Employee.objects.create(user=user,name="Approver",department=task.assignee.department,position="leader")
+    item=request_transfer(owner,task.pk,task.assignee,target,"Replacement required",revision=task.revision)
+    decide(user,item.pk,0,"approve")
+
 
 
 @override_settings(WORKHUB_REQUIRE_HIWORKS=False, WORKHUB_SCHEDULER_ENABLED=False,
@@ -29,14 +37,13 @@ class WorkflowBoundaryTests(TestCase):
         self.task.last_report_at = now
         self.task.save()
         target = self.helper()
-        change(self.owner, self.task.pk, 'handover', {
-            'revision': self.task.revision, 'body': 'Replacement required', 'replacement': target.user})
+        approved_transfer(self.owner,self.task,target)
         self.task.refresh_from_db()
         self.assertEqual(self.task.progress, 0)
         self.assertIsNone(self.task.last_report_at)
         self.assertTrue(self.task.awaiting_acceptance)
         self.assertEqual(self.task.assignments.get().employee, target)
-        self.assertEqual(self.task.events.get().snapshot['before']['progress'], '80')
+        self.assertEqual(self.task.transfers.get().source_assignment['progress'], '80')
 
     def test_shared_handover_retains_other_workers_progress(self):
         helper = self.helper()
@@ -50,8 +57,7 @@ class WorkflowBoundaryTests(TestCase):
         self.task.save()
         replacement_user = get_user_model().objects.create_user('new-worker')
         replacement = Employee.objects.create(user=replacement_user, name='New', department=self.emp.department)
-        change(self.owner, self.task.pk, 'handover', {
-            'revision': 0, 'body': 'Keep shared work', 'replacement': replacement_user})
+        approved_transfer(self.owner,self.task,replacement)
         self.task.refresh_from_db()
         self.assertEqual(self.task.progress, 30)
         self.assertEqual(self.task.assignments.get(employee=helper).progress, 60)

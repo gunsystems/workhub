@@ -71,6 +71,10 @@ def deliver_pending(limit=10):
         if not AssignmentMail.objects.filter(pk=pk, state='pending').update(state='sending', attempts=F('attempts')+1, claimed_until=now+timedelta(minutes=2)):
             continue
         mail = AssignmentMail.objects.select_related('task', 'employee__user').get(pk=pk)
+        if mail.payload.get('kind')=='transfer':
+            from .transfers import deliver_mail
+            deliver_mail(mail)
+            continue
         if mail.payload.get('kind')=='comment':
             deliver_comment(mail)
             continue

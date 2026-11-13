@@ -41,6 +41,8 @@ def remove(request,pk):
         else:
             TaskTrash.objects.create(task=task,previous_status=task.status,reason=form.cleaned_data['reason'],deleted_by=request.user)
             Task.all_objects.filter(pk=task.pk).update(is_deleted=True,status='cancelled',revision=F('revision')+1)
+            from .transfers import close_for_task
+            close_for_task(task,request.user)
             WorkSeries.objects.filter(template_task=task,enabled=True).update(enabled=False)
             CalendarExport.objects.filter(task=task).update(updated_at=timezone.now()-timedelta(days=3650))
             write('delete','Task',task.pk,task.title,before={'status':task.status,'is_deleted':False},after={'is_deleted':True,'reason':form.cleaned_data['reason'],'recoverable':True},actor=request.user)

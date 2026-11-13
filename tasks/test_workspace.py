@@ -153,11 +153,11 @@ class WorkspaceTests(TestCase):
 
     def test_delegate_and_handover_do_not_allow_self_approval(self):
         task=self.task([self.leader])
-        self.act(self.author,task,'handover',replacement=self.helper)
-        task.refresh_from_db(); self.assertEqual(task.assignee.user_id,self.helper.pk)
-        self.assertFalse(task.assignments.filter(employee=self.emp[self.worker.pk]).exists())
-        self.act(self.helper,task,'submit')
-        with self.assertRaises(ValidationError): self.act(self.author,task,'delegate',replacement=self.helper)
+        with self.assertRaises(ValidationError):self.act(self.author,task,'handover',replacement=self.helper)
+        task.refresh_from_db(); self.assertEqual(task.assignee.user_id,self.worker.pk)
+        self.assertTrue(task.assignments.filter(employee=self.emp[self.worker.pk]).exists())
+        self.act(self.worker,task,'submit')
+        with self.assertRaises(ValidationError): self.act(self.author,task,'delegate',replacement=self.worker)
         self.act(self.leader,task,'delegate',replacement=self.head)
         self.assertFalse(can_review(self.leader,Task.objects.get(pk=task.pk)))
         self.act(self.head,task,'review',decision='approve')

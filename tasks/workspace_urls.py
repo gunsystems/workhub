@@ -11,7 +11,10 @@ from . import offboarding
 from . import proposal_views
 from . import calendar_quick
 from . import meetings, microsoft_meetings
+from . import transfers
 urlpatterns=[
+    path('tasks/<int:task_pk>/transfer/',transfers.create,name='transfer_new'),
+    path('transfers/<int:pk>/',transfers.detail,name='transfer_detail'),
     path('meetings/new/',meetings.edit,name='meeting_new'),
     path('meetings/microsoft/',microsoft_meetings.settings_view,name='microsoft_settings'),
     path('meetings/microsoft/connect/',microsoft_meetings.connect,name='microsoft_connect'),
