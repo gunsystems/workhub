@@ -3,6 +3,28 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.23.3",
+      "status": "live_verified",
+      "release_notes": "releases/v0.23.3.md",
+      "summary": "자료명은 표시 제목으로 사용하고 다운로드 원래 파일명 유지",
+      "source_commit": "c7e1466dbd5afbb57db2f8a887532bbf1b624534",
+      "deployment": {
+        "id": "dep-dbr95759fdbs73dmdj2g",
+        "status": "live",
+        "finished_at": "2026-11-13T04:32:19.963121Z"
+      },
+      "verification": {
+        "focused_document_proposal_tests": 52,
+        "full_django_tests": 685,
+        "node_checks": 9,
+        "ci_run": 43365685731,
+        "ci_conclusion": "success",
+        "live_attachment": "display title and original filename shown separately",
+        "live_download": "existing attachment downloaded with original filename; browser duplicate suffix only",
+        "business_mutations": "none"
+      }
+    },
+    {
       "version": "0.23.2",
       "status": "live_verified",
       "release_notes": "releases/v0.23.2.md",
