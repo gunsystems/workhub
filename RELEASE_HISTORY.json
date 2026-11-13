@@ -3,6 +3,16 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.23.1",
+      "status": "verification_in_progress",
+      "release_notes": "releases/v0.23.1.md",
+      "summary": "품의 금액 쉼표·구매 정보 라벨·결재순서 안내와 증빙 누락 표시",
+      "verification": {
+        "focused_proposal_tests": 19,
+        "proposal_node_check": "passed"
+      }
+    },
+    {
       "version": "0.23.0",
       "status": "live_verified",
       "release_notes": "releases/v0.23.0.md",

@@ -51,6 +51,10 @@ class ProposalForm(forms.ModelForm):
         self.fields['task'].queryset=visible_tasks(user)
         self.fields['original'].queryset=Proposal.objects.filter(employee=person,state='approved',stage='prior')
         self.fields['revision'].initial=self.instance.revision if self.instance.pk else 0
+        category=self.data.get('category') if self.is_bound else (self.initial.get('category') or self.instance.category)
+        stage=self.data.get('stage') if self.is_bound else (self.initial.get('stage') or self.instance.stage)
+        self.fields['needed_on'].label='구매 희망일' if category=='purchase' and stage!='claim' else ('지급 희망일' if stage=='claim' else '진행 희망일')
+        self.fields['supplier'].label='구매처' if category=='purchase' else ('교육기관·업체' if category=='education' else '관련 업체')
         self.fields['amount'].help_text='부가세를 포함한 총액입니다. 비용 없는 기타 품의는 0원으로 입력하세요.'
         self.fields['specifics'].help_text='구매: 품목·수량 / 교육·자격증: 과정·시험명·일정 / 복지: 지원 항목·대상을 적어 주세요.'
         self.fields['original'].help_text='사용 후 비용 청구일 때 본인의 승인된 품의를 연결할 수 있습니다.'
@@ -125,4 +129,4 @@ def detail(request,pk):
         item.refresh_from_db()
     ProposalNotice.objects.filter(event__proposal=item,user=request.user,read_at__isnull=True).update(read_at=timezone.now())
     person=profile(request.user);owner=bool(person and item.employee_id==person.pk);step=proposals.current(item)
-    return render(request,'tasks/proposal_detail.html',{'item':item,'owner':owner,'error':error,'editable':owner and item.state in ['draft','rejected','withdrawn'],'can_decide':bool(person and step and step.approver_id==person.pk),'steps':item.steps.filter(round=item.round),'events':item.events.all(),'documents':item.documents.filter(archived_at__isnull=True)})
+    return render(request,'tasks/proposal_detail.html',{'item':item,'owner':owner,'error':error,'needs_evidence':item.amount>0 and not item.documents.filter(archived_at__isnull=True).exists(),'editable':owner and item.state in ['draft','rejected','withdrawn'],'can_decide':bool(person and step and step.approver_id==person.pk),'steps':item.steps.filter(round=item.round),'events':item.events.all(),'documents':item.documents.filter(archived_at__isnull=True)})
