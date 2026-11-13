@@ -24,6 +24,28 @@ class DocumentTests(TestCase):
             response=self.client.get(f'/work/documents/{doc.pk}/download/')
             self.assertEqual(b''.join(response.streaming_content),data)
         self.assertIn('.png',response['Content-Disposition']);self.assertIn('attachment',response['Content-Disposition'])
+    def test_download_uses_original_name_without_changing_display_title(self):
+        from urllib.parse import unquote
+        doc=self.doc(original_name='실제 견적서.pdf');doc.name='구매 검토용';doc.save()
+        with patch('tasks.drive_storage.WorkhubStorage._open',return_value=ContentFile(b'%PDF-original')):
+            response=self.client.get(f'/work/documents/{doc.pk}/download/')
+            self.assertEqual(b''.join(response.streaming_content),b'%PDF-original')
+        header=unquote(response['Content-Disposition'])
+        self.assertIn('실제 견적서.pdf',header);self.assertNotIn('구매 검토용',header)
+        doc.refresh_from_db();self.assertEqual(doc.name,'구매 검토용')
+        page=self.client.get(f'/tasks/{self.task.pk}/')
+        self.assertContains(page,'구매 검토용');self.assertContains(page,'파일명: 실제 견적서.pdf')
+
+    def test_original_jpeg_suffix_is_preserved_and_bad_image_suffix_repaired(self):
+        from urllib.parse import unquote
+        doc=self.doc(original_name='original.jpeg');doc.name='표시 제목';doc.save()
+        for original,expected in [('original.jpeg','original.jpeg'),('wrong.pdf','wrong.jpg')]:
+            doc.original_name=original;doc.save()
+            with patch('tasks.drive_storage.WorkhubStorage._open',return_value=ContentFile(b'\xff\xd8\xffimage')):
+                response=self.client.get(f'/work/documents/{doc.pk}/download/')
+                self.assertEqual(b''.join(response.streaming_content),b'\xff\xd8\xffimage')
+            self.assertIn(expected,unquote(response['Content-Disposition']))
+
     def test_image_preview_decodes_bounded_jpeg_and_rechecks_acl(self):
         from PIL import Image
         doc=self.doc();doc.name='이미지 증빙';doc.save()

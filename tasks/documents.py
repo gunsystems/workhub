@@ -1,5 +1,5 @@
 """Object-scoped attachments; no public Drive sharing or cross-task file search."""
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from django import forms
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -29,8 +29,8 @@ def validate_file(value):
 
 
 class DocumentForm(forms.Form):
-    name = forms.CharField(label='자료 이름', max_length=200, required=False,
-        help_text='파일을 올리는 경우 비워 두면 파일 이름을 사용합니다.')
+    name = forms.CharField(label='자료명 · 화면 표시용', max_length=200, required=False,
+        help_text='목록에서 구분할 제목입니다. 비워 두면 파일 이름을 사용하며, 다운로드할 때는 원래 파일명을 유지합니다.')
     kind = forms.ChoiceField(label='자료 구분', choices=WorkDocument._meta.get_field('kind').choices)
     file = forms.FileField(widget=forms.ClearableFileInput(attrs={'data-upload-limit':'20971520','accept':'.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.png,.jpg,.jpeg,.zip'}),label='파일 첨부 · 최대 20MB', required=False, validators=[validate_file])
     link = forms.URLField(label='외부 자료 링크', max_length=2000, required=False,
@@ -149,8 +149,12 @@ def document_download(request, pk):
         opened=obj.file.open('rb')
         head=opened.read(32);opened.seek(0)
         extension=image_extension(head) or Path(obj.original_name).suffix.lower()
-        filename=Path(obj.name).name
-        if extension and Path(filename).suffix.lower()!=extension:filename+=extension
+        filename=PureWindowsPath(obj.original_name or obj.name).name
+        filename=''.join(char for char in filename if ord(char)>=32) or 'attachment'
+        suffix=Path(filename).suffix.lower()
+        # Preserve valid original names, including .jpeg; repair old mislabeled images.
+        if extension and suffix!=extension and {suffix,extension}!={'.jpg','.jpeg'}:
+            filename=str(Path(filename).with_suffix(extension)) if suffix else filename+extension
         response = FileResponse(opened, as_attachment=True, filename=filename,
             content_type='application/octet-stream')
     except (FileNotFoundError, RepositoryError):
