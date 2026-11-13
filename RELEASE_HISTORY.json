@@ -4,11 +4,22 @@
   "releases": [
     {
       "version": "0.24.2",
-      "status": "prepared",
+      "status": "live_connection_blocked",
       "release_notes": "releases/v0.24.2.md",
       "summary": "Exchange 일정 제공자 조회 대기시간 보강",
       "verification": {
-        "live_connection": "pending"
+        "focused_meeting_tests": 24,
+        "full_django_tests": 709,
+        "node_checks": 9,
+        "ci_run": 43387936331,
+        "live_connection": "OAuth token/profile succeeded; calendar capability GET returned HTTP 502 after approximately 24 seconds. No actual meeting or invitation created.",
+        "outlook_ui": "Browser navigation could not complete; mailbox UI not verified."
+      },
+      "source_commit": "8efea381fee725bd762cec504a5c59f81e8a2133",
+      "deployment": {
+        "id": "dep-dbrc19oae00c73f7kerg",
+        "status": "live",
+        "finished_at": "2026-11-13T07:48:55.01685Z"
       }
     },
     {
