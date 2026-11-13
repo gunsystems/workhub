@@ -3,6 +3,37 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.25.0",
+      "status": "live_verified",
+      "summary": "승인형 업무 이관 · 소속/인수 부서 승인과 인수 확인",
+      "release_notes": "releases/v0.25.0.md",
+      "source_commit": "99ff039514d6ee1e32e21fa663e9035ba675cf81",
+      "initial_source_commit": "8836e6eb52240074e2623a1e8e2ed33d1c8cb063",
+      "deployment": {
+        "id": "dep-dbri2vhsrm7s7394ea5g",
+        "status": "live",
+        "finished_at": "2026-11-13T14:41:59.188016Z"
+      },
+      "verification": {
+        "focused_tests": 84,
+        "full_django_tests": 731,
+        "node_checks": 9,
+        "initial_ci_run": 43443161498,
+        "ci_run": 43444453743,
+        "migration": "tasks.0054_approved_task_transfers applied OK",
+        "backup": "/var/data/backups/before-v0250-20261113-143304.sqlite3; integrity_check=ok",
+        "live_ui": "Administrator task detail to transfer request entry verified on v0.25.0. Existing task approvers excluded from recipient options. Context help works. No transfer requests submitted, approvals executed, or staff messages sent.",
+        "mobile": "Request form at actual 320/390/768 px viewport widths: no visible control overflow. Desktop entry and help dialog verified. Approval detail rendered in isolated tests; no production transfer record created.",
+        "microsoft_live": "Deferred until Microsoft incident recovery. No meetings created.",
+        "logos": "Unchanged",
+        "screenshots": [
+          "outputs/Workhub_v0250_업무이관_PC.png",
+          "outputs/Workhub_v0250_업무이관_모바일.png"
+        ]
+      },
+      "rollback_commit": "d94af69560deeaf6107f9be5f371b8b7ff01529b"
+    },
+    {
       "version": "0.24.4",
       "status": "live_verified",
       "summary": "같은 화면의 간단 업무 전환·미팅 입력 검사 보완",
@@ -1852,4 +1883,3 @@
     }
   ]
 }
-
