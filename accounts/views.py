@@ -71,7 +71,7 @@ def invitation_preview(request, employee_id):
 
 
 class LoginForm(forms.Form):
-    username = forms.CharField(label='이메일 또는 관리자 아이디', max_length=254)
+    username = forms.CharField(label='이메일 또는 아이디', max_length=254)
     password = forms.CharField(label='비밀번호', widget=forms.PasswordInput)
 
 
@@ -181,7 +181,7 @@ def sign_in(request):
             from django.conf import settings
             return redirect('mfa_setup' if access and (access.require_mfa or (settings.WORKHUB_REQUIRE_HIWORKS and not user.is_superuser)) else 'dashboard')
         form.add_error(None, '로그인할 수 없습니다. 입력 내용을 확인하거나 잠시 후 다시 시도하세요.')
-    return page(request, 'Workhub 로그인', form)
+    return page(request, 'WORKHUB 로그인', form)
 
 
 @never_cache

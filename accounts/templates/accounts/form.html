@@ -3,7 +3,7 @@
 <head>{% include 'tasks/favicon.html' %}
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{{ title }} · Workhub</title>
+  <title>{% if title == 'WORKHUB 로그인' %}{{ title }}{% else %}{{ title }} · WORKHUB{% endif %}</title>
   <style>
     *{box-sizing:border-box}
     body{margin:0;background:#f3f5f8;color:#19283d;font:16px/1.6 system-ui,sans-serif}
@@ -57,7 +57,7 @@
   <div class="codes">{% for code in codes %}<code>{{ code }}</code>{% endfor %}</div>
   <p class="next-action"><a class="button" href="/dashboard/">업무 시작하기</a></p>
   {% endif %}
-  {% if title == 'Workhub 로그인' %}{% if request.GET.expired %}<p class="notice">30분 동안 활동이 없어 안전하게 로그아웃되었습니다. 다시 로그인해 주세요.</p>{% endif %}<p><a href="/accounts/password/reset/">비밀번호를 잊으셨나요?</a></p>{% endif %}
+  {% if title == 'WORKHUB 로그인' %}{% if request.GET.expired %}<p class="notice">30분 동안 활동이 없어 안전하게 로그아웃되었습니다. 다시 로그인해 주세요.</p>{% endif %}<p><a href="/accounts/password/reset/">비밀번호를 잊으셨나요?</a></p>{% endif %}
   {% if logout_confirmation %}<form action="{% url 'logout' %}" method="post" class="form-actions">{% csrf_token %}<button class="primary" type="submit">로그아웃</button><a class="button secondary" href="/dashboard/">취소</a></form>{% endif %}
   {% if retry_url %}<p class="next-action"><a class="button" href="{{ retry_url }}">다시 시도하기</a></p>{% endif %}
   {% if enrollment_complete %}<p class="next-action"><a class="button" href="/dashboard/">업무 시작하기</a></p>{% endif %}

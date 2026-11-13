@@ -58,7 +58,7 @@ class AccountSwitchTests(TestCase):
     def test_restart_login_is_post_only_and_clears_pending_state(self):
         self.login_as(self.users[0]);self.assertEqual(self.client.get('/accounts/mfa/switch/').status_code,405)
         self.assertEqual(self.client.post('/accounts/mfa/switch/').url,'/login/')
-        self.assertNotIn('pending_mfa_user',self.client.session);self.assertContains(self.client.get('/login/'),'이메일 또는 관리자 아이디')
+        self.assertNotIn('pending_mfa_user',self.client.session);self.assertContains(self.client.get('/login/'),'이메일 또는 아이디')
         self.assertEqual(Client(enforce_csrf_checks=True).post('/accounts/mfa/switch/').status_code,403)
     def test_legacy_mixed_session_fails_closed_without_enrolling_old_user(self):
         for path in ['/accounts/mfa/verify/','/accounts/mfa/setup/','/work/']:
