@@ -1,0 +1,10 @@
+{% extends 'tasks/base.html' %}{% load static %}{% block content %}
+<link rel="stylesheet" href="{% static 'tasks/shared_documents.css' %}">
+<section class="heading"><div><div class="eyebrow">DOCUMENT ACCESS</div><h1>접근 권한</h1><p>{{ document.name }}</p></div></section>
+<section class="detail">
+{% if error %}<p class="shared-message shared-error" role="alert">{{ error }}</p>{% endif %}
+{% if document %}<p class="shared-message">현재 계정으로 열람할 수 있는 항목입니다. 아래에는 Microsoft가 현재 계정에 공개한 공유 권한을 표시합니다.</p>
+<p class="helptext">그룹 구성원·사이트 권한 등 전체 접근자를 모두 표시하는 목록은 아닙니다. 상위 권한 상속 여부가 응답에 없을 수도 있으므로 최종 확인과 변경은 SharePoint의 ‘액세스 관리’에서 진행하세요.</p>
+<div class="shared-access-list">{% for permission in permissions %}<article><strong>{{ permission.names }}</strong><span>{{ permission.roles }}</span><small>{% if permission.inherited %}상위 위치에서 부여됨{% else %}권한 적용 위치는 SharePoint에서 확인{% endif %}</small></article>{% empty %}<p>표시할 공유 권한이 없습니다. 접근 권한이 없다는 의미는 아닙니다.</p>{% endfor %}</div>
+<div class="shared-actions"><a class="button primary" href="{{ document.webUrl }}" target="_blank" rel="noopener noreferrer">SharePoint에서 확인 ↗</a><a class="button" href="{{ back_url }}">폴더로 돌아가기</a></div>{% else %}<a class="button" href="{% url 'shared_documents' %}">문서함으로 돌아가기</a>{% endif %}
+</section>{% endblock %}

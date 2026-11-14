@@ -3,6 +3,17 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.26.1",
+      "status": "implementation_ready",
+      "summary": "폴더 이름 클릭·경로 탐색과 관리자 폴더 관리·공유 권한 확인",
+      "release_notes": "releases/v0.26.1.md",
+      "verification": {
+        "focused_tests": 41,
+        "migration": "None",
+        "live": "Pending deployment and selected-site write approval"
+      }
+    },
+    {
       "version": "0.26.0",
       "status": "live_owner_verified",
       "summary": "직원 본인 권한으로 공동 문서 탐색·원본 열기·업무 및 프로젝트 연결",

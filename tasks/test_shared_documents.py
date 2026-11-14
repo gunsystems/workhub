@@ -205,3 +205,131 @@ class SharedDocumentsTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'proposal.docx')
         self.assertContains(response, '열람 가능한 연결 문서가 없습니다')
+
+    def folder_row(self, **extra):
+        row = {**self.file, 'id': 'folder-id', 'name': '교육 자료', 'folder': {}, 'eTag': '"version-1"',
+               'parentReference': {'driveId': 'drive-id'}}
+        row.pop('file')
+        row.update(extra)
+        return row
+
+    def test_folder_name_validation(self):
+        from .shared_documents import FolderForm
+        for name in ('../secret', 'a/b', 'a\\b', 'a*', 'CON', 'NUL.txt', 'name.', '~$temp'):
+            self.assertFalse(FolderForm({'name': name}).is_valid(), name)
+        self.assertTrue(FolderForm({'name': '2027 제품 교육'}).is_valid())
+
+    def test_staff_cannot_manage_folder_even_with_sharepoint_access(self):
+        with patch('tasks.shared_documents.UserDocuments') as factory:
+            for method in (self.client.get, self.client.post):
+                self.assertEqual(method('/work/shared-documents/drive-id/folder/').status_code, 403)
+            factory.assert_not_called()
+
+    def test_folder_creation_confirmation_is_single_use(self):
+        self.parents()
+        with patch('tasks.shared_documents.UserDocuments') as factory:
+            factory.return_value.library.return_value = self.library
+            factory.return_value.create_folder.return_value = {'id': 'new-folder'}
+            response = self.client.get('/work/shared-documents/drive-id/folder/')
+            proof = response.context['proof']
+            payload = {'proof': proof, 'name': '교육', 'action': 'create', 'folder': ''}
+            response = self.client.post('/work/shared-documents/drive-id/folder/', payload)
+            self.assertEqual(response.status_code, 302)
+            self.client.post('/work/shared-documents/drive-id/folder/', payload)
+            factory.return_value.create_folder.assert_called_once_with('drive-id', '', '교육')
+
+    def test_nonempty_folder_delete_never_calls_write(self):
+        self.parents()
+        with patch('tasks.shared_documents.UserDocuments') as factory, patch('tasks.shared_documents.graph_write') as write:
+            factory.return_value.library.return_value = self.library
+            factory.return_value.item.return_value = self.folder_row()
+            factory.return_value.children.return_value = [self.file]
+            response = self.client.get('/work/shared-documents/drive-id/folder/?action=delete&folder=folder-id')
+            self.assertContains(response, '자료가 있는 폴더는 삭제할 수 없습니다')
+            response = self.client.post('/work/shared-documents/drive-id/folder/',
+                {'action': 'delete', 'folder': 'folder-id', 'proof': response.context['proof']})
+            self.assertEqual(response.status_code, 200)
+            write.assert_not_called()
+
+    def test_empty_folder_delete_uses_etag_and_no_permanent_delete(self):
+        self.parents()
+        with patch('tasks.shared_documents.UserDocuments') as factory, patch('tasks.shared_documents.graph_write') as write:
+            factory.return_value.library.return_value = self.library
+            factory.return_value.item.return_value = self.folder_row()
+            factory.return_value.children.return_value = []
+            factory.return_value.token = 'delegated'
+            response = self.client.get('/work/shared-documents/drive-id/folder/?action=delete&folder=folder-id')
+            self.client.post('/work/shared-documents/drive-id/folder/',
+                {'action': 'delete', 'folder': 'folder-id', 'proof': response.context['proof']})
+            self.assertEqual(write.call_args.args[2], 'DELETE')
+            self.assertEqual(write.call_args.kwargs['etag'], '"version-1"')
+            self.assertNotIn('permanent', write.call_args.args[0])
+
+    def test_stale_folder_confirmation_does_not_write(self):
+        self.parents()
+        with patch('tasks.shared_documents.UserDocuments') as factory, patch('tasks.shared_documents.graph_write') as write:
+            factory.return_value.library.return_value = self.library
+            factory.return_value.item.return_value = self.folder_row()
+            response = self.client.get('/work/shared-documents/drive-id/folder/?action=rename&folder=folder-id')
+            factory.return_value.item.return_value = self.folder_row(eTag='"version-2"')
+            response = self.client.post('/work/shared-documents/drive-id/folder/',
+                {'action': 'rename', 'folder': 'folder-id', 'name': '변경', 'proof': response.context['proof']})
+            self.assertContains(response, '폴더가 변경되었습니다')
+            write.assert_not_called()
+
+    def test_folder_get_does_not_write_and_root_cannot_be_deleted(self):
+        self.parents()
+        with patch('tasks.shared_documents.UserDocuments') as factory, patch('tasks.shared_documents.graph_write') as write:
+            factory.return_value.library.return_value = self.library
+            factory.return_value.item.return_value = self.folder_row(root={})
+            self.assertEqual(self.client.get('/work/shared-documents/drive-id/folder/?action=delete&folder=folder-id').status_code, 404)
+            write.assert_not_called()
+
+    def test_signed_confirmation_cannot_change_target(self):
+        self.parents()
+        with patch('tasks.shared_documents.UserDocuments') as factory, patch('tasks.shared_documents.graph_write') as write:
+            factory.return_value.library.return_value = self.library
+            factory.return_value.item.return_value = self.folder_row()
+            factory.return_value.children.return_value = []
+            response = self.client.get('/work/shared-documents/drive-id/folder/?action=rename&folder=folder-id')
+            response = self.client.post('/work/shared-documents/drive-id/folder/',
+                {'action': 'delete', 'folder': 'folder-id', 'proof': response.context['proof']})
+            self.assertContains(response, '요청이 만료되었습니다')
+            write.assert_not_called()
+
+    def test_ancestry_uses_ids_and_rejects_cycles(self):
+        client = object.__new__(UserDocuments)
+        rows = [self.folder_row(id='child', parentReference={'id': 'parent', 'driveId': 'drive-id'}),
+                self.folder_row(id='parent', name='교육', parentReference={'id': 'root', 'driveId': 'drive-id'}),
+                self.folder_row(id='root', root={})]
+        with patch.object(client, 'item', side_effect=rows):
+            self.assertEqual([r['id'] for r in client.ancestry('drive-id', 'child')], ['parent', 'child'])
+        with patch.object(client, 'item', return_value=self.folder_row(parentReference={'id': 'loop'})):
+            with self.assertRaises(SharePointProbeError): client.ancestry('drive-id', 'loop')
+
+    def test_permission_panel_does_not_claim_complete_access_list(self):
+        with patch('tasks.shared_documents.UserDocuments') as factory:
+            factory.return_value.item.return_value = self.file
+            factory.return_value.permissions.return_value = [{'names': '<script>bad</script>', 'roles': '열람', 'inherited': True}]
+            response = self.client.get('/work/shared-documents/drive-id/file-id/access/')
+            self.assertContains(response, '전체 접근자를 모두 표시하는 목록은 아닙니다')
+            self.assertNotContains(response, '<script>bad</script>')
+
+    def test_folder_post_is_csrf_protected(self):
+        from django.test import Client
+        self.parents()
+        client = Client(enforce_csrf_checks=True)
+        client.force_login(self.user)
+        self.assertEqual(client.post('/work/shared-documents/drive-id/folder/', {'name': 'new'}).status_code, 403)
+
+    def test_folder_links_and_breadcrumbs_render_without_separate_open_button(self):
+        with patch('tasks.shared_documents.UserDocuments') as factory:
+            factory.return_value.library.return_value = self.library
+            factory.return_value.libraries = [self.library]
+            factory.return_value.children.return_value = [self.folder_row()]
+            factory.return_value.ancestry.return_value = [{'id': 'parent', 'name': '상위'}, {'id': 'child', 'name': '현재'}]
+            response = self.client.get('/work/shared-documents/?drive=drive-id&folder=child')
+            self.assertContains(response, '현재 폴더 경로')
+            self.assertContains(response, '↑ 상위 폴더')
+            self.assertNotContains(response, '>폴더 열기</a>')
+            self.assertContains(response, 'shared-folder-link')
