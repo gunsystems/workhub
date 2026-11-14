@@ -4,7 +4,7 @@
   "releases": [
     {
       "version": "0.26.0",
-      "status": "live_connection_verification_pending",
+      "status": "live_owner_verified",
       "summary": "직원 본인 권한으로 공동 문서 탐색·원본 열기·업무 및 프로젝트 연결",
       "release_notes": "releases/v0.26.0.md",
       "verification": {
@@ -14,9 +14,10 @@
         "ci_run": 43586798006,
         "migration": "0055_shared_documents OK",
         "microsoft_settings": "Delegated User.Read + Sites.Selected granted; Web callback saved; selected-site read scope unchanged",
-        "live_ui": "Staff login and OAuth connection pending",
-        "mobile": "pending",
-        "screenshot": "outputs/Workhub_v0260_배포완료_20261114.png"
+        "live_ui": "Representative lee company OAuth connected; 3 libraries listed; empty verification document created in 전사 공통; name search, canonical original open, link to task 11 and task-detail return path verified. No other staff notified.",
+        "mobile": "Empty-library layout checked at 320/390/768px. Linked-file view verified on desktop; linked-file mobile viewport override could not be reliably applied in final pass.",
+        "screenshot": "outputs/Workhub_v0260_공동문서_업무연결_PC_20261114.png",
+        "limitations": "Ordinary staff site permissions and live revoked-access checks remain pending; no write/upload/edit permission automation."
       },
       "source_commit": "70e70afa9b6ac73bb94bb3c069969571348b2a41",
       "deployment": {
