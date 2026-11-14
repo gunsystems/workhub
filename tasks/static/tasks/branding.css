@@ -5,7 +5,9 @@
 .footer-brand{display:flex;align-items:center;flex-wrap:wrap;gap:12px}
 .footer-company-logo{display:block;width:112px;height:auto;max-height:28px}
 .app-shell footer .footer-version{float:none;white-space:nowrap;font-size:11px;color:#708279;border-left:1px solid #d8e3dc;padding-left:12px}
+.app-shell footer .footer-version{display:inline-block}
 .auth-brand{display:flex;justify-content:center;padding:4px 0 20px}
 .auth-brand img{display:block;width:180px;max-width:65%;height:auto}
 @media(max-width:700px){.app-sidebar .company-logo{width:auto;flex:1;margin-right:20px}.workhub-brand-image{width:208px;max-width:100%}.app-shell footer{align-items:flex-start}.app-shell footer>span{float:none;font-size:10px}.auth-brand img{width:156px}}
 @media(max-width:360px){.workhub-brand-image{width:185px}.footer-company-logo{width:100px}}
+
