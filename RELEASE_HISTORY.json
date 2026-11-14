@@ -4,14 +4,22 @@
   "releases": [
     {
       "version": "0.26.1",
-      "status": "implementation_ready",
+      "status": "live_owner_verified",
       "summary": "폴더 이름 클릭·경로 탐색과 관리자 폴더 관리·공유 권한 확인",
       "release_notes": "releases/v0.26.1.md",
       "verification": {
         "focused_tests": 41,
+        "full_django_tests": 772,
+        "node_checks": 9,
+        "ci_run": 43591228272,
         "migration": "None",
-        "live": "Pending deployment and selected-site write approval"
-      }
+        "selected_site": "Workhub Documents only: app role read to write. Temporary Graph Explorer consent revoked and no-permissions state verified.",
+        "live_ui": "Representative account: folder-name navigation, breadcrumbs, create empty test folder, rename, recycle delete, partial access panel verified. Test folder removed to SharePoint recycle bin.",
+        "mobile": "Actual 320px folder form, 390px and 768px document layout checked; final folder-row polish checked after deploy.",
+        "limitations": "Folder management restricted to Workhub administrator/representative and own Microsoft permissions. Empty folders only. Ordinary staff live permission and revoked-access checks remain pending; no upload, file delete, or ACL editing in this release."
+      },
+      "source_commit": "8bc9e2e6e633e5abeb207924857ffac376febb8f",
+      "deploy_id": "dep-dbs4jpbl550s73fea4dg"
     },
     {
       "version": "0.26.0",
