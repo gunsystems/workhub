@@ -4,14 +4,24 @@
   "releases": [
     {
       "version": "0.26.0",
-      "status": "implementation_ready",
+      "status": "live_connection_verification_pending",
       "summary": "직원 본인 권한으로 공동 문서 탐색·원본 열기·업무 및 프로젝트 연결",
       "release_notes": "releases/v0.26.0.md",
       "verification": {
         "focused_tests": 29,
-        "migration": "0055_shared_documents",
-        "deployment": "pending",
-        "live_ui": "pending"
+        "full_django_tests": 760,
+        "node_checks": 9,
+        "ci_run": 43586798006,
+        "migration": "0055_shared_documents OK",
+        "microsoft_settings": "Delegated User.Read + Sites.Selected granted; Web callback saved; selected-site read scope unchanged",
+        "live_ui": "Staff login and OAuth connection pending",
+        "mobile": "pending",
+        "screenshot": "outputs/Workhub_v0260_배포완료_20261114.png"
+      },
+      "source_commit": "70e70afa9b6ac73bb94bb3c069969571348b2a41",
+      "deployment": {
+        "id": "dep-dbs3pqbrjlhs73d33n7g",
+        "status": "live"
       }
     },
     {
