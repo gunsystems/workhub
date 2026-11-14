@@ -3,6 +3,18 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.26.0",
+      "status": "implementation_ready",
+      "summary": "직원 본인 권한으로 공동 문서 탐색·원본 열기·업무 및 프로젝트 연결",
+      "release_notes": "releases/v0.26.0.md",
+      "verification": {
+        "focused_tests": 29,
+        "migration": "0055_shared_documents",
+        "deployment": "pending",
+        "live_ui": "pending"
+      }
+    },
+    {
       "version": "0.25.4",
       "status": "live_verified",
       "summary": "SharePoint 문서 전용 앱 읽기 연결 사전 점검",

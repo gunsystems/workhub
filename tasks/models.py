@@ -742,3 +742,4 @@ class EmployeeAddress(models.Model):
 from .proposal_models import Proposal, ProposalStep, ProposalEvent, ProposalNotice
 from .meeting_models import MicrosoftConnection, Meeting, MeetingAttendee, MeetingMail
 from .transfer_models import TaskTransfer, TransferStep
+from .shared_document_models import DocumentConnection, SharedDocument, SharedDocumentLink

@@ -91,6 +91,11 @@ def check_repository(config=None):
     token = auth.get('access_token')
     if not isinstance(token, str) or not token:
         raise SharePointProbeError('문서 연결 앱의 인증에 실패했습니다.')
+    return site_libraries(config, token)
+
+
+def site_libraries(config, token):
+    """Same site boundary for delegated user access and deployment probes."""
     parsed = urlsplit(config.site_url)
     graph = 'https://graph.microsoft.com/v1.0'
     site = _json_request(f'{graph}/sites/{parsed.hostname}:{parsed.path}?$select=id,webUrl', token=token)
@@ -134,4 +139,3 @@ def check_repository(config=None):
         if not valid_next:
             raise SharePointProbeError('문서함 목록의 다음 페이지 주소가 올바르지 않습니다.')
     raise SharePointProbeError('문서함 목록이 너무 길어 조회를 중단했습니다.')
-

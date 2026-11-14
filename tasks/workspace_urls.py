@@ -12,7 +12,14 @@ from . import proposal_views
 from . import calendar_quick
 from . import meetings, microsoft_meetings
 from . import transfers
+from . import shared_documents
 urlpatterns=[
+    path('shared-documents/',shared_documents.listing,name='shared_documents'),
+    path('shared-documents/connect/',shared_documents.connect,name='shared_documents_connect'),
+    path('shared-documents/callback/',shared_documents.callback,name='shared_documents_callback'),
+    path('shared-documents/disconnect/',shared_documents.disconnect,name='shared_documents_disconnect'),
+    path('shared-documents/<str:drive>/<str:item>/open/',shared_documents.open_document,name='shared_document_open'),
+    path('shared-documents/<str:drive>/<str:item>/link/',shared_documents.link_document,name='shared_document_link'),
     path('tasks/<int:task_pk>/transfer/',transfers.create,name='transfer_new'),
     path('transfers/<int:pk>/',transfers.detail,name='transfer_detail'),
     path('meetings/new/',meetings.edit,name='meeting_new'),
