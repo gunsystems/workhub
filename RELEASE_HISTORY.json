@@ -3,6 +3,27 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.25.4",
+      "status": "live_verified",
+      "summary": "SharePoint 문서 전용 앱 읽기 연결 사전 점검",
+      "release_notes": "releases/v0.25.4.md",
+      "source_commit": "e7a3246535e4a374fcc5a3502758ee2a6ca122f9",
+      "deployment": {
+        "id": "dep-dbs2vhe1egvs73cmlmi0",
+        "status": "live"
+      },
+      "verification": {
+        "ci_run": 43582447719,
+        "full_django_tests": 742,
+        "node_checks": 9,
+        "focused_tests": 11,
+        "migration": "None",
+        "live_probe": "Dedicated app authenticated; configured site libraries: 3.",
+        "scope_check": "Existing other site request denied with HTTP 403; no file writes.",
+        "limitations": "Employee document UI and collaborative editing not implemented in this release."
+      }
+    },
+    {
       "version": "0.25.1",
       "status": "live_verified",
       "summary": "로그인 관리자 문구 제거 및 WORKHUB 브랜드 표기 통일",
@@ -1907,4 +1928,3 @@
     }
   ]
 }
-
