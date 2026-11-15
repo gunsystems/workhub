@@ -3,14 +3,30 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.30.1",
+      "status": "live_functionally_verified",
+      "summary": "그룹 기반 문서 권한 관리 운영 반영 및 상속 결과 오탐 보완",
+      "release_notes": "releases/v0.30.1.md",
+      "verification": {
+        "focused_django_tests": 41,
+        "github_ci": "success",
+        "deployment": "dep-dbt3truc6qcc73alkvcg",
+        "live": "Verified empty group creation, employee membership add/remove, folder inheritance break/reset, group read grant, read-to-write change, grant removal, representative Manage and ordinary employee No access lookup. Test group restored to zero members; empty test folder restored to inheritance. Existing work documents unchanged.",
+        "mobile": "Viewport override did not take effect in inspection browser; real mobile visual validation remains pending.",
+        "ci_run": 43773785843
+      },
+      "rollback_commit": "7326b2eb9ff85d25dd5d37a15cb92141ae757332"
+    },
+    {
       "version": "0.30.0",
-      "status": "development_pending_live_validation",
+      "status": "superseded_by_0.30.1",
       "summary": "그룹 중심 문서 권한 관리와 명시적 상속 처리",
       "release_notes": "releases/v0.30.0.md",
       "verification": {
         "focused_django_tests": 39,
-        "live": "not deployed; real SharePoint group writes and responsive screenshots pending",
-        "migration": "0057_document_access_group"
+        "live": "Deployed; empty group create/member add/remove, inheritance break/reset verified. Break verification false-positive corrected in 0.30.1.",
+        "migration": "0057_document_access_group",
+        "full_django_tests": 842
       },
       "rollback_commit": "488a710ea0e11f7473cc55186249bbefd7a3f9ff"
     },
