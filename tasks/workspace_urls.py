@@ -12,13 +12,16 @@ from . import proposal_views
 from . import calendar_quick
 from . import meetings, microsoft_meetings
 from . import transfers
-from . import shared_documents
+from . import shared_documents, shared_files
 urlpatterns=[
     path('shared-documents/',shared_documents.listing,name='shared_documents'),
     path('shared-documents/connect/',shared_documents.connect,name='shared_documents_connect'),
     path('shared-documents/callback/',shared_documents.callback,name='shared_documents_callback'),
     path('shared-documents/disconnect/',shared_documents.disconnect,name='shared_documents_disconnect'),
     path('shared-documents/<str:drive>/folder/',shared_documents.folder_manage,name='shared_folder_manage'),
+    path('shared-documents/<str:drive>/upload/',shared_files.upload_file,name='shared_file_upload'),
+    path('shared-documents/<str:drive>/<str:item>/download/',shared_files.download_file,name='shared_file_download'),
+    path('shared-documents/<str:drive>/<str:item>/manage/<str:action>/',shared_files.manage_file,name='shared_file_manage'),
     path('shared-documents/<str:drive>/<str:item>/access/',shared_documents.document_access,name='shared_document_access'),
     path('shared-documents/<str:drive>/<str:item>/open/',shared_documents.open_document,name='shared_document_open'),
     path('shared-documents/<str:drive>/<str:item>/link/',shared_documents.link_document,name='shared_document_link'),

@@ -3,7 +3,8 @@ import json
 from django.contrib.auth import get_user_model
 from .models import Task, Employee, Project, Department
 
-TYPE_LABELS={'WorkDocument':'업무자료','Task':'업무','Employee':'직원','Project':'프로젝트','Department':'부서','Account':'계정',
+TYPE_LABELS={'SharePointFile':'공동 문서 파일','SharePointFolder':'공동 문서 폴더','SharedDocumentLink':'공동 문서 연결',
+    'WorkDocument':'업무자료','Task':'업무','Employee':'직원','Project':'프로젝트','Department':'부서','Account':'계정',
     'AssignmentMail':'업무 배정 메일','TaskParticipation':'공동 수행','TaskWatchers':'참조자',
     'ApprovalStep':'결재','WorkRequest':'업무 요청','ChecklistItem':'체크리스트','AccountEvent':'계정 처리',
     'PeriodReport':'업무보고','ReportSubmission':'제출 보고','ReportReview':'보고 검토','ReportFile':'첨부',

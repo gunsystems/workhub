@@ -550,7 +550,8 @@ def folder_manage(request, drive):
                 from .audit import write
                 write({'create': 'create', 'rename': 'update', 'delete': 'delete'}[action],
                       'SharePointFolder', target_id, '공동 문서 폴더 ' + {'create': '생성', 'rename': '이름 변경', 'delete': '휴지통 이동'}[action],
-                      after={'문서함': drive, '폴더': target_id}, actor=request.user)
+                      before={'폴더명': row['name'], '문서함': drive, '폴더': folder} if row else {},
+                      after={'문서함': drive, '폴더': target_id, '폴더명': form.cleaned_data['name'] if action != 'delete' else row['name'], '휴지통': action == 'delete'}, actor=request.user)
                 messages.success(request, {'create': '폴더를 만들었습니다.', 'rename': '폴더 이름을 변경했습니다.',
                                            'delete': '폴더를 SharePoint 휴지통으로 이동했습니다.'}[action])
                 return redirect(context['cancel_url'])

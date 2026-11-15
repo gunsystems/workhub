@@ -3,6 +3,17 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.28.0",
+      "status": "implementation_ready",
+      "summary": "Workhub 파일 업로드·새 버전·다운로드·이름 변경·이동·휴지통 및 관리자 로그",
+      "release_notes": "releases/v0.28.0.md",
+      "verification": {
+        "focused_tests": 64,
+        "live": "Pending CI and delegated live verification",
+        "migration": "None"
+      }
+    },
+    {
       "version": "0.27.2",
       "status": "live_verified",
       "summary": "공동 문서 첫 사용 안내와 직원용 문구 원칙 기록",

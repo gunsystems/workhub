@@ -6,7 +6,7 @@ from .google_calendar import NoRedirect
 from .sharepoint_probe import SharePointProbeError
 
 
-def graph_write(url, token, method, data=None, etag=None):
+def graph_write(url, token, method, data=None, etag=None, label='폴더'):
     headers = {'Authorization': 'Bearer ' + token, 'Accept': 'application/json'}
     body = None
     if data is not None:
@@ -31,6 +31,6 @@ def graph_write(url, token, method, data=None, etag=None):
                   409: '같은 이름의 폴더가 이미 있거나 폴더 상태가 변경되었습니다.',
                   412: '다른 사용자가 폴더를 변경했습니다. 새로고침 후 다시 진행하세요.',
                   429: 'Microsoft 요청이 많습니다. 잠시 후 다시 진행하세요.'}
-        raise SharePointProbeError(reason.get(exc.code, '폴더 변경에 실패했습니다. 새로고침하여 결과를 확인하세요.')) from None
+        raise SharePointProbeError(reason.get(exc.code, '폴더 변경에 실패했습니다. 새로고침하여 결과를 확인하세요.').replace('폴더', label)) from None
     except (URLError, OSError, ValueError, TypeError):
         raise SharePointProbeError('변경 결과를 확인하지 못했습니다. 중복 실행하지 말고 새로고침하여 확인하세요.') from None

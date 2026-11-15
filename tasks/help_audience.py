@@ -18,9 +18,9 @@ def for_audience(name, source, user):
             '연결한 문서는 해당 업무의 공동 문서 보기 · 연결에서 다시 엽니다.',
         ]
         result['notes'] = ['문서를 연결해도 원본을 복사하지 않습니다. 수정한 내용은 같은 원본에 반영됩니다.',
-                           '편집이 허용된 Word·Excel·PowerPoint 문서는 웹에서 함께 편집할 수 있습니다. 새 자료 추가는 문서함의 SharePoint에서 열기를 이용하세요.',
+                           '편집이 허용된 Word·Excel·PowerPoint 문서는 웹에서 함께 편집할 수 있습니다. 파일 업로드로 자료를 추가하고 파일 옆 ⋯ 메뉴에서 다운로드·새 버전 업로드·이름 변경·이동·삭제를 합니다.',
                            '문서가 열리지 않거나 편집이 필요하면 관리자에게 문의하세요.',
-                           '검색은 현재 폴더의 이름을 기준으로 합니다. 문서함 전체에서 찾으려면 SharePoint에서 열기를 이용하세요.',
+                           '검색은 현재 폴더의 이름을 기준으로 합니다. 하위 폴더까지 자동 검색하지 않으므로 필요한 폴더를 열어 검색하세요.',
                            '접근 권한 확인에서는 본인에게 공개된 공유 정보를 볼 수 있습니다.']
         result['flow_labels'] = ['회사 계정 연결', '폴더 · 문서 찾기', '원본 열기', '업무에 연결']
         if authenticated and can_override_work(user):
@@ -28,6 +28,10 @@ def for_audience(name, source, user):
                                           '빈 폴더만 삭제할 수 있습니다. 삭제한 폴더는 SharePoint 휴지통으로 이동합니다.']
         if admin:
             result.setdefault('management_notes', []).append('최종 권한 확인·변경은 SharePoint 액세스 관리에서 진행하세요. 표시된 공유 정보는 전체 접근자 목록이 아닐 수 있습니다.')
+    elif name in ['shared_file_upload', 'shared_file_manage']:
+        result.update(title='공동 문서 파일 관리', purpose='문서함에서 파일을 등록하거나 정리합니다.',
+            steps=['파일 업로드에서 파일을 선택하거나 끌어다 놓고 등록합니다.', '파일 옆 ⋯ 메뉴에서 다운로드·이름 변경·이동·삭제를 선택합니다.', '이동은 폴더를 열어 위치를 고른 뒤 이 폴더로 이동을 누릅니다. 삭제는 확인 후 휴지통으로 이동합니다.'],
+            notes=['파일당 최대 20MB이며 같은 이름의 파일을 자동으로 덮어쓰지 않습니다.', '이름 변경·이동 후에도 연결된 업무에서 같은 문서를 엽니다. 삭제하면 연결된 업무에서도 열 수 없습니다.', '편집 권한이 필요한 작업이 차단되면 관리자에게 문의하세요.'])
     elif name in ['notice_list', 'notice_detail'] and not admin:
         result.update(title='공지사항', purpose='본인에게 전달된 공지를 확인합니다.',
             steps=['공지 제목을 눌러 내용을 확인합니다.', '첨부자료와 공지에서 안내하는 일시·대상을 확인합니다.'],

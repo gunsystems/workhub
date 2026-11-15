@@ -1,0 +1,21 @@
+{% extends 'tasks/base.html' %}{% load static %}{% block content %}
+<link rel="stylesheet" href="{% static 'tasks/shared_documents.css' %}">
+<section class="heading"><div><div class="eyebrow">COMPANY DOCUMENTS</div><h1>{{ title }}</h1><p>{{ library.name }}{% if location_name %} · {{ location_name }}{% endif %}{% if target %} · {{ target.name }}{% endif %}</p></div></section>
+<section class="detail shared-folder-editor">
+{% if error %}<p class="shared-message shared-error" role="alert">{{ error }}</p>{% endif %}
+{% if library and not error %}
+{% if action == 'move' %}
+<h2>이동할 폴더를 선택하세요</h2><p>같은 문서함 안에서 이동합니다. 파일에 연결된 업무는 유지됩니다.</p>
+<nav class="shared-breadcrumbs" aria-label="이동할 폴더 경로"><a href="{% url 'shared_file_manage' drive item action %}">{{ library.name }}</a>{% for crumb in breadcrumbs %}<span aria-hidden="true">›</span><a href="{% url 'shared_file_manage' drive item action %}?to={{ crumb.id|urlencode }}">{{ crumb.name }}</a>{% endfor %}</nav>
+{% if to %}<a class="button" href="{% url 'shared_file_manage' drive item action %}?to={{ up_folder|urlencode }}">↑ 상위 폴더</a>{% endif %}
+<div class="shared-file-list">{% for folder in folders %}<a class="shared-folder-link shared-move-folder" href="{% url 'shared_file_manage' drive item action %}?to={{ folder.id|urlencode }}">📁 {{ folder.name }}</a>{% empty %}<p class="helptext">이 조회 구간에는 하위 폴더가 없습니다.</p>{% endfor %}</div>
+{% if more_url %}<a class="button" href="{{ more_url }}">다음 폴더 보기</a>{% endif %}
+{% endif %}
+<form method="post" enctype="multipart/form-data" class="shared-link-form">{% csrf_token %}
+<input type="hidden" name="proof" value="{{ proof }}"><input type="hidden" name="folder" value="{{ folder }}"><input type="hidden" name="to" value="{{ to }}">
+{% if action == 'delete' %}<h2>{{ target.name }}</h2><p>이 파일을 휴지통으로 이동할까요?</p><p class="helptext">연결된 업무에서도 열 수 없게 됩니다. 복원이 필요하면 관리자에게 요청하세요.</p>
+{% elif action == 'move' %}<p class="shared-message">이동할 위치: <strong>{{ destination_name }}</strong></p>
+{% else %}{{ form.as_p }}{% if action == 'replace' %}<p class="helptext">같은 형식의 수정 파일을 올리면 기존 문서의 새 버전으로 저장합니다. 문서 이름과 업무 연결은 유지됩니다.</p>{% elif action == 'upload' %}<p class="helptext">한 번에 파일 1개 · 최대 20MB. 같은 이름의 파일은 덮어쓰지 않습니다.</p>{% else %}<p class="helptext">파일 확장자는 유지합니다. 연결된 업무에도 바뀐 이름이 표시됩니다.</p>{% endif %}{% endif %}
+<div class="shared-actions"><button class="button {% if action == 'delete' %}shared-danger{% else %}primary{% endif %}">{% if action == 'replace' %}새 버전 저장{% elif action == 'upload' %}파일 업로드{% elif action == 'delete' %}휴지통으로 이동{% elif action == 'move' %}이 폴더로 이동{% else %}이름 변경{% endif %}</button><a class="button" href="{{ cancel_url }}">취소</a></div>
+</form>{% else %}<a class="button" href="{{ cancel_url }}">문서함으로 돌아가기</a>{% endif %}
+</section>{% endblock %}
