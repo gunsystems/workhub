@@ -10,9 +10,12 @@
       "verification": {
         "focused_tests": 85,
         "node_checks": 10,
-        "full_regression": "running",
+        "full_regression": "success",
         "live": "Pending Microsoft configuration and actual access verification",
-        "migration": "0056_document_permission_management"
+        "migration": "0056_document_permission_management",
+        "full_django_tests": 827,
+        "ci_run": 43713042233,
+        "ci_job": 132808584016
       },
       "rollback_commit": "45b5cba05db6859fc87ec75422a652c70a274694"
     },
