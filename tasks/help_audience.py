@@ -10,8 +10,16 @@ def for_audience(name, source, user):
     employee = profile(user) if authenticated else None
     reviewer = bool(admin or (employee and (employee.role == 'manager' or employee.position in ['leader', 'head', 'executive'])))
     if name in ['shared_documents', 'shared_document_link', 'shared_folder_manage', 'shared_document_access']:
+        result['steps'] = [
+            '회사 문서함 연결에서 Workhub와 같은 이메일의 회사 Microsoft 계정으로 로그인합니다.',
+            '폴더 이름을 눌러 열고, 상단 폴더 경로나 상위 폴더로 이동합니다.',
+            '검색어와 정렬을 선택해 문서를 찾습니다. 더 보기 또는 다음 항목 검색이 있으면 이어서 확인하세요.',
+            '문서 열기로 원본을 확인하고, 업무에 연결에서 관련 업무·프로젝트를 선택합니다.',
+            '연결한 문서는 해당 업무의 공동 문서 보기 · 연결에서 다시 엽니다.',
+        ]
         result['notes'] = ['문서를 연결해도 원본을 복사하지 않습니다. 수정한 내용은 같은 원본에 반영됩니다.',
                            '문서가 열리지 않거나 편집이 필요하면 관리자에게 문의하세요.',
+                           '검색은 현재 폴더의 이름을 기준으로 합니다. 문서함 전체에서 찾으려면 SharePoint에서 열기를 이용하세요.',
                            '접근 권한 확인에서는 본인에게 공개된 공유 정보를 볼 수 있습니다.']
         result['flow_labels'] = ['회사 계정 연결', '폴더 · 문서 찾기', '원본 열기', '업무에 연결']
         if authenticated and can_override_work(user):
