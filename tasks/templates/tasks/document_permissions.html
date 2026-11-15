@@ -1,0 +1,14 @@
+{% extends 'tasks/base.html' %}{% load static %}{% block content %}
+<link rel="stylesheet" href="{% static 'tasks/document_permissions.css' %}">
+<section class="heading"><div><div class="eyebrow">ADMINISTRATION · 관리자 전용</div><h1>문서 권한 관리</h1><p>{{ target.name|default:'폴더·파일 권한' }}</p></div></section>
+{% for message in messages %}<p class="permission-note" role="status">{{ message }}</p>{% endfor %}
+{% if error %}<section class="detail"><p class="permission-error" role="alert">{{ error }}</p><a class="button" href="{% url 'document_permission_setup' %}">관리자 연결 확인</a></section>
+{% elif preview %}<section class="detail permission-panel"><h2>변경 내용 확인</h2><p>이 항목을 아래 직원에게만 허용합니다. 기존 일반 직원·그룹 권한은 해제하고 소유자와 현재 처리 계정은 보존합니다.</p>
+<ul class="permission-people">{% for row in preview.desired %}<li><strong>{{ row.name }}</strong><span>{{ row.email }}</span><b>{% if row.role == 'read' %}보기{% else %}편집{% endif %}</b></li>{% empty %}<li>추가로 허용할 직원 없음 · 관리자 접근만 유지</li>{% endfor %}</ul>
+<h3>보존할 관리자</h3><ul>{% for row in protected %}<li>{{ row.name }}</li>{% endfor %}</ul>
+<details><summary>현재 권한 · 변경 전</summary><ul>{% for row in snapshot.rows %}{% if not row.limited %}<li>{{ row.name }}{% if row.protected %} · 보존{% else %} · 선택한 직원 권한으로 대체{% endif %}</li>{% endif %}{% endfor %}</ul></details>
+<p class="permission-note">폴더 변경은 상속받는 하위 자료에 적용됩니다. 이미 별도 권한을 가진 하위 자료는 변경하지 않습니다. 사이트 관리자 권한은 별도로 유지됩니다.</p>
+<form method="post" action="{% url 'document_permission_apply' drive item %}">{% csrf_token %}<input type="hidden" name="nonce" value="{{ nonce }}"><label class="permission-confirm"><input type="checkbox" name="confirmed" value="yes" required> 허용 대상과 기존 권한 해제 범위를 확인했습니다.</label><div class="permission-actions"><button class="button primary">권한 변경 적용</button><a class="button" href="{% url 'document_permission_manage' drive item %}">다시 선택</a><a class="button" href="{{ cancel_url }}">취소</a></div></form></section>
+{% else %}<section class="detail permission-panel"><h2>접근할 직원 선택</h2><p>보기는 열람·다운로드, 편집은 파일 추가·수정·삭제를 허용합니다. 저장 전 변경 범위를 확인합니다.</p>
+<p class="permission-note">현재 {% if snapshot.unique %}이 항목에 별도 권한이 있습니다.{% else %}상위 폴더의 권한을 사용하고 있습니다. 적용하면 이 항목의 권한을 분리합니다.{% endif %} 소유자와 처리 계정의 접근은 유지됩니다.</p>
+<form method="post">{% csrf_token %}<div class="permission-fields">{% for field in form %}<div class="permission-field">{{ field.label_tag }}{{ field }}{{ field.errors }}{% if field.field.disabled %}<small>관리자 접근 유지</small>{% endif %}</div>{% endfor %}</div><div class="permission-actions"><button class="button primary">변경 내용 검토</button><a class="button" href="{{ cancel_url }}">취소</a></div></form></section>{% endif %}{% endblock %}

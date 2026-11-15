@@ -743,3 +743,4 @@ from .proposal_models import Proposal, ProposalStep, ProposalEvent, ProposalNoti
 from .meeting_models import MicrosoftConnection, Meeting, MeetingAttendee, MeetingMail
 from .transfer_models import TaskTransfer, TransferStep
 from .shared_document_models import DocumentConnection, SharedDocument, SharedDocumentLink
+from .document_permission_models import DocumentPermissionConnection, DocumentPermissionLease

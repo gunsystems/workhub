@@ -12,9 +12,14 @@ from . import proposal_views
 from . import calendar_quick
 from . import meetings, microsoft_meetings
 from . import transfers
-from . import shared_documents, shared_files
+from . import shared_documents, shared_files, document_permissions
 urlpatterns=[
     path('shared-documents/',shared_documents.listing,name='shared_documents'),
+    path('shared-documents/permissions/',document_permissions.setup,name='document_permission_setup'),
+    path('shared-documents/permissions/connect/',document_permissions.connect,name='document_permission_connect'),
+    path('shared-documents/permissions/callback/',document_permissions.callback,name='document_permission_callback'),
+    path('shared-documents/<str:drive>/<str:item>/permissions/',document_permissions.manage,name='document_permission_manage'),
+    path('shared-documents/<str:drive>/<str:item>/permissions/apply/',document_permissions.apply,name='document_permission_apply'),
     path('shared-documents/connect/',shared_documents.connect,name='shared_documents_connect'),
     path('shared-documents/callback/',shared_documents.callback,name='shared_documents_callback'),
     path('shared-documents/disconnect/',shared_documents.disconnect,name='shared_documents_disconnect'),

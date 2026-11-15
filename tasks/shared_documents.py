@@ -24,7 +24,7 @@ from django.utils import timezone
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST, require_GET, require_http_methods
 
-from .models import DocumentConnection, SharedDocument, SharedDocumentLink
+from .models import DocumentConnection, SharedDocument, SharedDocumentLink, DocumentPermissionConnection
 from .sharepoint_probe import ProbeConfig, SharePointProbeError, _json_request, site_libraries
 from .documents import parent_for, can_add
 from .permissions import visible_tasks, visible_projects, can_override_work
@@ -77,21 +77,28 @@ def segment(value):
 class UserDocuments:
     def token_key(self, connection):
         # Reconnect, rotation, settings or identity changes invalidate reuse.
-        values = (str(connection.pk), str(connection.user_id), connection.email,
+        values = (type(connection).__name__, str(connection.pk), str(connection.user_id), connection.email,
                   str(connection.subject), str(connection.connected_at),
                   connection.encrypted_refresh_token, self.config.tenant_id,
                   self.config.client_id, self.config.client_secret, self.config.site_url,
                   settings.SECRET_KEY)
         return hashlib.sha256(repr(values).encode()).hexdigest()
 
-    def __init__(self, user):
+    def __init__(self, user, *, permission_connection=None):
         if not user.is_authenticated or not user.is_active:
             raise PermissionDenied
         self.config = ProbeConfig.from_settings()
-        connection = DocumentConnection.objects.filter(user=user).first()
+        if permission_connection is None and user.is_superuser:
+            permission_connection = DocumentPermissionConnection.objects.filter(user=user).first()
+        if permission_connection is not None and not user.is_superuser:
+            raise PermissionDenied
+        if permission_connection is not None and (permission_connection.user_id != user.pk or
+                permission_connection.site_url != self.config.site_url):
+            raise PermissionDenied
+        connection = permission_connection or DocumentConnection.objects.filter(user=user).first()
         if (not connection or str(connection.tenant) != self.config.tenant_id or
                 str(connection.client) != self.config.client_id or
-                connection.email.casefold() != user.email.strip().casefold()):
+                (permission_connection is None and connection.email.casefold() != user.email.strip().casefold())):
             raise SharePointProbeError('회사 Microsoft 계정을 문서함에 연결해 주세요.')
         try:
             refresh = cipher().decrypt(connection.encrypted_refresh_token.encode()).decode()
@@ -108,7 +115,7 @@ class UserDocuments:
             self.token = auth['access_token']
             if auth.get('refresh_token'):
                 connection.encrypted_refresh_token = cipher().encrypt(auth['refresh_token'].encode()).decode()
-                DocumentConnection.objects.filter(pk=connection.pk).update(
+                type(connection).objects.filter(pk=connection.pk).update(
                     encrypted_refresh_token=connection.encrypted_refresh_token)
             try:
                 ttl = max(0, int(auth.get('expires_in', 0)) - 60)
@@ -116,7 +123,7 @@ class UserDocuments:
                 ttl = 0
             document_token_cache.put(self.token_key(connection), cipher().encrypt(self.token.encode()), ttl)
         self._items = {}
-        self.cursor_identity = (user.pk, connection.pk, connection.email, str(connection.subject),
+        self.cursor_identity = (type(connection).__name__, user.pk, connection.pk, connection.email, str(connection.subject),
                                 str(connection.connected_at), self.config.tenant_id,
                                 self.config.client_id, self.config.site_url)
         # Always query Graph with the user's token: no cached ACLs or listings.
@@ -344,6 +351,9 @@ def callback(request):
 @never_cache
 def disconnect(request):
     DocumentConnection.objects.filter(user=request.user).delete()
+    if request.user.is_superuser:
+        DocumentPermissionConnection.objects.filter(user=request.user).delete()
+        request.session.pop('document_permission_preview', None)
     messages.success(request, 'Workhub의 문서 계정 연결을 해제했습니다.')
     return redirect('shared_documents')
 
@@ -365,6 +375,10 @@ def listing(request):
     context = {'connection': DocumentConnection.objects.filter(user=request.user).first(),
                'can_manage_folders': can_override_work(request.user), 'kind': kind, 'parent': parent, 'q': request.GET.get('q', '')[:200].strip(), 'callback_url': callback_url(),
                'order': request.GET.get('order', 'name')}
+    if request.user.is_superuser:
+        permission_connection = DocumentPermissionConnection.objects.filter(user=request.user).first()
+        if permission_connection:
+            context.update(connection=permission_connection, is_permission_connection=True)
     try:
         client = UserDocuments(request.user)
         context['libraries'] = client.libraries

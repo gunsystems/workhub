@@ -57,7 +57,7 @@ class HelpAudienceTests(TestCase):
             self.assertIn('관리자에게 문의', str(staff))
             self.assertIn('빈 폴더', str(self.help(name, self.executive)['management_notes']))
             self.assertNotIn('액세스 관리', str(self.help(name, self.executive)))
-            self.assertIn('액세스 관리', str(self.help(name, self.admin)['management_notes']))
+            self.assertIn('권한 관리', str(self.help(name, self.admin)['management_notes']))
             self.assertEqual(staff, self.help(name, self.staff))
         self.assertEqual(original, TOPICS['shared_documents'])
 
