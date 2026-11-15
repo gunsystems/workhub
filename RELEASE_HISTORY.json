@@ -4,13 +4,20 @@
   "releases": [
     {
       "version": "0.27.2",
-      "status": "implementation_ready",
+      "status": "live_verified",
       "summary": "공동 문서 첫 사용 안내와 직원용 문구 원칙 기록",
       "release_notes": "releases/v0.27.2.md",
       "verification": {
         "focused_tests": 47,
-        "live": "Pending CI and responsive check"
-      }
+        "full_django_tests": 789,
+        "node_checks": 10,
+        "ci_run": 43689903844,
+        "live": "Representative connected state verified on shared documents; initial unconnected state and admin setup exclusion verified by rendered view test.",
+        "mobile": "PC and 320/390px cards verified without horizontal overflow; screenshots saved.",
+        "migration": "None"
+      },
+      "source_commit": "ef17ae27314dec8cc2cc130b89743e3f796a3169",
+      "deploy_id": "dep-dbsluge1egvs73e8726g"
     },
     {
       "version": "0.27.1",
