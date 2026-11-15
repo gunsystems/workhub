@@ -35,43 +35,29 @@ def upload(client, drive, folder, file, existing=None):
     if not existing and folder and 'folder' not in client.item(drive, folder):
         raise SharePointProbeError('등록할 폴더를 확인해 주세요.')
     name = existing['name'] if existing else file.name
+    headers = {'Authorization': 'Bearer ' + client.token,
+               'Content-Type': 'application/octet-stream', 'Content-Length': str(file.size)}
     if existing:
         if not existing.get('eTag'):
             raise SharePointProbeError('파일 변경 상태를 확인하지 못했습니다.')
-        resource = f'{GRAPH}/drives/{segment(drive)}/items/{segment(existing["id"])}/createUploadSession'
+        resource = f'{GRAPH}/drives/{segment(drive)}/items/{segment(existing["id"])}/content'
+        headers['If-Match'] = existing['eTag']
     else:
         resource = f'{GRAPH}/drives/{segment(drive)}/' + (f'items/{segment(folder)}' if folder else 'root')
-        resource += ':/' + quote(name, safe='') + ':/createUploadSession'
-    session = graph_write(resource, client.token, 'POST',
-                          {'item': {'name': name, '@microsoft.graph.conflictBehavior': 'fail'}},
-                          etag=existing['eTag'] if existing else None, label='파일')
-    url = session.get('uploadUrl')
-    if not transfer_url(url, client.config):
-        raise SharePointProbeError('파일 등록 연결을 확인하지 못했습니다.')
-    offset = 0
+        resource += ':/' + quote(name, safe='') + ':/content?@microsoft.graph.conflictBehavior=fail'
+        headers['If-None-Match'] = '*'
+    # The form caps uploads at 20 MB; Graph's single binary upload supports 250 MB.
+    # Never retry writes, follow redirects or silently replace a same-name file.
     try:
-        while offset < file.size:
-            chunk = file.read(min(CHUNK, file.size - offset))
-            if not chunk:
+        with requests.put(resource, data=file, headers=headers, timeout=(10, 60), allow_redirects=False) as response:
+            if response.status_code not in (200, 201):
+                raise failure(response.status_code)
+            result = response.json()
+            client.validate_item(result, drive)
+            if ('file' not in result or result.get('name') != name or result.get('size') != file.size
+                    or (existing and result.get('id') != existing['id'])):
                 raise ValueError
-            end = offset + len(chunk)
-            with requests.put(url, data=chunk, headers={'Content-Length': str(len(chunk)),
-                    'Content-Range': f'bytes {offset}-{end - 1}/{file.size}',
-                    'Content-Type': 'application/octet-stream'}, timeout=(10, 45), allow_redirects=False) as response:
-                if response.status_code not in (200, 201, 202):
-                    raise failure(response.status_code)
-                if end < file.size and response.status_code != 202:
-                    raise ValueError
-                if end == file.size:
-                    if response.status_code not in (200, 201):
-                        raise ValueError
-                    result = response.json()
-                    client.validate_item(result, drive)
-                    if ('file' not in result or result.get('name') != name or result.get('size') != file.size
-                            or (existing and result.get('id') != existing['id'])):
-                        raise ValueError
-                    return result
-            offset = end
+            return result
     except (requests.RequestException, ValueError, TypeError, KeyError):
         raise SharePointProbeError('등록 결과를 확인하지 못했습니다. 문서 목록을 확인한 뒤 다시 진행하세요.') from None
 

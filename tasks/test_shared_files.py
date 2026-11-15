@@ -182,33 +182,29 @@ class FileTransferTests(TestCase):
             self.assertFalse(transfer_url(url, self.config), url)
         self.assertTrue(transfer_url('https://example.sharepoint.com/upload', self.config))
 
-    def test_upload_is_conflict_fail_and_does_not_send_bearer_to_upload_url(self):
-        response = self.response()
-        with patch('tasks.shared_file_http.graph_write', return_value={'uploadUrl': 'https://example.sharepoint.com/upload'}) as session, patch('tasks.shared_file_http.requests.put', return_value=response) as put:
-            self.assertEqual(upload(self.client, 'drive', '', SimpleUploadedFile('sample.txt', b'abc')), self.row)
-            self.assertEqual(session.call_args.args[3]['item']['@microsoft.graph.conflictBehavior'], 'fail')
-            self.assertNotIn('Authorization', put.call_args.kwargs['headers'])
-            self.assertEqual(put.call_args.kwargs['headers']['Content-Range'], 'bytes 0-2/3')
+    def test_upload_binary_request_is_conflict_fail_and_keeps_original_bytes(self):
+        file = SimpleUploadedFile('sample.txt', b'abc')
+        with patch('tasks.shared_file_http.requests.put', return_value=self.response()) as put:
+            self.assertEqual(upload(self.client, 'drive', '', file), self.row)
+            self.assertTrue(put.call_args.args[0].endswith(':/content?@microsoft.graph.conflictBehavior=fail'))
+            self.assertEqual(put.call_args.kwargs['headers']['If-None-Match'], '*')
+            self.assertEqual(put.call_args.kwargs['headers']['Authorization'], 'Bearer secret-delegated')
+            self.assertEqual(put.call_args.kwargs['data'].read(), b'abc')
             self.assertFalse(put.call_args.kwargs['allow_redirects'])
 
-    def test_upload_conflict_and_untrusted_upload_url_never_retry(self):
-        with patch('tasks.shared_file_http.graph_write', return_value={'uploadUrl': 'https://example.sharepoint.com/upload'}), patch('tasks.shared_file_http.requests.put', return_value=self.response(409)) as put:
-            with self.assertRaises(SharePointProbeError):
-                upload(self.client, 'drive', '', SimpleUploadedFile('sample.txt', b'abc'))
-            self.assertEqual(put.call_count, 1)
-        with patch('tasks.shared_file_http.graph_write', return_value={'uploadUrl': 'https://evil.test/upload'}), patch('tasks.shared_file_http.requests.put') as put:
-            with self.assertRaises(SharePointProbeError):
-                upload(self.client, 'drive', '', SimpleUploadedFile('sample.txt', b'abc'))
-            put.assert_not_called()
+    def test_upload_conflict_and_redirect_never_retry_or_follow(self):
+        for status in (409, 302, 403):
+            with patch('tasks.shared_file_http.requests.put', return_value=self.response(status)) as put:
+                with self.assertRaises(SharePointProbeError):
+                    upload(self.client, 'drive', '', SimpleUploadedFile('sample.txt', b'abc'))
+                self.assertEqual(put.call_count, 1)
 
-    def test_upload_chunk_ranges_and_new_version_if_match(self):
-        data = b'a' * CHUNK + b'end'
-        result = {**self.row, 'size': len(data)}
-        with patch('tasks.shared_file_http.graph_write', return_value={'uploadUrl': 'https://example.sharepoint.com/upload'}) as session, patch('tasks.shared_file_http.requests.put', side_effect=[self.response(202), self.response(201, result)]) as put:
-            upload(self.client, 'drive', '', SimpleUploadedFile('different.txt', data), existing=self.row)
-            self.assertTrue(session.call_args.args[0].endswith('/items/file/createUploadSession'))
-            self.assertEqual(session.call_args.kwargs['etag'], '"v1"')
-            self.assertEqual(put.call_args_list[1].kwargs['headers']['Content-Range'], f'bytes {CHUNK}-{len(data)-1}/{len(data)}')
+    def test_new_version_keeps_identity_and_uses_if_match(self):
+        with patch('tasks.shared_file_http.requests.put', return_value=self.response()) as put:
+            upload(self.client, 'drive', '', SimpleUploadedFile('different.txt', b'abc'), existing=self.row)
+            self.assertTrue(put.call_args.args[0].endswith('/items/file/content'))
+            self.assertEqual(put.call_args.kwargs['headers']['If-Match'], '\"v1\"')
+            self.assertNotIn('If-None-Match', put.call_args.kwargs['headers'])
 
     def test_download_redirect_drops_bearer_and_rejects_external_destination(self):
         redirect = self.response(302)
