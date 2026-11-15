@@ -4,6 +4,7 @@ Not a user-facing file client: successful app access never authorizes an employe
 No upload, download, permission grant or token persistence is performed here.
 """
 import json
+import hashlib
 import re
 import socket
 import uuid
@@ -94,17 +95,26 @@ def check_repository(config=None):
     return site_libraries(config, token)
 
 
-def site_libraries(config, token):
+def site_libraries(config, token, *, reuse_site_location=False):
     """Same site boundary for delegated user access and deployment probes."""
     parsed = urlsplit(config.site_url)
     graph = 'https://graph.microsoft.com/v1.0'
-    site = _json_request(f'{graph}/sites/{parsed.hostname}:{parsed.path}?$select=id,webUrl', token=token)
+    # Cache only the URL-to-ID mapping, never libraries or authorization results.
+    # Keyed by delegated token as well as configuration, so users cannot share it.
+    from . import document_token_cache
+    location_key = 'site-' + hashlib.sha256(repr((config.tenant_id, config.client_id,
+        config.site_url, token)).encode()).hexdigest()
+    cached = document_token_cache.get(location_key) if reuse_site_location else None
+    site = json.loads(cached) if cached else _json_request(
+        f'{graph}/sites/{parsed.hostname}:{parsed.path}?$select=id,webUrl', token=token)
     site_url = site.get('webUrl')
     if not isinstance(site_url, str) or site_url.rstrip('/').casefold() != config.site_url.casefold():
         raise SharePointProbeError('설정한 사이트와 Microsoft 응답이 일치하지 않습니다.')
     site_id = site.get('id')
     if not isinstance(site_id, str) or not site_id:
         raise SharePointProbeError('사이트 식별 정보를 확인하지 못했습니다.')
+    if reuse_site_location and not cached:
+        document_token_cache.put(location_key, json.dumps({'id': site_id, 'webUrl': site_url}).encode(), 300)
     base = f'{graph}/sites/{quote(site_id, safe="")}/drives'
     url = base + '?$select=id,name,webUrl'
     libraries = []

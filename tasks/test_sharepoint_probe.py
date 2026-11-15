@@ -11,12 +11,32 @@ from .sharepoint_probe import ProbeConfig, SharePointProbeError, check_repositor
 
 class SharePointProbeTests(SimpleTestCase):
     def setUp(self):
+        from . import document_token_cache
+        document_token_cache.clear()
+        self.addCleanup(document_token_cache.clear)
         self.config = ProbeConfig('11111111-1111-1111-1111-111111111111',
             '22222222-2222-2222-2222-222222222222', 'secret-not-for-output',
             'https://example.sharepoint.com/sites/WorkhubDocuments')
         self.site = {'id': 'site-id', 'webUrl': self.config.site_url}
         self.library = {'id': 'drive-id', 'name': '전사 공통',
                         'webUrl': self.config.site_url + '/DocLib'}
+
+    def test_site_location_reuse_still_queries_libraries_for_each_user_token(self):
+        from .sharepoint_probe import site_libraries
+        with patch('tasks.sharepoint_probe._json_request', side_effect=[self.site,
+                {'value': [self.library]}, {'value': []}, self.site, {'value': []}]) as request:
+            self.assertEqual(site_libraries(self.config, 'first', reuse_site_location=True), [self.library])
+            self.assertEqual(site_libraries(self.config, 'first', reuse_site_location=True), [])
+            self.assertEqual(site_libraries(self.config, 'second', reuse_site_location=True), [])
+            self.assertEqual(request.call_count, 5)
+
+    def test_cached_site_location_does_not_bypass_access_denial(self):
+        from .sharepoint_probe import site_libraries
+        with patch('tasks.sharepoint_probe._json_request', side_effect=[self.site,
+                {'value': [self.library]}, SharePointProbeError('denied')]):
+            site_libraries(self.config, 'first', reuse_site_location=True)
+            with self.assertRaises(SharePointProbeError):
+                site_libraries(self.config, 'first', reuse_site_location=True)
 
     def probe(self, pages):
         with patch('tasks.sharepoint_probe._json_request', side_effect=[
@@ -104,4 +124,3 @@ class SharePointProbeTests(SimpleTestCase):
             with self.assertRaises(CommandError) as caught:
                 call_command('check_sharepoint_storage', stdout=io.StringIO())
             self.assertNotIn('secret', str(caught.exception))
-

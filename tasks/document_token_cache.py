@@ -1,4 +1,8 @@
-"""Bounded, process-local encrypted delegated tokens; never cache document access."""
+"""Bounded process-local token/location storage; never cache document access.
+
+Token values are encrypted by the caller. Site values contain only validated
+URL-to-ID mappings; both are isolated by identity/configuration fingerprints.
+"""
 from collections import OrderedDict
 from threading import Lock
 from time import monotonic

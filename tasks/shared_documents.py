@@ -116,7 +116,7 @@ class UserDocuments:
             document_token_cache.put(self.token_key(connection), cipher().encrypt(self.token.encode()), ttl)
         self._items = {}
         # Always query Graph with the user's token: no cached ACLs or listings.
-        self.libraries = site_libraries(self.config, self.token)
+        self.libraries = site_libraries(self.config, self.token, reuse_site_location=True)
 
     def library(self, drive):
         for library in self.libraries:
@@ -188,6 +188,8 @@ class UserDocuments:
             if 'folder' not in row:
                 raise Http404
             result.append({'id': row['id'], 'name': row['name']})
+            if row['parentReference'].get('path') in (f'/drives/{drive}/root:', '/drive/root:'):
+                break  # Validated current item already identifies the library root parent.
             folder = row['parentReference'].get('id', '')
         return list(reversed(result))
 

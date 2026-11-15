@@ -3,8 +3,19 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.26.3",
+      "status": "implementation_ready",
+      "summary": "문서함 사이트 위치 재조회·폴더 루트 조회 추가 제거",
+      "release_notes": "releases/v0.26.3.md",
+      "verification": {
+        "focused_tests": 48,
+        "migration": "None",
+        "live": "Pending CI and deployment"
+      }
+    },
+    {
       "version": "0.26.2",
-      "status": "live_pending_signed_in_timing",
+      "status": "live_timing_checked",
       "summary": "공동 문서의 인증 재사용 및 요청 내 폴더 중복 조회 제거",
       "release_notes": "releases/v0.26.2.md",
       "verification": {
@@ -13,7 +24,7 @@
         "node_checks": 9,
         "ci_run": 43681170177,
         "migration": "None",
-        "live": "Render deployment Live verified; signed-in folder timing pending user OTP. No measured latency improvement claimed."
+        "live": "Representative signed-in: library 2.643s, folder 3.210s, parent 2.587s, repeat folder 3.275s including browser automation overhead. Additional optimization continued in 0.26.3."
       },
       "source_commit": "45b8ac7331831c6ffb0a9e77fda05f7ce9d693d1",
       "deploy_id": "dep-dbsk78mi0phs73dcqap0"

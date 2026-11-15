@@ -97,7 +97,7 @@ class SharedDocumentsTests(TestCase):
                 patch('tasks.shared_documents.site_libraries', return_value=[self.library]) as libraries:
             client = UserDocuments(self.user)
         self.assertEqual(token.call_args.args[1]['grant_type'], 'refresh_token')
-        libraries.assert_called_once_with(self.config, 'delegated')
+        libraries.assert_called_once_with(self.config, 'delegated', reuse_site_location=True)
         connection.refresh_from_db()
         self.assertNotEqual(connection.encrypted_refresh_token, 'rotated')
         self.assertEqual(cipher().decrypt(connection.encrypted_refresh_token.encode()), b'rotated')
@@ -359,6 +359,14 @@ class SharedDocumentsTests(TestCase):
             self.assertEqual([r['id'] for r in client.ancestry('drive-id', 'child')], ['parent', 'child'])
         with patch.object(client, 'item', return_value=self.folder_row(parentReference={'id': 'loop'})):
             with self.assertRaises(SharePointProbeError): client.ancestry('drive-id', 'loop')
+
+    def test_root_parent_path_avoids_redundant_root_lookup(self):
+        client = object.__new__(UserDocuments)
+        row = self.folder_row(parentReference={'id': 'root-id', 'driveId': 'drive-id',
+                                               'path': '/drives/drive-id/root:'})
+        with patch.object(client, 'item', return_value=row) as item:
+            self.assertEqual(len(client.ancestry('drive-id', 'folder-id')), 1)
+            item.assert_called_once_with('drive-id', 'folder-id')
 
     def test_permission_panel_does_not_claim_complete_access_list(self):
         with patch('tasks.shared_documents.UserDocuments') as factory:
