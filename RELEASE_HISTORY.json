@@ -4,13 +4,20 @@
   "releases": [
     {
       "version": "0.27.1",
-      "status": "implementation_ready",
+      "status": "live_verified",
       "summary": "직원용 도움말과 관리자 운영 설명 분리",
       "release_notes": "releases/v0.27.1.md",
       "verification": {
-        "focused_tests": 5,
-        "live": "Pending CI and deployment"
-      }
+        "focused_tests": 26,
+        "full_django_tests": 788,
+        "node_checks": 10,
+        "ci_run": 43688262851,
+        "live": "Representative document help and role-specific manager section verified. Employee/admin/leader separation verified in rendered-template and context tests.",
+        "mobile": "390px screenshot; 320/390px dialog has no horizontal overflow.",
+        "migration": "None"
+      },
+      "source_commit": "417c161f8cc03eeb538ab4d5e03efe55d83b4dce",
+      "deploy_id": "dep-dbslknek1f9s739l31rg"
     },
     {
       "version": "0.27.0",
