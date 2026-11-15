@@ -172,7 +172,8 @@ def page_help(request):
     if not help_topic:help_topic=topic('화면 사용 안내','현재 화면의 정보를 확인하고 필요한 내용을 입력합니다.',
         ['화면 제목과 대상 업무·직원을 먼저 확인합니다.','필수 항목과 안내를 읽고 저장합니다. 돌아가거나 취소하면 입력 내용은 저장되지 않습니다.'],
         ['권한과 업무 상태에 따라 가능한 작업이 달라집니다. 전체 업무 흐름은 사용 가이드에서 확인하세요.'])
-    help_topic=dict(help_topic)
+    from .help_audience import for_audience
+    help_topic=for_audience(name,help_topic,getattr(request,'user',None))
     flows={
         '업무자료 등록':['업무 · 요청 확인','파일 또는 링크','자료 구분 · 등록','권한 확인 · 다운로드'],
         '업무자료 저장소':['서버 설정','연결 확인','공유 드라이브 권한','업무별 자료 등록'],
@@ -217,7 +218,7 @@ def page_help(request):
         'OTP 재등록':['관리자 본인 확인','초기화 승인','회사 이메일 인증','새 OTP 등록'],
         '비밀번호 재설정':['회사 이메일 입력','재설정 메일','새 비밀번호','기존 OTP 로그인'],
     }
-    labels=flows.get(help_topic['title'],['화면 · 대상 확인','내용 확인 · 입력','필요한 처리','저장 · 결과 확인'])
+    labels=help_topic.get('flow_labels') or flows.get(help_topic['title'],['화면 · 대상 확인','내용 확인 · 입력','필요한 처리','저장 · 결과 확인'])
     nodes=[];edges=[]
     for index,label in enumerate(labels):
         x=8+(index%3)*180;y=8+(index//3)*90

@@ -3,6 +3,16 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.27.1",
+      "status": "implementation_ready",
+      "summary": "직원용 도움말과 관리자 운영 설명 분리",
+      "release_notes": "releases/v0.27.1.md",
+      "verification": {
+        "focused_tests": 5,
+        "live": "Pending CI and deployment"
+      }
+    },
+    {
       "version": "0.27.0",
       "status": "live_owner_verified",
       "summary": "50개 단계별 문서 목록·정렬·부분 화면 이동·권한별 암호화 커서",
