@@ -18,12 +18,65 @@ CLIENT = '22222222-2222-2222-2222-222222222222'
                    SHAREPOINT_CLIENT_SECRET='test-secret', SHAREPOINT_SITE_URL=SITE)
 class SharedDocumentsTests(TestCase):
     def setUp(self):
+        from . import document_token_cache
+        document_token_cache.clear()
+        self.addCleanup(document_token_cache.clear)
         self.user = get_user_model().objects.create_user('document-user', email='staff@example.com')
         self.client.force_login(self.user)
         self.config = ProbeConfig.from_settings()
         self.library = {'id': 'drive-id', 'name': '공통', 'webUrl': SITE + '/DocLib'}
         self.file = {'id': 'file-id', 'name': 'proposal.docx', 'webUrl': SITE + '/DocLib/proposal.docx',
                      'file': {}, 'parentReference': {'driveId': 'drive-id'}, 'size': 10}
+
+    def test_token_reuse_still_rechecks_site_and_rotation_invalidates(self):
+        connection = self.connection()
+        auth = {'scope': 'User.Read Sites.Selected', 'access_token': 'delegated',
+                'refresh_token': 'rotated', 'expires_in': 3600}
+        with patch('tasks.shared_documents.token_request', return_value=auth) as token, \
+                patch('tasks.shared_documents.site_libraries', return_value=[self.library]) as libraries:
+            UserDocuments(self.user)
+            UserDocuments(self.user)
+            self.assertEqual(token.call_count, 1)
+            self.assertEqual(libraries.call_count, 2)
+            connection.refresh_from_db()
+            connection.encrypted_refresh_token = cipher().encrypt(b'reconnected').decode()
+            connection.save()
+            UserDocuments(self.user)
+            self.assertEqual(token.call_count, 2)
+
+    def test_cached_token_does_not_bypass_revoked_site(self):
+        self.connection()
+        with patch('tasks.shared_documents.token_request', return_value={
+                'scope': 'User.Read Sites.Selected', 'access_token': 'delegated', 'expires_in': 3600}) as token, \
+                patch('tasks.shared_documents.site_libraries', return_value=[self.library]) as libraries:
+            UserDocuments(self.user)
+            libraries.side_effect = SharePointProbeError('denied')
+            with self.assertRaises(SharePointProbeError):
+                UserDocuments(self.user)
+            self.assertEqual(token.call_count, 1)
+
+    def test_item_memo_is_only_within_one_request(self):
+        client = object.__new__(UserDocuments)
+        client.libraries, client.config, client.token, client._items = [self.library], self.config, 'token', {}
+        with patch('tasks.shared_documents._json_request', return_value=self.file) as graph:
+            client.item('drive-id', 'file-id')
+            client.item('drive-id', 'file-id')
+            self.assertEqual(graph.call_count, 1)
+            client._items = {}
+            client.item('drive-id', 'file-id')
+            self.assertEqual(graph.call_count, 2)
+
+    def test_token_cache_expiry_and_capacity(self):
+        from . import document_token_cache as cache
+        with patch('tasks.document_token_cache.monotonic', return_value=100):
+            cache.put('one', b'encrypted', 5000)
+            self.assertEqual(cache.get('one'), b'encrypted')
+        with patch('tasks.document_token_cache.monotonic', return_value=401):
+            self.assertIsNone(cache.get('one'))
+            for i in range(130):
+                cache.put(str(i), b'encrypted', 10)
+            self.assertIsNone(cache.get('0'))
+            self.assertEqual(len(cache._entries), 128)
 
     def connection(self, **values):
         data = dict(user=self.user, tenant=TENANT, client=CLIENT, subject=TENANT,

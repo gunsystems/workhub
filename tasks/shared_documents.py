@@ -28,6 +28,7 @@ from .sharepoint_probe import ProbeConfig, SharePointProbeError, _json_request, 
 from .documents import parent_for, can_add
 from .permissions import visible_tasks, visible_projects, can_override_work
 from .shared_document_http import graph_write
+from . import document_token_cache
 from django.core import signing
 
 SCOPES = 'offline_access User.Read Sites.Selected'
@@ -73,6 +74,15 @@ def segment(value):
 
 
 class UserDocuments:
+    def token_key(self, connection):
+        # Reconnect, rotation, settings or identity changes invalidate reuse.
+        values = (str(connection.pk), str(connection.user_id), connection.email,
+                  str(connection.subject), str(connection.connected_at),
+                  connection.encrypted_refresh_token, self.config.tenant_id,
+                  self.config.client_id, self.config.client_secret, self.config.site_url,
+                  settings.SECRET_KEY)
+        return hashlib.sha256(repr(values).encode()).hexdigest()
+
     def __init__(self, user):
         if not user.is_authenticated or not user.is_active:
             raise PermissionDenied
@@ -86,12 +96,26 @@ class UserDocuments:
             refresh = cipher().decrypt(connection.encrypted_refresh_token.encode()).decode()
         except (InvalidToken, ValueError):
             raise SharePointProbeError('문서 계정을 다시 연결해 주세요.') from None
-        auth = token_request(self.config, {'grant_type': 'refresh_token', 'refresh_token': refresh, 'scope': SCOPES})
-        required_scope(auth)
-        self.token = auth['access_token']
-        if auth.get('refresh_token'):
-            DocumentConnection.objects.filter(pk=connection.pk).update(
-                encrypted_refresh_token=cipher().encrypt(auth['refresh_token'].encode()).decode())
+        cached = document_token_cache.get(self.token_key(connection))
+        try:
+            self.token = cipher().decrypt(cached).decode() if cached else None
+        except (InvalidToken, ValueError, TypeError):
+            self.token = None
+        if not self.token:
+            auth = token_request(self.config, {'grant_type': 'refresh_token', 'refresh_token': refresh, 'scope': SCOPES})
+            required_scope(auth)
+            self.token = auth['access_token']
+            if auth.get('refresh_token'):
+                connection.encrypted_refresh_token = cipher().encrypt(auth['refresh_token'].encode()).decode()
+                DocumentConnection.objects.filter(pk=connection.pk).update(
+                    encrypted_refresh_token=connection.encrypted_refresh_token)
+            try:
+                ttl = max(0, int(auth.get('expires_in', 0)) - 60)
+            except (ValueError, TypeError, OverflowError):
+                ttl = 0
+            document_token_cache.put(self.token_key(connection), cipher().encrypt(self.token.encode()), ttl)
+        self._items = {}
+        # Always query Graph with the user's token: no cached ACLs or listings.
         self.libraries = site_libraries(self.config, self.token)
 
     def library(self, drive):
@@ -103,9 +127,14 @@ class UserDocuments:
 
     def item(self, drive, item):
         self.library(drive)
+        key = (drive, item)
+        if key in getattr(self, '_items', {}):
+            return self._items[key]
         result = _json_request(f'{GRAPH}/drives/{segment(drive)}/items/{segment(item)}'
             '?$select=id,name,webUrl,file,folder,size,lastModifiedDateTime,parentReference,eTag,root', token=self.token)
         self.validate_item(result, drive)
+        if hasattr(self, '_items'):
+            self._items[key] = result
         return result
 
     def validate_item(self, row, drive):

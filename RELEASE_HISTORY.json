@@ -3,6 +3,17 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.26.2",
+      "status": "implementation_ready",
+      "summary": "공동 문서의 인증 재사용 및 요청 내 폴더 중복 조회 제거",
+      "release_notes": "releases/v0.26.2.md",
+      "verification": {
+        "focused_tests": 45,
+        "migration": "None",
+        "live": "Pending deployment and signed-in timing check"
+      }
+    },
+    {
       "version": "0.26.1",
       "status": "live_owner_verified",
       "summary": "폴더 이름 클릭·경로 탐색과 관리자 폴더 관리·공유 권한 확인",
