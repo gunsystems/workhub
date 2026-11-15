@@ -4,14 +4,21 @@
   "releases": [
     {
       "version": "0.28.0",
-      "status": "implementation_ready",
+      "status": "live_verified",
       "summary": "Workhub 파일 업로드·새 버전·다운로드·이름 변경·이동·휴지통 및 관리자 로그",
       "release_notes": "releases/v0.28.0.md",
       "verification": {
         "focused_tests": 64,
-        "live": "Pending CI and delegated live verification",
-        "migration": "None"
-      }
+        "live": "Representative-owned PNG upload, exact SHA-256 download, same-ID new version, rename, move and recycle verified. Administrator searched and inspected all five persisted operation audit records including actor, timestamp and before/after filename.",
+        "migration": "None",
+        "full_django_tests": 806,
+        "node_checks": 10,
+        "ci_run": 43693804713,
+        "mobile": "390px administrator audit controls checked with no page overflow. Authenticated file form mobile walkthrough not repeated after administrator role switch.",
+        "limitations": "Office web editor/direct SharePoint saves are outside Workhub audit; no Microsoft audit ingestion or new permission grants."
+      },
+      "source_commit": "45b5cba05db6859fc87ec75422a652c70a274694",
+      "deploy_id": "dep-dbsmlidg1s2s73fk7c4g"
     },
     {
       "version": "0.27.2",
