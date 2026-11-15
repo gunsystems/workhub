@@ -28,7 +28,7 @@ def for_audience(name, source, user):
         if admin:
             result.setdefault('management_notes', []).append('최종 권한 확인·변경은 SharePoint 액세스 관리에서 진행하세요. 표시된 공유 정보는 전체 접근자 목록이 아닐 수 있습니다.')
     elif name in ['notice_list', 'notice_detail'] and not admin:
-        result.update(title='공지사항', purpose='본인에게 전달된 회사 공지를 확인합니다.',
+        result.update(title='공지사항', purpose='본인에게 전달된 공지를 확인합니다.',
             steps=['공지 제목을 눌러 내용을 확인합니다.', '첨부자료와 공지에서 안내하는 일시·대상을 확인합니다.'],
             notes=['본인에게 전달된 공지만 표시됩니다.', '공지 내용을 열면 확인 시각이 기록됩니다.'],
             flow_labels=['공지 목록', '내용 · 자료 확인', '안내에 따라 진행'])

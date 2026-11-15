@@ -221,8 +221,8 @@ class OperationsTests(TestCase):
 
     def test_guide_has_role_appropriate_setup_and_requires_login(self):
         self.assertContains(self.client.get('/guide/'),'업무 요청 접수')
-        self.assertNotContains(self.client.get('/guide/'),'먼저 테스트 계정을 연결하세요')
+        self.assertNotContains(self.client.get('/guide/'),'직원 초대 · 관리자 안내')
         self.client.force_login(self.owner)
-        self.assertContains(self.client.get('/guide/'),'먼저 테스트 계정을 연결하세요')
+        self.assertContains(self.client.get('/guide/'),'직원 초대 · 관리자 안내')
         self.client.logout()
         self.assertEqual(self.client.get('/guide/').status_code,302)
