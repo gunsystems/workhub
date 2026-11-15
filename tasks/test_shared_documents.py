@@ -143,6 +143,88 @@ class SharedDocumentsTests(TestCase):
         self.assertEqual(self.client.get('/work/shared-documents/connect/').status_code, 405)
         self.assertEqual(self.client.get('/work/shared-documents/disconnect/').status_code, 405)
 
+    def page_client(self):
+        client = object.__new__(UserDocuments)
+        client.libraries, client.config, client.token = [self.library], self.config, 'user-token'
+        client.cursor_identity, client._items = (1, 2, 'staff@example.com'), {}
+        return client
+
+    def test_first_page_does_not_drain_large_folder_and_cursor_continues(self):
+        client = self.page_client()
+        resource = 'https://graph.microsoft.com/v1.0/drives/drive-id/root/children'
+        with patch('tasks.shared_documents._json_request', return_value={
+                'value': [self.file] * 50, '@odata.nextLink': resource + '?$skiptoken=page2'}) as graph:
+            rows, cursor, scanned = client.children_page('drive-id')
+            self.assertEqual((len(rows), scanned), (50, 50))
+            self.assertTrue(cursor)
+            self.assertNotIn('skiptoken', cursor)
+            self.assertEqual(graph.call_count, 1)
+            self.assertIn('%24top=50', graph.call_args.args[0])
+            graph.return_value = {'value': [self.file]}
+            rows, cursor, scanned = client.children_page('drive-id', cursor=cursor)
+            self.assertEqual(graph.call_args.args[0], resource + '?$skiptoken=page2')
+            self.assertEqual((scanned, cursor), (51, ''))
+
+    def test_cursor_cannot_cross_user_drive_search_or_sort(self):
+        client = self.page_client()
+        next_url = 'https://graph.microsoft.com/v1.0/drives/drive-id/root/children?$skiptoken=page2'
+        with patch('tasks.shared_documents._json_request', return_value={'value': [], '@odata.nextLink': next_url}):
+            _, cursor, _ = client.children_page('drive-id')
+        with patch('tasks.shared_documents._json_request') as graph:
+            for kwargs in ({'query': 'changed'}, {'order': 'modified'}, {'cursor': cursor[:20] + 'x' + cursor[21:]}):
+                with self.assertRaises(SharePointProbeError):
+                    client.children_page('drive-id', **({'cursor': cursor} | kwargs))
+            client.cursor_identity = (2, 2, 'other@example.com')
+            with self.assertRaises(SharePointProbeError):
+                client.children_page('drive-id', cursor=cursor)
+            graph.assert_not_called()
+
+    def test_cursor_expiry_and_external_nextlink_fail_closed(self):
+        import json, time
+        client = self.page_client()
+        payload = {'scope': [list(client.cursor_identity), 'drive-id', '', '', 'name'],
+                   'url': 'https://evil.test/steal', 'scanned': 0}
+        with patch('tasks.shared_documents._json_request') as graph:
+            for cursor in (cipher().encrypt(json.dumps(payload).encode()).decode(),
+                           cipher().encrypt_at_time(json.dumps(payload).encode(), int(time.time()) - 901).decode()):
+                with self.assertRaises(SharePointProbeError): client.children_page('drive-id', cursor=cursor)
+            graph.assert_not_called()
+        with patch('tasks.shared_documents._json_request', return_value={'value': [], '@odata.nextLink': 'https://evil.test/steal'}):
+            with self.assertRaises(SharePointProbeError): client.children_page('drive-id')
+
+    def test_search_returns_partial_state_and_remote_sort(self):
+        client = self.page_client()
+        with patch('tasks.shared_documents._json_request', return_value={'value': [self.file],
+                '@odata.nextLink': 'https://graph.microsoft.com/v1.0/drives/drive-id/root/children?$skiptoken=next'}) as graph:
+            rows, cursor, scanned = client.children_page('drive-id', query='unmatched', order='modified')
+            self.assertEqual(rows, [])
+            self.assertTrue(cursor)
+            self.assertEqual(scanned, 1)
+            self.assertIn('lastModifiedDateTime+desc', graph.call_args.args[0])
+
+    def test_partial_navigation_keeps_auth_and_no_store_headers(self):
+        with patch('tasks.shared_documents.UserDocuments') as factory:
+            factory.return_value.libraries = [self.library]
+            factory.return_value.library.return_value = self.library
+            factory.return_value.children_page.return_value = ([], 'encrypted-next', 50)
+            response = self.client.get('/work/shared-documents/?drive=drive-id&q=missing',
+                                       HTTP_X_WORKHUB_DOCUMENTS='1')
+            self.assertContains(response, '아직 확인하지 않은 항목이 있습니다')
+            self.assertContains(response, '다음 항목 검색')
+            self.assertNotContains(response, '<html')
+            self.assertIn('no-store', response['Cache-Control'])
+            self.assertIn('X-Workhub-Documents', response['Vary'])
+        self.client.logout()
+        response = self.client.get('/work/shared-documents/?drive=drive-id', HTTP_X_WORKHUB_DOCUMENTS='1')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+    def test_paged_items_revalidate_selected_site(self):
+        client = self.page_client()
+        with patch('tasks.shared_documents._json_request', return_value={
+                'value': [{**self.file, 'webUrl': 'https://evil.test/doc'}]}):
+            with self.assertRaises(SharePointProbeError): client.children_page('drive-id')
+
     def test_parent_permission_precedes_graph(self):
         with patch('tasks.shared_documents.parent_for', side_effect=Http404), \
                 patch('tasks.shared_documents.UserDocuments') as graph:
@@ -180,7 +262,7 @@ class SharedDocumentsTests(TestCase):
         with patch('tasks.shared_documents.UserDocuments') as factory:
             factory.return_value.libraries = [self.library]
             factory.return_value.library.return_value = self.library
-            factory.return_value.children.return_value = [folder, self.file]
+            factory.return_value.children_page.return_value = ([folder, self.file], '', 2)
             response = self.client.get('/work/shared-documents/?drive=drive-id')
         self.assertContains(response, 'folder=folder-id')
         self.assertContains(response, '/drive-id/file-id/open/')
@@ -387,7 +469,7 @@ class SharedDocumentsTests(TestCase):
         with patch('tasks.shared_documents.UserDocuments') as factory:
             factory.return_value.library.return_value = self.library
             factory.return_value.libraries = [self.library]
-            factory.return_value.children.return_value = [self.folder_row()]
+            factory.return_value.children_page.return_value = ([self.folder_row()], '', 1)
             factory.return_value.ancestry.return_value = [{'id': 'parent', 'name': '상위'}, {'id': 'child', 'name': '현재'}]
             response = self.client.get('/work/shared-documents/?drive=drive-id&folder=child')
             self.assertContains(response, '현재 폴더 경로')

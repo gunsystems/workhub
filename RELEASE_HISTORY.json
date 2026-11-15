@@ -3,6 +3,18 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.27.0",
+      "status": "implementation_ready",
+      "summary": "50개 단계별 문서 목록·정렬·부분 화면 이동·권한별 암호화 커서",
+      "release_notes": "releases/v0.27.0.md",
+      "verification": {
+        "focused_tests": 54,
+        "node_navigation": "Passed",
+        "migration": "None",
+        "live": "Pending CI/deployment and responsive check"
+      }
+    },
+    {
       "version": "0.26.3",
       "status": "live_owner_verified",
       "summary": "문서함 사이트 위치 재조회·폴더 루트 조회 추가 제거",

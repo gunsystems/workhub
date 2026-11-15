@@ -4,6 +4,7 @@ The server application token is intentionally never used in these views.
 """
 import base64
 import hashlib
+import json
 import re
 import secrets
 import uuid
@@ -115,6 +116,9 @@ class UserDocuments:
                 ttl = 0
             document_token_cache.put(self.token_key(connection), cipher().encrypt(self.token.encode()), ttl)
         self._items = {}
+        self.cursor_identity = (user.pk, connection.pk, connection.email, str(connection.subject),
+                                str(connection.connected_at), self.config.tenant_id,
+                                self.config.client_id, self.config.site_url)
         # Always query Graph with the user's token: no cached ACLs or listings.
         self.libraries = site_libraries(self.config, self.token, reuse_site_location=True)
 
@@ -173,6 +177,55 @@ class UserDocuments:
             if not valid:
                 raise SharePointProbeError('다음 문서 목록의 주소를 확인하지 못했습니다.')
         raise SharePointProbeError('폴더의 항목이 많습니다. SharePoint에서 폴더를 나눠 주세요.')
+
+    def children_page(self, drive, folder='', *, cursor='', query='', order='name'):
+        """One bounded Graph page. Never drain nextLink before first render."""
+        self.library(drive)
+        if folder and 'folder' not in self.item(drive, folder):
+            raise Http404
+        ordering = {'name': 'name asc', 'name_desc': 'name desc', 'modified': 'lastModifiedDateTime desc'}
+        if order not in ordering:
+            raise Http404
+        resource = f'{GRAPH}/drives/{segment(drive)}/' + (f'items/{segment(folder)}' if folder else 'root') + '/children'
+        scope = [list(self.cursor_identity), drive, folder, query, order]
+        url = resource + '?' + urlencode({'$select': 'id,name,webUrl,file,folder,size,lastModifiedDateTime,parentReference',
+                                         '$top': 50, '$orderby': ordering[order]})
+        scanned = 0
+        if cursor:
+            try:
+                if len(cursor) > 18000:
+                    raise ValueError
+                payload = json.loads(cipher().decrypt(cursor.encode(), ttl=900))
+                if payload.get('scope') != scope or type(payload.get('scanned')) is not int or payload['scanned'] < 0:
+                    raise ValueError
+                url, scanned = payload['url'], payload['scanned']
+            except (InvalidToken, ValueError, TypeError, KeyError, UnicodeError, AttributeError):
+                raise SharePointProbeError('목록 조회가 만료되었거나 조건이 바뀌었습니다. 처음부터 다시 조회하세요.') from None
+        def valid_next(value):
+            try:
+                return (isinstance(value, str) and len(value) <= 8192 and
+                        urlsplit(value)._replace(query='').geturl() == resource)
+            except ValueError:
+                return False
+        if not valid_next(url):
+            raise SharePointProbeError('문서 목록 주소를 확인하지 못했습니다.')
+        page = _json_request(url, token=self.token)
+        values, rows = page.get('value'), []
+        if not isinstance(values, list) or len(values) > 200:
+            raise SharePointProbeError('문서 목록을 확인하지 못했습니다.')
+        for row in values:
+            self.validate_item(row, drive)
+            if ('file' in row or 'folder' in row) and query.casefold() in row['name'].casefold():
+                rows.append(row)
+        scanned += len(values)
+        next_url = page.get('@odata.nextLink')
+        next_cursor = ''
+        if next_url:
+            if not valid_next(next_url) or next_url == url:
+                raise SharePointProbeError('다음 문서 목록 주소를 확인하지 못했습니다.')
+            next_cursor = cipher().encrypt(json.dumps({'scope': scope, 'url': next_url,
+                                                       'scanned': scanned}).encode()).decode()
+        return rows, next_cursor, scanned
 
 
     def ancestry(self, drive, folder):
@@ -310,7 +363,8 @@ def parent_context(user, params):
 def listing(request):
     kind, parent = parent_context(request.user, request.GET)
     context = {'connection': DocumentConnection.objects.filter(user=request.user).first(),
-               'can_manage_folders': can_override_work(request.user), 'kind': kind, 'parent': parent, 'q': request.GET.get('q', '')[:200], 'callback_url': callback_url()}
+               'can_manage_folders': can_override_work(request.user), 'kind': kind, 'parent': parent, 'q': request.GET.get('q', '')[:200].strip(), 'callback_url': callback_url(),
+               'order': request.GET.get('order', 'name')}
     try:
         client = UserDocuments(request.user)
         context['libraries'] = client.libraries
@@ -333,10 +387,22 @@ def listing(request):
             context['library'] = client.library(drive)
             context['breadcrumbs'] = client.ancestry(drive, folder) if folder else []
             context['up_folder'] = context['breadcrumbs'][-2]['id'] if len(context['breadcrumbs']) > 1 else ''
-            context['rows'] = [row for row in client.children(drive, folder) if context['q'].casefold() in row['name'].casefold()]
+            context['rows'], context['next_cursor'], context['scanned'] = client.children_page(
+                drive, folder, cursor=request.GET.get('cursor', ''), query=context['q'], order=context['order'])
+            context['continuation'] = bool(request.GET.get('cursor'))
+            params = {'drive': drive, 'folder': folder, 'q': context['q'], 'order': context['order']}
+            if parent:
+                params.update(kind=kind, parent=parent.pk)
+            context['reset_url'] = reverse('shared_documents') + '?' + urlencode(params)
+            if context['next_cursor']:
+                context['next_url'] = context['reset_url'] + '&' + urlencode({'cursor': context['next_cursor']})
     except SharePointProbeError as exc:
         context['error'] = str(exc)
-    return render(request, 'tasks/shared_documents.html', context)
+    template = 'tasks/shared_document_workspace.html' if request.headers.get('X-Workhub-Documents') == '1' else 'tasks/shared_documents.html'
+    response = render(request, template, context)
+    response['Vary'] = 'X-Workhub-Documents, Cookie'
+    response['Referrer-Policy'] = 'no-referrer'
+    return response
 
 
 @login_required

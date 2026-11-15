@@ -44,3 +44,4 @@ jobs:
       - run: node tasks/test_date_ranges.cjs
 
       - run: node tasks/test_proposal_form.cjs
+      - run: node tasks/test_shared_documents_browser.cjs
