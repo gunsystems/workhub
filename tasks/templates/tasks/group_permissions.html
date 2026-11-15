@@ -9,6 +9,6 @@
 <div id="permission-tree" data-drive="{{ drive }}"><a data-permission-nav data-folder="root" href="{% url 'document_permission_manage' drive|default:'none' 'root' %}">문서함 전체</a><button type="button" data-expand="root" aria-expanded="false">하위 폴더 펼치기</button><div data-children="root"></div></div>
 <p id="permission-status" role="status" aria-live="polite"></p>
 </aside>
-<main id="permission-detail" tabindex="-1">{% include 'tasks/group_permission_panel.html' %}</main></div>
+<div id="permission-detail" tabindex="-1">{% include 'tasks/group_permission_panel.html' %}</div></div>
 <script src="{% static 'tasks/group_permissions.js' %}" defer></script>
 {% endblock %}
