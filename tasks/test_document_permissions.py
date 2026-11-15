@@ -236,3 +236,12 @@ class PermissionViewTests(TestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['employee_' + str(self.staff.pk)], 'owner')
         self.assertEqual(form.desired(), [])
+
+    def test_site_admin_without_direct_assignment_cannot_be_displayed_as_denied(self):
+        self.staff.email = 'owner@gunsystems.co.kr'
+        form = AccessForm({'reason': '사유', 'employee_' + str(self.staff.pk): 'none'},
+            employees=[self.staff], snapshot={'rows': []}, protected_email=self.staff.email)
+        self.assertTrue(form.is_valid())
+        self.assertTrue(form.fields['employee_' + str(self.staff.pk)].disabled)
+        self.assertEqual(form.cleaned_data['employee_' + str(self.staff.pk)], 'owner')
+        self.assertEqual(form.desired(), [])

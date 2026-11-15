@@ -121,13 +121,14 @@ def callback(request):
 class AccessForm(forms.Form):
     reason = forms.CharField(label='변경 사유', max_length=500, widget=forms.Textarea(attrs={'rows': 3}))
 
-    def __init__(self, *args, employees, snapshot, **kwargs):
+    def __init__(self, *args, employees, snapshot, protected_email='', **kwargs):
         super().__init__(*args, **kwargs)
         rows = snapshot['rows']
         self.employees = list(employees)
         for employee in self.employees:
             row = next((r for r in rows if r['email'] == employee.email.casefold()), None)
-            protected = bool(row and row['protected'])
+            # Site administrators can have access without a direct item assignment.
+            protected = employee.email.casefold() == protected_email.casefold() or bool(row and row['protected'])
             value = 'none'
             if row and not row['protected'] and not row['limited']:
                 value = 'write' if any(kind in (3, 6) for _, kind in row['roles']) else 'read'
@@ -172,7 +173,8 @@ def manage(request, drive, item):
         staff = list(employees())
         if len(staff) > 30 or len({s.email.casefold() for s in staff}) != len(staff):
             raise SharePointProbeError('직원 이메일 중복 또는 관리 대상 수를 확인해 주세요.')
-        context['form'] = form = AccessForm(request.POST or None, employees=staff, snapshot=snapshot)
+        context['form'] = form = AccessForm(request.POST or None, employees=staff, snapshot=snapshot,
+                                          protected_email=client.connection.email)
         if request.method == 'POST' and form.is_valid():
             nonce = secrets.token_urlsafe(24)
             data = {'user': request.user.pk, 'drive': drive, 'item': item, 'at': timezone.now().timestamp(),
