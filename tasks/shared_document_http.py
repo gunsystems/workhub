@@ -1,5 +1,7 @@
 """Bounded Graph writes; never retry a mutation or disclose provider payloads."""
 import json
+import logging
+import re
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, build_opener
 from .google_calendar import NoRedirect
@@ -26,6 +28,13 @@ def graph_write(url, token, method, data=None, etag=None, label='폴더'):
             raise ValueError
         return value
     except HTTPError as exc:
+        try:
+            error = json.loads(exc.read(4096)).get('error', {})
+            code = re.sub(r'[^A-Za-z0-9_.-]', '', str(error.get('code', 'unknown')))[:80]
+            diagnostic = re.sub(r'https?://\S+|[A-Za-z0-9_=-]{50,}', '[redacted]', str(error.get('message', '')))[:180]
+        except (ValueError, TypeError, AttributeError):
+            code, diagnostic = 'unknown', ''
+        logging.getLogger(__name__).warning('Document write rejected: status=%s code=%s detail=%s', exc.code, code, diagnostic)
         reason = {403: '폴더를 변경할 SharePoint 권한이 없습니다. 관리자에게 문의하세요.',
                   401: '문서 계정을 다시 연결해 주세요.', 404: '폴더가 이동되거나 삭제되었습니다.',
                   409: '같은 이름의 폴더가 이미 있거나 폴더 상태가 변경되었습니다.',
