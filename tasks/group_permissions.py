@@ -58,6 +58,9 @@ def overview(request, drive='', item='root'):
         if not drive:
             raise SharePointProbeError('관리할 문서함이 없습니다.')
         context['target'] = api.bind(drive, item)
+        if 'root' in context['target'] or item == 'root':
+            context['target'] = {**context['target'], 'name': next(
+                (library['name'] for library in api.docs.libraries if library['id'] == drive), '문서함 전체')}
         context['snapshot'] = state = api.state()
         state['direct_people'] = [r for r in state['rows'] if r['type'] == 1 and not r['protected'] and not r['limited']]
         context['personal_count'] = len(state['direct_people'])

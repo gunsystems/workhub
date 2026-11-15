@@ -42,6 +42,32 @@ class Mutable(GroupPermissionClient):
         return {}
 
 class GroupApiTests(TestCase):
+    def test_inheritance_copy_allows_only_sharepoint_traversal_metadata_changes(self):
+        api = Mutable(); api.value['unique'] = False
+        api.value['rows'].append(row(9, kind=1))
+        before = api.state()
+        original = api.call
+        def copy_without_limited(suffix, method='GET', data=None):
+            result = original(suffix, method, data)
+            if 'breakroleinheritance' in suffix:
+                api.value['rows'] = [r for r in api.value['rows'] if not r['limited']]
+                api.value['rows'][0]['email'] = 'scope-metadata@example.invalid'
+            return result
+        api.call = copy_without_limited
+        self.assertTrue(api.change(before, 'break', [], Mock())['unique'])
+
+    def test_inheritance_copy_rejects_lost_real_grant(self):
+        api = Mutable(); api.value['unique'] = False; before = api.state()
+        original = api.call
+        def lose_grant(suffix, method='GET', data=None):
+            result = original(suffix, method, data)
+            if 'breakroleinheritance' in suffix:
+                api.value['rows'] = [r for r in api.value['rows'] if r['id'] != 2]
+            return result
+        api.call = lose_grant
+        with self.assertRaises(SharePointProbeError):
+            api.change(before, 'break', [], Mock())
+
     def test_delta_keeps_unselected_group_personal_access_and_owner(self):
         api=Mutable(); result=api.change(api.state(),'groups',[{'id':4,'role':'write'}],Mock())
         self.assertEqual([r['id'] for r in result['rows']],[1,2,3,4]); self.assertEqual(len(api.operations),1)

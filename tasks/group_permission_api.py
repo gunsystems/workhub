@@ -18,6 +18,12 @@ def entries(raw):
     return values
 
 
+def access_bindings(rows):
+    """Compare grants, excluding SharePoint-managed traversal permissions."""
+    return {(r['id'], r['type'], int(rid)) for r in rows
+            for rid, kind in r['roles'] if int(kind) != 1}
+
+
 class GroupPermissionClient(PermissionClient):
     def call(self, suffix, method='GET', data=None):
         return super().call(suffix.lstrip('/'), method, data)
@@ -221,7 +227,7 @@ class GroupPermissionClient(PermissionClient):
             self.call(self.resource + '/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=false)', 'POST')
             after = self.state()
             observe('상위 권한을 복사하여 별도 설정', after)
-            if not after['unique'] or digest(after['rows']) != digest(before['rows']):
+            if not after['unique'] or access_bindings(after['rows']) != access_bindings(before['rows']):
                 raise SharePointProbeError('상속 분리 결과를 확인해 주세요.')
             return after
         if action == 'reset':
