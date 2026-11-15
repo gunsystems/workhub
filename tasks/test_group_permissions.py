@@ -1,0 +1,197 @@
+from copy import deepcopy
+from unittest.mock import Mock, patch
+from datetime import timedelta
+from django.contrib.auth import get_user_model
+from django.test import TestCase, Client
+from django.utils import timezone
+from .models import Department, Employee, DocumentAccessGroup, DocumentPermissionLease, SystemAudit
+from .document_permission_api import digest
+from .group_permission_api import GroupPermissionClient, entries
+from .sharepoint_probe import SharePointProbeError
+
+def row(pid, kind=2, ptype=8, protected=False):
+    return {'id':pid,'name':str(pid),'email':'','type':ptype,'roles':[(100+kind,kind)],'protected':protected,'limited':kind==1}
+
+def state(unique=True):
+    return {'unique':unique,'rows':[row(1,5,protected=True),row(2),row(3,ptype=1)],
+            'source':{'resource':'safe','name':'상위','drive':'drive','item':'parent'}}
+
+class Mutable(GroupPermissionClient):
+    def __init__(self):
+        self.value=state(); self.resource='safe'; self.operations=[]; self.identity={'Id':1}
+    def state(self): return deepcopy(self.value)
+    def roles(self): return {'read':102,'write':103,'manage':105}
+    def parent_state(self): return state(False)
+    def groups(self): return [{'id':2},{'id':4}]
+    def call(self,suffix,method='GET',data=None):
+        import re
+        self.operations.append(suffix)
+        if 'breakroleinheritance' in suffix: self.value['unique']=True
+        elif 'resetroleinheritance' in suffix: self.value['unique']=False
+        elif 'roleassignment(' in suffix:
+            pid,rid=map(int,re.search(r'principalid=(\d+),roledefid=(\d+)',suffix).groups())
+            person=next((r for r in self.value['rows'] if r['id']==pid),None)
+            if 'addroleassignment' in suffix:
+                if person is None:
+                    person=row(pid); person['roles']=[]; self.value['rows'].append(person)
+                person['roles'].append((rid,rid-100)); person['roles'].sort()
+            else:
+                person['roles']=[r for r in person['roles'] if r[0]!=rid]
+                if not person['roles']: self.value['rows'].remove(person)
+            self.value['rows'].sort(key=lambda r:r['id'])
+        return {}
+
+class GroupApiTests(TestCase):
+    def test_delta_keeps_unselected_group_personal_access_and_owner(self):
+        api=Mutable(); result=api.change(api.state(),'groups',[{'id':4,'role':'write'}],Mock())
+        self.assertEqual([r['id'] for r in result['rows']],[1,2,3,4]); self.assertEqual(len(api.operations),1)
+    def test_new_role_added_before_old_removed(self):
+        api=Mutable(); result=api.change(api.state(),'groups',[{'id':2,'role':'write'}],Mock())
+        self.assertIn('addroleassignment',api.operations[0]); self.assertIn('removeroleassignment',api.operations[1])
+        self.assertEqual(result['rows'][1]['roles'],[(103,3)])
+    def test_remove_only_named_group(self):
+        api=Mutable(); result=api.change(api.state(),'groups',[{'id':2,'role':'none'}],Mock())
+        self.assertEqual([r['id'] for r in result['rows']],[1,3])
+    def test_inherited_save_never_breaks_implicitly(self):
+        api=Mutable(); api.value['unique']=False
+        with self.assertRaises(SharePointProbeError): api.change(api.state(),'groups',[{'id':2,'role':'write'}],Mock())
+        self.assertEqual(api.operations,[])
+    def test_explicit_break_copies_and_keeps_child_scopes(self):
+        api=Mutable(); api.value['unique']=False; before=api.state()
+        result=api.change(before,'break',[],Mock())
+        self.assertTrue(result['unique']); self.assertEqual(before['rows'],result['rows'])
+        self.assertEqual(api.operations,['safe/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=false)'])
+    def test_explicit_reset(self):
+        api=Mutable(); self.assertFalse(api.change(api.state(),'reset',[],Mock(),parent=api.parent_state())['unique'])
+        self.assertEqual(api.operations,['safe/resetroleinheritance()'])
+    def test_stale_state_blocks_write(self):
+        api=Mutable(); before=api.state(); api.value['rows'].append(row(9))
+        with self.assertRaises(SharePointProbeError): api.change(before,'groups',[{'id':2,'role':'write'}],Mock())
+        self.assertEqual(api.operations,[])
+    def test_owner_and_person_cannot_be_submitted_as_group(self):
+        for pid in (1,3):
+            api=Mutable()
+            with self.assertRaises(SharePointProbeError): api.change(api.state(),'groups',[{'id':pid,'role':'none'}],Mock())
+            self.assertEqual(api.operations,[])
+    def test_silent_write_failure_is_detected(self):
+        api=Mutable(); api.call=Mock(return_value={})
+        with self.assertRaises(SharePointProbeError): api.change(api.state(),'groups',[{'id':2,'role':'write'}],Mock())
+        self.assertEqual(api.call.call_count,1)
+    def test_network_failure_never_retried(self):
+        api=Mutable(); api.call=Mock(side_effect=SharePointProbeError('중단'))
+        with self.assertRaises(SharePointProbeError): api.change(api.state(),'groups',[{'id':2,'role':'write'}],Mock())
+        self.assertEqual(api.call.call_count,1)
+    def test_incomplete_group_list_not_treated_as_complete(self):
+        for key in ('@odata.nextLink','odata.nextLink','__next'):
+            with self.assertRaises(SharePointProbeError): entries({'value':[],key:'next'})
+
+class AncestorTests(TestCase):
+    def api(self):
+        api=object.__new__(GroupPermissionClient); api.list_id='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
+        api.resource=f"lists(guid'{api.list_id}')/items(3)"; api.drive='drive'; api.item_id='child'
+        api.target_row={'name':'하위','parentReference':{'id':'parent'}}; api.docs=Mock()
+        api.docs.item.return_value={'name':'상위','parentReference':{'id':'root-id'}}
+        return api
+    def test_nearest_unique_ancestor_uses_rest(self):
+        api=self.api(); api.call=Mock(side_effect=[{'HasUniqueRoleAssignments':False},{'HasUniqueRoleAssignments':True}])
+        api.snapshot=Mock(return_value={'unique':True,'rows':[row(1,5,protected=True)]})
+        with patch('tasks.group_permission_api._json_request',return_value={'sharepointIds':{'listId':api.list_id,'listItemId':'2'}}): result=api.state()
+        self.assertFalse(result['unique']); self.assertEqual(result['source']['item'],'parent')
+        self.assertTrue(api.resource.endswith('items(3)'))
+    def test_root_uses_configured_web_no_parent_site(self):
+        api=self.api(); api.resource=f"lists(guid'{api.list_id}')"; api.item_id='root'
+        api.call=Mock(side_effect=[{'HasUniqueRoleAssignments':False},{'HasUniqueRoleAssignments':True,'Title':'전용 사이트'}])
+        api.snapshot=Mock(return_value={'unique':True,'rows':[row(1,5,protected=True)]})
+        self.assertEqual(api.state()['source']['resource'],'')
+    def test_foreign_list_ancestor_rejected(self):
+        api=self.api(); api.call=Mock(return_value={'HasUniqueRoleAssignments':False})
+        with patch('tasks.group_permission_api._json_request',return_value={'sharepointIds':{'listId':'other','listItemId':2}}):
+            with self.assertRaises(SharePointProbeError): api.state()
+
+class MembershipTests(TestCase):
+    def api(self):
+        api=object.__new__(GroupPermissionClient); api.identity={'Id':1}
+        api.members=Mock(return_value=[{'id':1,'site_admin':True},{'id':2,'site_admin':False}])
+        api.call=Mock(); api.principal=Mock(return_value=3); return api
+    def test_owner_not_removed(self):
+        api=self.api()
+        with self.assertRaises(SharePointProbeError): api.group_change(4,api.members(),[],[1],Mock())
+        api.call.assert_not_called()
+    def test_stale_members_block_update(self):
+        api=self.api()
+        with self.assertRaises(SharePointProbeError): api.group_change(4,[],['new@gunsystems.co.kr'],[],Mock())
+        api.call.assert_not_called()
+    def test_add_result_verified_and_observed(self):
+        api=self.api(); before=api.members(); after=before+[{'id':3,'site_admin':False}]
+        api.members.side_effect=[before,before,after]; api.call.return_value={'LoginName':'new-login'}
+        observed=Mock(); result=api.group_change(4,before,['new@gunsystems.co.kr'],[],observed)
+        self.assertEqual(result,after); self.assertEqual(observed.call_count,1)
+        self.assertEqual(api.call.call_args.args[:2],('sitegroups/getbyid(4)/users','POST'))
+
+class WorkspaceTests(TestCase):
+    def setUp(self):
+        users=get_user_model(); self.admin=users.objects.create_superuser('admin','admin@gunsystems.co.kr','unused')
+        self.worker=users.objects.create_user('worker',email='worker@gunsystems.co.kr')
+        self.staff=Employee.objects.create(user=self.worker,name='직원',department=Department.objects.create(name='기술팀'))
+        self.url='/work/shared-documents/drive/folder/permissions/'; self.client.force_login(self.admin)
+        self.factory=patch('tasks.group_permissions.GroupPermissionClient').start(); self.addCleanup(patch.stopall)
+        self.api=self.factory.return_value; self.api.config.site_url='https://tenant.sharepoint.com/sites/work'
+        self.api.connection.connected_at=timezone.now(); self.api.identity={'Id':1}
+        self.api.docs.libraries=[{'id':'drive','name':'공통'}]; self.api.bind.return_value={'name':'교육자료','folder':{}}
+        self.api.state.side_effect=lambda:state(); self.api.change.return_value=state()
+        self.api.groups.return_value=[{'id':2,'name':'Workhub_기술팀','login':''}]; self.api.members.return_value=[]
+        DocumentAccessGroup.objects.create(site_url=self.api.config.site_url,principal_id=2,name='Workhub_기술팀')
+    def preview(self,**data):
+        response=self.client.post(self.url+'review/',data or {'action':'groups','group_2':'write'})
+        self.assertEqual(response.status_code,200); return response.context['nonce']
+    def test_get_and_review_are_read_only(self):
+        response=self.client.get(self.url); self.assertContains(response,'그룹 구성원'); self.assertContains(response,'직원별 확인')
+        self.assertContains(response,'permission-table'); self.preview(); self.api.change.assert_not_called()
+    def test_fragment_has_panel_only(self):
+        response=self.client.get(self.url+'?panel=1'); self.assertContains(response,'상위 권한으로 복원')
+        self.assertNotContains(response,'permission-workspace')
+    def test_explicit_apply_one_use_and_reason(self):
+        nonce=self.preview(); self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'부서 공유'})
+        self.assertEqual(self.api.change.call_count,1); self.assertEqual(self.api.change.call_args.args[2],[{'id':2,'role':'write'}])
+        self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'재전송'}); self.assertEqual(self.api.change.call_count,1)
+    def test_missing_confirmation_or_reason(self):
+        for data in ({'reason':'사유'},{'confirmed':'yes'}): self.client.post(self.url+'apply/',{'nonce':self.preview(),**data})
+        self.api.change.assert_not_called()
+    def test_inherited_review_cannot_break(self):
+        self.api.state.side_effect=lambda:state(False)
+        self.assertEqual(self.client.post(self.url+'review/',{'action':'groups','group_2':'write'}).status_code,302)
+        self.api.change.assert_not_called()
+    def test_employee_denied_all_admin_endpoints(self):
+        self.client.force_login(self.worker)
+        for method,url in [('get',self.url),('post',self.url+'review/'),('post',self.url+'apply/'),
+                           ('get','/work/shared-documents/permissions/workspace/'),('get','/work/shared-documents/permissions/tree/')]:
+            self.assertEqual(getattr(self.client,method)(url).status_code,403)
+        self.factory.assert_not_called()
+    def test_unmanaged_group_cannot_modify_members(self):
+        DocumentAccessGroup.objects.all().delete()
+        response=self.client.post(self.url+'review/',{'action':'members','group':'2','add':[str(self.staff.pk)]})
+        self.assertEqual(response.status_code,302); self.api.group_change.assert_not_called()
+    def test_staff_disabled_after_review(self):
+        nonce=self.preview(action='members',group='2',add=[str(self.staff.pk)])
+        self.staff.is_active=False; self.staff.save()
+        self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'변경'}); self.api.group_change.assert_not_called()
+    def test_site_wide_lock_blocks_overlapping_folder_group_writes(self):
+        DocumentPermissionLease.objects.create(target=digest(['document-permission-site',self.api.config.site_url]),expires_at=timezone.now()+timedelta(minutes=1))
+        self.client.post(self.url+'apply/',{'nonce':self.preview(),'confirmed':'yes','reason':'변경'}); self.api.change.assert_not_called()
+    def test_partial_failure_logged(self):
+        self.api.change.side_effect=SharePointProbeError('중단')
+        self.client.post(self.url+'apply/',{'nonce':self.preview(),'confirmed':'yes','reason':'변경'})
+        self.assertTrue(SystemAudit.objects.filter(action='permission_attention').exists()); self.assertFalse(DocumentPermissionLease.objects.exists())
+    def test_csrf(self):
+        strict=Client(enforce_csrf_checks=True); strict.force_login(self.admin)
+        self.assertEqual(strict.post(self.url+'review/',{}).status_code,403)
+    def test_legacy_individual_replace_not_accepted(self):
+        self.assertEqual(self.client.post(self.url,{'employee_1':'write'}).status_code,405); self.api.change.assert_not_called()
+    def test_tree_is_bounded_and_only_returns_folders(self):
+        self.api.docs.children_page.return_value=([{'id':'a','name':'폴더','folder':{}},{'id':'b','name':'파일','file':{}}],'cursor',50)
+        response=self.client.get('/work/shared-documents/permissions/tree/?drive=drive&folder=root')
+        self.assertEqual(response.json(),{'rows':[{'id':'a','name':'폴더'}],'cursor':'cursor'})
+    def test_oauth_state_mismatch(self):
+        with patch('tasks.document_permissions.ProbeConfig.from_settings'),patch('tasks.document_permissions.token_request') as token:
+            self.client.get('/work/shared-documents/permissions/callback/?state=wrong&code=secret')
+        token.assert_not_called()
