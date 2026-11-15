@@ -53,8 +53,9 @@ class PermissionClient:
 
     def call(self, suffix, method='GET', data=None):
         # Every path is built internally from numeric IDs/GUIDs. Never accept a URL from the browser.
-        url = self.config.site_url + '/_api/web/' + suffix
-        headers = {'Authorization': 'Bearer ' + self.token, 'Accept': 'application/json;odata=nometadata'}
+        url = self.config.site_url + '/_api/web' + (suffix if suffix.startswith('?') else '/' + suffix.lstrip('/'))
+        headers = {'Authorization': 'Bearer ' + self.token, 'Accept': 'application/json;odata=nometadata',
+                   'Content-Type': 'application/json;odata=nometadata'}
         try:
             with requests.request(method, url, headers=headers, json=data, timeout=(10, 20),
                                   allow_redirects=False) as response:
@@ -161,49 +162,3 @@ class PermissionClient:
             raise SharePointProbeError('해당 직원의 회사 Microsoft 계정을 확인하지 못했습니다.')
         return principal_id
 
-    def apply(self, expected, desired, observe):
-        """desired: [{email, role}]. Fail closed on concurrent/partial state, no auto retry."""
-        current = self.snapshot()
-        if digest(current) != digest(expected):
-            raise SharePointProbeError('다른 곳에서 권한이 변경되었습니다. 현재 권한을 다시 확인하세요.')
-        role_ids = self.roles()
-        planned = [(self.principal(r['email']), role_ids[r['role']]) for r in desired]
-        if len({pid for pid, _ in planned}) != len(planned):
-            raise SharePointProbeError('같은 Microsoft 계정에 연결된 직원 이메일이 중복됩니다.')
-        # ensureuser only resolves directory identities; recheck ACL before mutating it.
-        if digest(self.snapshot()) != digest(current):
-            raise SharePointProbeError('다른 곳에서 권한이 변경되었습니다. 현재 권한을 다시 확인하세요.')
-        if not current['unique']:
-            copied = current
-            self.call(self.resource + '/breakroleinheritance(copyRoleAssignments=true,clearSubscopes=false)', 'POST')
-            current = self.snapshot()
-            observe('권한 상속 분리', current)
-            if digest(current['rows']) != digest(copied['rows']):
-                raise SharePointProbeError('권한 분리 중 기존 권한 구성이 달라졌습니다. 현재 권한을 다시 확인하세요.')
-        protected = {r['id'] for r in current['rows'] if r['protected'] or r['limited']}
-        # Add intended access before removing old assignments. Keep owner/caller access.
-        for pid, role in planned:
-            if pid in protected:
-                continue
-            row = next((r for r in current['rows'] if r['id'] == pid), None)
-            if not row or role not in [rid for rid, _ in row['roles']]:
-                current = self.step(current, f'/roleassignments/addroleassignment(principalid={pid},roledefid={role})', 'POST', observe, '직원 권한 추가')
-        wanted = dict(planned)
-        for row in list(current['rows']):
-            if row['id'] in protected:
-                continue
-            for rid, _ in row['roles']:
-                if wanted.get(row['id']) != rid:
-                    current = self.step(current, f"/roleassignments/removeroleassignment(principalid={row['id']},roledefid={rid})", 'POST', observe, '기존 권한 해제')
-        actual = {(r['id'], rid) for r in current['rows'] if r['id'] not in protected for rid, _ in r['roles']}
-        if actual != {(pid, role) for pid, role in planned if pid not in protected}:
-            raise SharePointProbeError('요청한 권한과 실제 결과가 다릅니다. 현재 권한을 확인하세요.')
-        return current
-
-    def step(self, expected, suffix, method, observe, label):
-        if digest(self.snapshot()) != digest(expected):
-            raise SharePointProbeError('처리 중 외부 권한 변경이 확인되어 중단했습니다. 현재 권한을 다시 확인하세요.')
-        self.call(self.resource + suffix, method)
-        actual = self.snapshot()
-        observe(label, actual)
-        return actual

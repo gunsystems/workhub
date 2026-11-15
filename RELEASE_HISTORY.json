@@ -3,6 +3,18 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.30.0",
+      "status": "development_pending_live_validation",
+      "summary": "그룹 중심 문서 권한 관리와 명시적 상속 처리",
+      "release_notes": "releases/v0.30.0.md",
+      "verification": {
+        "focused_django_tests": 39,
+        "live": "not deployed; real SharePoint group writes and responsive screenshots pending",
+        "migration": "0057_document_access_group"
+      },
+      "rollback_commit": "488a710ea0e11f7473cc55186249bbefd7a3f9ff"
+    },
+    {
       "version": "0.29.0",
       "status": "prepared_pending_microsoft_setup",
       "summary": "관리자 직원별 폴더·파일 실제 권한 관리",

@@ -18,3 +18,14 @@ class DocumentPermissionConnection(models.Model):
 class DocumentPermissionLease(models.Model):
     target = models.CharField(max_length=64, unique=True)
     expires_at = models.DateTimeField()
+
+
+class DocumentAccessGroup(models.Model):
+    """References to groups created here, not a separate authorization database."""
+    site_url = models.URLField(max_length=500)
+    principal_id = models.PositiveIntegerField()
+    name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['site_url', 'principal_id'], name='document_group_site_id')]

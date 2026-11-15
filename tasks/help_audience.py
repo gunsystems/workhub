@@ -27,7 +27,7 @@ def for_audience(name, source, user):
             result['management_notes'] = ['새 폴더와 폴더 옆 ⋯ 메뉴에서 폴더를 만들거나 이름을 변경할 수 있습니다. 회사 문서함의 편집 권한이 필요합니다.',
                                           '빈 폴더만 삭제할 수 있습니다. 삭제한 폴더는 SharePoint 휴지통으로 이동합니다.']
         if admin:
-            result.setdefault('management_notes', []).append('직원별 접근을 지정하려면 폴더·파일 옆 ⋯ 메뉴의 권한 관리를 선택하세요. 변경 내용을 검토한 후 실제 문서 권한에 적용합니다. SharePoint에서 변경한 권한도 다시 조회됩니다.')
+            result.setdefault('management_notes', []).append('공동 문서의 문서 권한 관리에서 그룹 구성원과 폴더 권한을 관리합니다. 상속 중에는 상속 원본에서 변경하며, 폴더별 예외는 별도 설정을 명시적으로 선택합니다. 적용 전 변경 내용과 영향을 확인하세요.')
     elif name in ['shared_file_upload', 'shared_file_manage']:
         result.update(title='공동 문서 파일 관리', purpose='문서함에서 파일을 등록하거나 정리합니다.',
             steps=['파일 업로드에서 파일을 선택하거나 끌어다 놓고 등록합니다.', '파일 옆 ⋯ 메뉴에서 다운로드·이름 변경·이동·삭제를 선택합니다.', '이동은 폴더를 열어 위치를 고른 뒤 이 폴더로 이동을 누릅니다. 삭제는 확인 후 휴지통으로 이동합니다.'],

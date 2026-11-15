@@ -17,5 +17,5 @@
 <p id="shared-document-status" class="shared-load-status" role="status" aria-live="polite"></p>
 {% include 'tasks/shared_document_workspace.html' %}
 <script src="{% static 'tasks/shared_documents.js' %}" defer></script>
-{% if request.user.is_superuser %}<p><a class="button" href="{% url 'document_permission_setup' %}">문서 권한 관리자 연결</a></p><details class="detail"><summary>관리자 · 문서 연결 설정</summary><p>문서 앱의 위임 권한 User.Read · Sites.Selected 및 웹 리디렉션 주소를 설정합니다.</p><code class="shared-config">{{ callback_url }}</code><p>앱의 사이트 권한과 직원 본인의 SharePoint 권한을 모두 확인하세요. 이 화면에서 직원에게 문서 권한을 자동 부여하지 않습니다.</p></details>{% endif %}
+{% if request.user.is_superuser %}<p><a class="button" href="{% url 'document_permission_workspace' %}">문서 권한 관리</a> <a class="button" href="{% url 'document_permission_setup' %}">관리자 연결 설정</a></p><details class="detail"><summary>관리자 · 문서 연결 설정</summary><p>문서 앱의 위임 권한 User.Read · Sites.Selected 및 웹 리디렉션 주소를 설정합니다.</p><code class="shared-config">{{ callback_url }}</code><p>앱의 사이트 권한과 직원 본인의 SharePoint 권한을 모두 확인하세요. 이 화면에서 직원에게 문서 권한을 자동 부여하지 않습니다.</p></details>{% endif %}
 {% endblock %}
