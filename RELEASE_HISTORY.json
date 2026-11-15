@@ -4,14 +4,40 @@
   "releases": [
     {
       "version": "0.26.3",
-      "status": "implementation_ready",
+      "status": "live_owner_verified",
       "summary": "문서함 사이트 위치 재조회·폴더 루트 조회 추가 제거",
       "release_notes": "releases/v0.26.3.md",
       "verification": {
         "focused_tests": 48,
+        "full_django_tests": 779,
+        "node_checks": 9,
+        "ci_run": 43682073525,
         "migration": "None",
-        "live": "Pending CI and deployment"
-      }
+        "live": "Representative lee signed in; v0.26.3 footer verified. Same education folder and parent navigation succeeded.",
+        "timing_ms": {
+          "v0262": {
+            "parent": 2587,
+            "folder": [
+              3210,
+              3275
+            ]
+          },
+          "v0263": {
+            "parent": [
+              1733,
+              1923
+            ],
+            "folder": [
+              1532,
+              1429
+            ]
+          }
+        },
+        "timing_method": "Browser action elapsed time includes automation and network overhead; small same-session samples, not guaranteed SLA or comparison against v0.26.1.",
+        "screenshot": "outputs/Workhub_v0263_문서함속도확인_20261115.png"
+      },
+      "source_commit": "153e81df7d20cafffecf9bc985101836dce5650e",
+      "deploy_id": "dep-dbskd5mc6qcc739e1o1g"
     },
     {
       "version": "0.26.2",
