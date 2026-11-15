@@ -90,6 +90,22 @@ class SharedDocumentsTests(TestCase):
                 UserDocuments(self.user)
             token.assert_not_called()
 
+    def test_first_use_guidance_matches_connection_state_without_admin_setup(self):
+        with patch('tasks.shared_documents.UserDocuments', side_effect=SharePointProbeError('연결이 필요합니다.')):
+            response = self.client.get('/work/shared-documents/')
+        self.assertContains(response, 'Workhub 로그인 이메일과 같은 회사 Microsoft 계정')
+        self.assertContains(response, '함께 편집할 수 있습니다')
+        self.assertContains(response, '권한이 자동으로 추가되지는 않습니다')
+        self.assertNotContains(response, '관리자 · 문서 연결 설정')
+        self.assertNotContains(response, 'Teams 연결과는 별도로')
+        self.connection()
+        with patch('tasks.shared_documents.UserDocuments') as client:
+            client.return_value.libraries = []
+            response = self.client.get('/work/shared-documents/')
+        self.assertContains(response, '회사 계정 연결 완료')
+        self.assertContains(response, '문서함이나 폴더 이름을 눌러 시작하세요')
+        self.assertNotContains(response, '개인 Microsoft 계정 대신')
+
     def test_refresh_is_delegated_and_rotated_encrypted(self):
         connection = self.connection()
         with patch('tasks.shared_documents.token_request', return_value={

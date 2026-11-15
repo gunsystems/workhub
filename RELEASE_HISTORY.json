@@ -3,6 +3,16 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.27.2",
+      "status": "implementation_ready",
+      "summary": "공동 문서 첫 사용 안내와 직원용 문구 원칙 기록",
+      "release_notes": "releases/v0.27.2.md",
+      "verification": {
+        "focused_tests": 47,
+        "live": "Pending CI and responsive check"
+      }
+    },
+    {
       "version": "0.27.1",
       "status": "live_verified",
       "summary": "직원용 도움말과 관리자 운영 설명 분리",
