@@ -4,14 +4,19 @@
   "releases": [
     {
       "version": "0.26.2",
-      "status": "implementation_ready",
+      "status": "live_pending_signed_in_timing",
       "summary": "공동 문서의 인증 재사용 및 요청 내 폴더 중복 조회 제거",
       "release_notes": "releases/v0.26.2.md",
       "verification": {
         "focused_tests": 45,
+        "full_django_tests": 776,
+        "node_checks": 9,
+        "ci_run": 43681170177,
         "migration": "None",
-        "live": "Pending deployment and signed-in timing check"
-      }
+        "live": "Render deployment Live verified; signed-in folder timing pending user OTP. No measured latency improvement claimed."
+      },
+      "source_commit": "45b8ac7331831c6ffb0a9e77fda05f7ce9d693d1",
+      "deploy_id": "dep-dbsk78mi0phs73dcqap0"
     },
     {
       "version": "0.26.1",
