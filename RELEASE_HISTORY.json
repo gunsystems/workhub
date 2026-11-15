@@ -4,15 +4,22 @@
   "releases": [
     {
       "version": "0.27.0",
-      "status": "implementation_ready",
+      "status": "live_owner_verified",
       "summary": "50개 단계별 문서 목록·정렬·부분 화면 이동·권한별 암호화 커서",
       "release_notes": "releases/v0.27.0.md",
       "verification": {
         "focused_tests": 54,
-        "node_navigation": "Passed",
+        "full_django_tests": 785,
+        "node_checks": 10,
+        "ci_run": 43685962549,
         "migration": "None",
-        "live": "Pending CI/deployment and responsive check"
-      }
+        "live": "Representative lee: v0.27.0, partial parent/folder navigation, name search, modified/name-desc sorting and browser back verified.",
+        "pagination": "Automated 50-row first page and opaque continuation verified without adding production test documents; live library currently has four items.",
+        "mobile": "Actual 320/390px controls and links checked with no horizontal overflow; screenshots saved.",
+        "limitations": "Current-folder name search scans one page per request and explicitly offers next-item search; it is not whole-library or document-content search. No new Microsoft permissions."
+      },
+      "source_commit": "ffb0b401db930280ce65e3aebd197fa3030d75b9",
+      "deploy_id": "dep-dbsl67ec6qcc739fulog"
     },
     {
       "version": "0.26.3",
