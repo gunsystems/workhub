@@ -1,0 +1,10 @@
+{% extends 'tasks/base.html' %}{% load static %}{% block content %}
+<link rel="stylesheet" href="{% static 'tasks/document_permissions.css' %}">
+<section class="heading"><div><div class="eyebrow">ADMINISTRATION · 관리자 전용</div><h1>문서 권한 관리 연결</h1><p>Workhub에서 지정한 직원별 권한을 실제 회사 문서함에 반영합니다.</p></div></section>
+{% for message in messages %}<p class="permission-note" role="status">{{ message }}</p>{% endfor %}
+<section class="detail permission-panel"><h2>관리자 계정</h2>
+{% if permission_connection %}<p>{{ permission_connection.email }} · 연결됨</p>{% else %}<p>회사 문서 사이트의 권한을 관리할 수 있는 Microsoft 계정을 연결하세요.</p>{% endif %}
+<p>일반 직원의 문서 연결과는 별도입니다. 직원에게 관리자 계정이나 문서 관리 권한을 부여하지 않습니다.</p>
+<form method="post" action="{% url 'document_permission_connect' %}">{% csrf_token %}<button class="button primary">관리자 Microsoft 계정 연결</button></form></section>
+<section class="detail permission-panel"><h2>최초 연결 설정</h2><p>문서 앱에 SharePoint용 위임 권한 Sites.Selected와 아래 복귀 주소가 필요합니다. 앱은 Workhub 전용 문서 사이트에서 권한을 관리할 수 있어야 합니다. 다른 사이트의 권한을 추가하지 마세요.</p><code>{{ callback_url }}</code><p>연결 후 공동 문서의 폴더·파일 옆 메뉴에서 권한 관리를 선택하세요. 저장소에서 변경한 내용도 다시 조회됩니다.</p></section>
+<a class="button" href="{% url 'shared_documents' %}">공동 문서로</a>{% endblock %}

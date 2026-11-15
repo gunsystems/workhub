@@ -84,6 +84,36 @@ class SharedDocumentsTests(TestCase):
         data.update(values)
         return DocumentConnection.objects.create(**data)
 
+    def test_permission_connection_cannot_be_borrowed_by_another_user(self):
+        from .models import DocumentPermissionConnection
+        from django.core.exceptions import PermissionDenied
+        admin = get_user_model().objects.create_superuser('separate-admin', 'admin@gunsystems.co.kr', 'unused')
+        connection = DocumentPermissionConnection.objects.create(user=admin, tenant=TENANT, client=CLIENT,
+            subject=TENANT, email='owner@gunsystems.co.kr', site_url=SITE,
+            encrypted_refresh_token=cipher().encrypt(b'refresh').decode())
+        with self.assertRaises(PermissionDenied):
+            UserDocuments(self.user, permission_connection=connection)
+        other = get_user_model().objects.create_superuser('other-admin', 'other@gunsystems.co.kr', 'unused')
+        with self.assertRaises(PermissionDenied):
+            UserDocuments(other, permission_connection=connection)
+
+    def test_admin_alias_is_site_bound_and_used_only_for_its_own_admin(self):
+        from .models import DocumentPermissionConnection
+        from django.core.exceptions import PermissionDenied
+        admin = get_user_model().objects.create_superuser('separate-admin', 'admin@gunsystems.co.kr', 'unused')
+        connection = DocumentPermissionConnection.objects.create(user=admin, tenant=TENANT, client=CLIENT,
+            subject=TENANT, email='owner@gunsystems.co.kr', site_url=SITE,
+            encrypted_refresh_token=cipher().encrypt(b'admin-refresh').decode())
+        with patch('tasks.shared_documents.token_request', return_value={
+                'scope':'User.Read Sites.Selected','access_token':'delegated'}) as token, \
+                patch('tasks.shared_documents.site_libraries', return_value=[self.library]):
+            UserDocuments(admin)
+            self.assertEqual(token.call_args.args[1]['refresh_token'], 'admin-refresh')
+            connection.site_url = 'https://example.sharepoint.com/sites/Other'
+            connection.save()
+            with self.assertRaises(PermissionDenied):
+                UserDocuments(admin)
+
     def test_no_connection_never_uses_application_token(self):
         with patch('tasks.shared_documents.token_request') as token:
             with self.assertRaises(SharePointProbeError):

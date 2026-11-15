@@ -3,6 +3,20 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.29.0",
+      "status": "prepared_pending_microsoft_setup",
+      "summary": "관리자 직원별 폴더·파일 실제 권한 관리",
+      "release_notes": "releases/v0.29.0.md",
+      "verification": {
+        "focused_tests": 85,
+        "node_checks": 10,
+        "full_regression": "running",
+        "live": "Pending Microsoft configuration and actual access verification",
+        "migration": "0056_document_permission_management"
+      },
+      "rollback_commit": "45b5cba05db6859fc87ec75422a652c70a274694"
+    },
+    {
       "version": "0.28.0",
       "status": "live_verified",
       "summary": "Workhub 파일 업로드·새 버전·다운로드·이름 변경·이동·휴지통 및 관리자 로그",
