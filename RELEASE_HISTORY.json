@@ -4,14 +4,18 @@
   "releases": [
     {
       "version": "0.31.0",
-      "status": "verified_automated_pending_live_validation",
+      "status": "deployed",
       "summary": "전자결재 증명서·서류 신청과 비공개 PDF 발급·담당자 재배정",
       "release_notes": "releases/v0.31.0.md",
       "verification": {
         "focused_certificate_tests": 10,
         "related_regression_tests": 84,
         "migration": "0058_certificate_requests",
-        "live": "pending authenticated form verification; no real staff certificates issued"
+        "live": "employee form and admin routing label verified; responsive 390px has no horizontal overflow; administrator POST issuing tested automatically; no real staff request or notification created",
+        "full_django_tests": 865,
+        "ci_run": 43866700326,
+        "ci_job": 133296970359,
+        "deploy": "dep-dbtff8k9v7es73afuqag"
       },
       "rollback_commit": "8144d7da8bcac2427fdf8cc3c2de87968df8906b"
     },
