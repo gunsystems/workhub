@@ -65,6 +65,30 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
   assert.match(app.status.textContent, /다시 시도/);
   assert.equal(app.current().rows.children.length, 1);
 
+  // Repeated clicks while a request is running must not fan out into Graph calls.
+  for (const more of [false, true]) {
+    app = setup(); let finish;
+    app.fetchWith(url => new Promise(resolve => {
+      finish = () => resolve({ok: true, url, text: async () => ''});
+    }));
+    const url = '/work/shared-documents/?folder=same' + (more ? '&cursor=next' : '');
+    app.parsed.push(app.fixture(['two']));
+    app.click(url, more); app.click(url, more); app.click(url, more);
+    assert.equal(app.calls.length, 1, 'identical pending navigation is requested once');
+    assert.equal(app.calls[0][1].signal.aborted, false, 'duplicate click keeps original request alive');
+    finish(); await tick();
+    app.parsed.push(app.fixture(['three']));
+    app.click(url, more);
+    assert.equal(app.calls.length, 2, 'settled navigation rechecks access without response caching');
+    finish(); await tick();
+  }
+
+  app = setup();
+  app.fetchWith(async () => {throw new Error('offline');});
+  app.click('/work/shared-documents/?folder=retry'); await tick();
+  app.click('/work/shared-documents/?folder=retry'); await tick();
+  assert.equal(app.calls.length, 2, 'failure releases duplicate-request guard for retry');
+
   app = setup(); let release;
   app.fetchWith(url => new Promise(resolve => {release = () => resolve({ok: true, url, text: async () => ''});}));
   app.click('/work/shared-documents/?folder=old');
