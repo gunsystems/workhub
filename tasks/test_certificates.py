@@ -138,6 +138,23 @@ class CertificateTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn('document_name', form.errors); self.assertIn('period_end', form.errors)
 
+    def test_custom_name_enabled_only_for_other_including_forged_post(self):
+        from .certificate_views import RequestForm
+        self.assertTrue(RequestForm().fields['document_name'].disabled)
+        data = {'submission':'x','kind':'employment','language':'ko','purpose':'개인 보관','document_name':'위조한 이름'}
+        form = RequestForm(data)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['document_name'], '')
+        data['kind'] = 'other'
+        form = RequestForm(data)
+        self.assertFalse(form.fields['document_name'].disabled)
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['document_name'], '위조한 이름')
+        data['document_name'] = ''
+        form = RequestForm(data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('document_name', form.errors)
+
     def test_stale_notices_do_not_leak_after_reassignment(self):
         from accounts.models import AccessProfile
         from django.utils import timezone
@@ -170,6 +187,12 @@ class CertificateTests(TestCase):
         with patch('accounts.services.deliver', side_effect=TimeoutError) as send:
             service.deliver_pending(); service.deliver_pending()
             self.assertEqual(send.call_count, 1)
+            html = send.call_args.kwargs['html_body']
+            self.assertIn('GUNSYSTEMS', html)
+            self.assertIn('background:#173f35', html)
+            self.assertIn('발급된 PDF를 내려받으세요', html)
+            self.assertNotIn(item.purpose, html)
+            self.assertIn('메일에 첨부하지 않습니다', html)
         self.assertTrue(CertificateNotice.objects.filter(user=user,mail_state='unknown').exists())
         self.assertContains(self.client.get(url), '발급 서류 받기')
 
