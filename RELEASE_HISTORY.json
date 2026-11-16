@@ -8,7 +8,7 @@
       "summary": "전자결재 증명서·서류 신청과 비공개 PDF 발급·담당자 재배정",
       "release_notes": "releases/v0.31.0.md",
       "verification": {
-        "focused_certificate_tests": 9,
+        "focused_certificate_tests": 10,
         "related_regression_tests": 84,
         "migration": "0058_certificate_requests",
         "live": "pending authenticated form verification; no real staff certificates issued"

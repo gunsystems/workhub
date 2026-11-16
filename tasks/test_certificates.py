@@ -172,3 +172,16 @@ class CertificateTests(TestCase):
             self.assertEqual(send.call_count, 1)
         self.assertTrue(CertificateNotice.objects.filter(user=user,mail_state='unknown').exists())
         self.assertContains(self.client.get(url), '발급 서류 받기')
+
+    def test_account_history_preserved_with_clear_suspend_path(self):
+        from accounts.lifecycle import business_counts, change_access
+        item = self.submit()
+        person = item.employee
+        self.assertEqual(business_counts(person)['증명서·서류 신청'], 1)
+        for action in ['delete_access', 'delete_employee']:
+            with self.assertRaisesMessage(ValidationError, '사용 중지'):
+                change_access(self.admin, person.pk, action, '검증', self.users['member'].email)
+        change_access(self.admin, person.pk, 'suspend', '검증 사용 중지')
+        self.users['member'].refresh_from_db()
+        self.assertFalse(service.visible(self.users['member']).exists())
+        self.assertTrue(CertificateRequest.objects.filter(pk=item.pk).exists())
