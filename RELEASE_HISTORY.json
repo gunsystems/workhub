@@ -3,6 +3,21 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.31.2",
+      "status": "deployed",
+      "summary": "팀·업무 문서 그룹의 Workhub 구성원 관리 연결",
+      "release_notes": "releases/v0.31.2.md",
+      "commit": "ade289fe4bd10f19fa73c15c14b8f43d2cb26d24",
+      "deploy": "dep-dbth2l9srm7s73b9l45g",
+      "verification": {
+        "ci_feature_run": 43881855891,
+        "full_django_tests": 872,
+        "final_focused_tests": 43,
+        "live": "Existing team/work groups enrolled. Registered pre-login staff selectable. Membership preview cancelled; no live employee or folder access changes."
+      },
+      "rollback_commit": "b86fb49bed9f2c42db4b6e49e6add292bc80969b"
+    },
+    {
       "version": "0.31.1",
       "status": "deployed",
       "summary": "기타 서류명 입력 제어·기간 설명·전자결재 메일 디자인 통일",
