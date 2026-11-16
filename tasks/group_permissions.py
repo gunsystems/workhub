@@ -79,6 +79,12 @@ def overview(request, drive='', item='root'):
             group = next((r for r in groups if str(r['id']) == selected), None)
             context['selected_group'] = group
             if group:
+                if not group['managed']:
+                    try:
+                        api.check_membership_group(group['id'])
+                        context['can_register_group'] = True
+                    except SharePointProbeError:
+                        context['can_register_group'] = False
                 members = api.members(group['id'])
                 context['members'] = members
                 emails = {r['email'] for r in members if r['type'] == 1}
@@ -187,10 +193,17 @@ def review(request, drive, item):
             if any(g['name'].casefold() == payload['group_name'].casefold() for g in catalog):
                 raise SharePointProbeError('같은 이름의 그룹이 있습니다.')
             summary = [payload['group_name'] + ' · 빈 그룹 생성 (문서 접근 권한은 별도 연결)']
+        elif action == 'register_group':
+            group = next((g for g in catalog if str(g['id']) == request.POST.get('group')), None)
+            if not group or group['managed']:
+                raise SharePointProbeError('관리할 기존 그룹을 다시 선택하세요.')
+            api.check_membership_group(group['id'])
+            payload['group'] = group
+            summary = [group['name'] + ' · Workhub에서 구성원 관리 연결']
         elif action == 'members':
             group = next((g for g in catalog if str(g['id']) == request.POST.get('group') and g['managed']), None)
             if not group:
-                raise SharePointProbeError('Workhub에서 만든 그룹의 구성원만 변경할 수 있습니다.')
+                raise SharePointProbeError('먼저 이 그룹의 구성원 관리를 연결해 주세요.')
             staff = {str(s.pk): s for s in employees()}
             add_ids = request.POST.getlist('add')
             if any(pk not in staff for pk in add_ids) or len(set(add_ids)) != len(add_ids):
@@ -251,6 +264,12 @@ def apply(request, drive, item):
         action = payload['action']
         if digest(api.state()) != digest(payload['before']):
             raise SharePointProbeError('권한이 변경되었습니다. 다시 검토하세요.')
+        if action in ('members', 'register_group'):
+            api.check_membership_group(payload['group']['id'])
+        if action == 'register_group':
+            catalog = group_catalog(api)
+            if not any(g == payload['group'] for g in catalog):
+                raise SharePointProbeError('그룹 정보가 변경되었습니다. 다시 검토하세요.')
         if action == 'members':
             live = {str(s.pk): s.email.casefold() for s in employees()}
             if any(live.get(str(r['employee'])) != r['email'] for r in payload['additions']):
@@ -267,7 +286,13 @@ def apply(request, drive, item):
                 raise SharePointProbeError('처리 잠금이 만료되었습니다. 실제 권한을 다시 확인하세요.')
             write('update', 'SharePointGroupPermission', item, label+' · '+payload['name'],
                 after={'결과': value, '사유': reason}, actor=request.user)
-        if action == 'members':
+        if action == 'register_group':
+            group = payload['group']
+            DocumentAccessGroup.objects.update_or_create(site_url=api.config.site_url,
+                principal_id=group['id'], defaults={'name': group['name']})
+            write('update', 'SharePointGroupPermission', group['id'], '문서 그룹 구성원 관리 연결 · '+group['name'],
+                after={'그룹': group['name'], '사유': reason}, actor=request.user)
+        elif action == 'members':
             result = api.group_change(payload['group']['id'], payload['members'],
                 [r['email'] for r in payload['additions']], payload['removals'], observe)
             write('update', 'SharePointGroupPermission', payload['group']['id'], '문서 그룹 구성원 변경 · '+payload['group']['name'],
@@ -294,6 +319,6 @@ def apply(request, drive, item):
         if lease:
             DocumentPermissionLease.objects.filter(pk=lease.pk).delete()
     url = return_url(drive, item)
-    if payload.get('action') in ('members', 'create_group'):
+    if payload.get('action') in ('members', 'create_group', 'register_group'):
         url += '?' + urlencode({'tab': 'groups', 'group': (payload.get('group') or {}).get('id', '')})
     return redirect(url)

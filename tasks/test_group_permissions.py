@@ -135,6 +135,22 @@ class AncestorTests(TestCase):
             with self.assertRaises(SharePointProbeError): api.state()
 
 class MembershipTests(TestCase):
+    def test_default_groups_cannot_be_enrolled_even_after_rename(self):
+        api=object.__new__(GroupPermissionClient)
+        api.call=Mock(side_effect=[{'Id':3},{'Id':5},{'Id':4}])
+        with self.assertRaises(SharePointProbeError): api.check_membership_group(5)
+
+    def test_group_protection_fails_closed_on_incomplete_response(self):
+        api=object.__new__(GroupPermissionClient); api.call=Mock(return_value={})
+        with self.assertRaises(SharePointProbeError): api.check_membership_group(12)
+
+    def test_custom_group_may_be_enrolled_without_sharepoint_write(self):
+        api=object.__new__(GroupPermissionClient)
+        api.call=Mock(side_effect=[{'Id':3},{'Id':5},{'Id':4}])
+        api.check_membership_group(12)
+        self.assertEqual(api.call.call_count,3)
+        self.assertTrue(all(len(c.args)==1 for c in api.call.call_args_list))
+
     def api(self):
         api=object.__new__(GroupPermissionClient); api.identity={'Id':1}
         api.members=Mock(return_value=[{'id':1,'site_admin':True},{'id':2,'site_admin':False}])
@@ -197,6 +213,32 @@ class WorkspaceTests(TestCase):
         DocumentAccessGroup.objects.all().delete()
         response=self.client.post(self.url+'review/',{'action':'members','group':'2','add':[str(self.staff.pk)]})
         self.assertEqual(response.status_code,302); self.api.group_change.assert_not_called()
+    def test_register_external_group_then_manage_members(self):
+        DocumentAccessGroup.objects.all().delete()
+        self.api.groups.return_value=[{'id':12,'name':'팀 · 보안기술팀','login':''}]
+        response=self.client.get(self.url+'?tab=groups&group=12')
+        self.assertContains(response,'이 그룹의 구성원 관리 연결')
+        nonce=self.preview(action='register_group',group='12')
+        self.assertFalse(DocumentAccessGroup.objects.exists())
+        self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'팀별 관리'})
+        self.assertTrue(DocumentAccessGroup.objects.filter(principal_id=12,name='팀 · 보안기술팀').exists())
+        self.api.group_change.assert_not_called(); self.api.change.assert_not_called()
+        response=self.client.get(self.url+'?tab=groups&group=12')
+        self.assertContains(response,'구성원 변경 검토')
+
+    def test_register_rechecks_basic_group_protection_at_apply(self):
+        DocumentAccessGroup.objects.all().delete()
+        nonce=self.preview(action='register_group',group='2')
+        self.api.check_membership_group.side_effect=SharePointProbeError('기본 그룹 보호')
+        self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'관리 연결'})
+        self.assertFalse(DocumentAccessGroup.objects.exists())
+
+    def test_external_group_rename_after_preview_blocks_registration(self):
+        DocumentAccessGroup.objects.all().delete()
+        nonce=self.preview(action='register_group',group='2')
+        self.api.groups.return_value=[{'id':2,'name':'다른 그룹','login':''}]
+        self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'관리 연결'})
+        self.assertFalse(DocumentAccessGroup.objects.exists())
     def test_staff_disabled_after_review(self):
         nonce=self.preview(action='members',group='2',add=[str(self.staff.pk)])
         self.staff.is_active=False; self.staff.save()

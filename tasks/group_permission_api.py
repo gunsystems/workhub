@@ -183,6 +183,18 @@ class GroupPermissionClient(PermissionClient):
             raise SharePointProbeError('그룹 생성 결과를 다시 확인해 주세요.') from None
         return gid
 
+    def check_membership_group(self, group_id):
+        """Never enroll the site's owner/member/visitor infrastructure groups."""
+        group_id = int(group_id)
+        for role in ('AssociatedOwnerGroup', 'AssociatedMemberGroup', 'AssociatedVisitorGroup'):
+            value = self.call(role + '?$select=Id')
+            if type(value.get('Id')) is not int or value['Id'] < 1:
+                raise SharePointProbeError('기본 그룹 보호 상태를 확인하지 못했습니다. 다시 조회하세요.')
+            if value['Id'] == group_id:
+                raise SharePointProbeError('문서함 전체 기본 그룹은 팀·업무 구성원 관리에 연결할 수 없습니다.')
+        if group_id < 1:
+            raise SharePointProbeError('관리할 그룹을 다시 선택하세요.')
+
     def group_change(self, group_id, before, additions, removals, observe):
         """Only explicit member deltas. Do not replace hidden/nested membership."""
         if digest(self.members(group_id)) != digest(before):
