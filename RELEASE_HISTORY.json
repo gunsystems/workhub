@@ -3,6 +3,24 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.31.1",
+      "status": "deployed",
+      "summary": "기타 서류명 입력 제어·기간 설명·전자결재 메일 디자인 통일",
+      "release_notes": "releases/v0.31.1.md",
+      "commit": "73ad4a27f85724494d51e19613cb450c6810840f",
+      "deploy": "dep-dbtftptckfvc73eombrg",
+      "verification": {
+        "full_django_tests": 866,
+        "certificate_tests": 11,
+        "ci_run": 43871227153,
+        "ci_job": 133312629308,
+        "js": "certificate form disabled/required transitions passed",
+        "live": "Other enables custom document name; employment disables it; clarified optional period labels and privacy note; v0.31.1 confirmed. No production request submitted or mail resent.",
+        "email": "Django rendered existing-style template; no live delivery/resend performed."
+      },
+      "rollback_commit": "b3445de0eccfa8adcf4177baaf9ef5658118bbe3"
+    },
+    {
       "version": "0.31.0",
       "status": "deployed",
       "summary": "전자결재 증명서·서류 신청과 비공개 PDF 발급·담당자 재배정",
