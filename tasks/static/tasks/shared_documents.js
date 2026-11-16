@@ -21,6 +21,7 @@
     const controller = new AbortController();
     pending = controller;
     pendingKey = key;
+    const started = Date.now();
     const current = document.getElementById('shared-document-workspace');
     current.setAttribute('aria-busy', 'true');
     status.textContent = append ? '다음 항목을 불러오는 중입니다…' : '문서 목록을 불러오는 중입니다…';
@@ -52,6 +53,12 @@
       }
       if (push && !append) history.pushState({documents: true}, '', url.href);
       status.textContent = next.querySelector('[role="alert"]') ? '문서 목록을 확인하지 못했습니다.' : '문서 목록을 불러왔습니다.';
+      // Duration-only diagnostics; never log folder paths, names or tokens.
+      console.info('workhub_document_timing ' + JSON.stringify({
+        elapsed_ms: Date.now() - started,
+        outcome: next.querySelector('[role="alert"]') ? 'error' : 'ok',
+        server_timing: response.headers?.get('Server-Timing') || '',
+      }));
     } catch (error) {
       if (error.name === 'AbortError' || controller.signal.aborted) return;
       status.textContent = '목록을 불러오지 못했습니다. 다시 시도하거나 페이지를 새로고침해 주세요.';

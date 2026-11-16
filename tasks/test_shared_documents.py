@@ -195,6 +195,90 @@ class SharedDocumentsTests(TestCase):
         client.cursor_identity, client._items = (1, 2, 'staff@example.com'), {}
         return client
 
+    def batch_response(self, folder=None, children=None):
+        return {'responses': [
+            {'id': 'children', 'status': 200, 'body': {'value': [self.file]} if children is None else children},
+            {'id': 'folder', 'status': 200, 'body': folder or self.folder_row()},
+        ]}
+
+    def test_batch_folder_and_children_share_one_roundtrip_and_fresh_ancestry(self):
+        client = self.page_client()
+        folder = self.folder_row(parentReference={'driveId': 'drive-id', 'id': 'root', 'path': '/drive/root:'})
+        with patch('tasks.shared_documents._json_request', return_value=self.batch_response(folder)) as graph:
+            rows, cursor, scanned = client.children_page('drive-id', 'folder-id', batch_folder=True)
+            self.assertEqual((rows, cursor, scanned), ([self.file], '', 1))
+            self.assertEqual(client.ancestry('drive-id', 'folder-id'), [{'id': 'folder-id', 'name': folder['name']}])
+            self.assertEqual(graph.call_count, 1)
+            self.assertTrue(graph.call_args.args[0].endswith('/$batch'))
+            self.assertEqual(graph.call_args.kwargs['token'], 'user-token')
+            requests = graph.call_args.kwargs['json_data']['requests']
+            self.assertEqual([row['method'] for row in requests], ['GET', 'GET'])
+            self.assertTrue(all(row['url'].startswith('/drives/drive-id/items/folder-id') for row in requests))
+            client.children_page('drive-id', 'folder-id', batch_folder=True)
+            self.assertEqual(graph.call_count, 2, 'later browse must revalidate, even on the same client')
+
+    def test_batch_cursor_continues_only_the_same_folder_and_validates_nextlink(self):
+        client = self.page_client()
+        resource = 'https://graph.microsoft.com/v1.0/drives/drive-id/items/folder-id/children'
+        response = self.batch_response(children={'value': [self.file], '@odata.nextLink': resource + '?$skiptoken=second'})
+        with patch('tasks.shared_documents._json_request', return_value=response) as graph:
+            _, cursor, _ = client.children_page('drive-id', 'folder-id', batch_folder=True)
+            graph.return_value = self.batch_response()
+            client.children_page('drive-id', 'folder-id', cursor=cursor, batch_folder=True)
+            self.assertEqual(graph.call_args.kwargs['json_data']['requests'][1]['url'],
+                '/drives/drive-id/items/folder-id/children?$skiptoken=second')
+        response['responses'][0]['body']['@odata.nextLink'] = 'https://evil.test/steal'
+        with patch('tasks.shared_documents._json_request', return_value=response):
+            with self.assertRaises(SharePointProbeError):
+                client.children_page('drive-id', 'folder-id', batch_folder=True)
+
+    def test_ancestor_denial_does_not_render_already_fetched_rows(self):
+        self.client.force_login(self.user)
+        with patch('tasks.shared_documents.UserDocuments') as factory:
+            factory.return_value.children_page.return_value = ([self.file], '', 1)
+            factory.return_value.ancestry.side_effect = SharePointProbeError('denied')
+            response = self.client.get('/work/shared-documents/?drive=drive-id&folder=folder-id', HTTP_X_WORKHUB_DOCUMENTS='1')
+            self.assertNotIn('rows', response.context)
+            self.assertContains(response, 'denied')
+            self.assertIn('Server-Timing', response)
+            self.assertIn('no-store', response['Cache-Control'])
+
+    def test_batch_denial_or_malformed_subresponse_never_returns_rows(self):
+        for status in (401, 403, 404, 429, 500, '200', [], True):
+            for index in (0, 1):
+                with self.subTest(status=status, index=index):
+                    response = self.batch_response()
+                    response['responses'][index]['status'] = status
+                    client = self.page_client()
+                    with patch('tasks.shared_documents._json_request', return_value=response) as graph:
+                        with self.assertRaises(SharePointProbeError):
+                            client.children_page('drive-id', 'folder-id', batch_folder=True)
+                        self.assertEqual(graph.call_count, 1, 'no fallback that repeats denied requests')
+                        self.assertEqual(client._items, {})
+        for response in ({}, {'responses': []}, {'responses': [None, {}]},
+                         {'responses': [{'id': 'folder'}, {'id': 'folder'}]}):
+            with patch('tasks.shared_documents._json_request', return_value=response):
+                with self.assertRaises(SharePointProbeError):
+                    self.page_client().children_page('drive-id', 'folder-id', batch_folder=True)
+
+    def test_batch_preserves_site_drive_item_and_cursor_boundaries(self):
+        for folder in (self.folder_row(id='other'),
+                       self.folder_row(webUrl='https://elsewhere.sharepoint.com/sites/private/folder'),
+                       self.folder_row(parentReference={'driveId': 'other'})):
+            with patch('tasks.shared_documents._json_request', return_value=self.batch_response(folder)):
+                with self.assertRaises(SharePointProbeError):
+                    self.page_client().children_page('drive-id', 'folder-id', batch_folder=True)
+        with patch('tasks.shared_documents._json_request') as graph:
+            with self.assertRaises(Http404):
+                self.page_client().children_page('other-drive', 'folder-id', batch_folder=True)
+            with self.assertRaises(SharePointProbeError):
+                self.page_client().children_page('drive-id', 'folder-id', cursor='tampered', batch_folder=True)
+            graph.assert_not_called()
+        response = self.batch_response(children={'value': [dict(self.file, parentReference={'driveId': 'other'})]})
+        with patch('tasks.shared_documents._json_request', return_value=response):
+            with self.assertRaises(SharePointProbeError):
+                self.page_client().children_page('drive-id', 'folder-id', batch_folder=True)
+
     def test_first_page_does_not_drain_large_folder_and_cursor_continues(self):
         client = self.page_client()
         resource = 'https://graph.microsoft.com/v1.0/drives/drive-id/root/children'

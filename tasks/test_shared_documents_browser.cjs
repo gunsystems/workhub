@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const script = fs.readFileSync('tasks/static/tasks/shared_documents.js', 'utf8');
 function setup() {
-  const handlers = {}, events = {}, calls = [], parsed = [], states = [];
+  const handlers = {}, events = {}, calls = [], parsed = [], states = [], diagnostics = [];
   let workspace;
   const status = {textContent: ''};
   function fixture(ids = [], alert = false) {
@@ -22,6 +22,7 @@ function setup() {
   let fetchImpl = async url => ({ok: true, url, text: async () => '<fragment>'});
   const fetch = (...args) => {calls.push(args); return fetchImpl(...args);};
   vm.runInNewContext(script, {document, location, URL, URLSearchParams, FormData: class {},
+    console: {info(message) {diagnostics.push(message);}},
     AbortController, fetch, DOMParser: class {parseFromString() {return {getElementById: () => parsed.shift()};}},
     history: {pushState(...args) {states.push(args);}},
     window: {fetch, AbortController, addEventListener(name, fn) {events[name] = fn;}}});
@@ -31,7 +32,7 @@ function setup() {
     handlers.click({button: 0, target: {closest: () => link}, preventDefault() {prevented = true;}, ...extra});
     return prevented;
   };
-  return {click, calls, parsed, states, status, fixture, current: () => workspace,
+  return {click, calls, parsed, states, status, fixture, diagnostics, current: () => workspace,
     fetchWith(fn) {fetchImpl = fn;}};
 }
 const tick = () => new Promise(resolve => setImmediate(resolve));
@@ -44,6 +45,11 @@ const tick = () => new Promise(resolve => setImmediate(resolve));
   assert.equal(app.calls[0][1].headers['X-Workhub-Documents'], '1');
   assert.equal(app.calls[0][1].cache, 'no-store');
   assert.equal(app.states.length, 1);
+  const diagnostic = JSON.parse(app.diagnostics[0].replace('workhub_document_timing ', ''));
+  assert.deepEqual(Object.keys(diagnostic).sort(), ['elapsed_ms', 'outcome', 'server_timing']);
+  assert.equal(diagnostic.outcome, 'ok');
+  assert.ok(diagnostic.elapsed_ms >= 0);
+  assert.ok(!app.diagnostics[0].includes('folder=two'), 'no private path in diagnostics');
   assert.equal(app.click('https://evil.test/work/shared-documents/'), false);
   assert.equal(app.click('/work/shared-documents/?folder=x', false, {ctrlKey: true}), false);
 

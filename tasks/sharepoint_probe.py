@@ -51,11 +51,13 @@ class ProbeConfig:
             'SHAREPOINT_CLIENT_SECRET', 'SHAREPOINT_SITE_URL')))
 
 
-def _json_request(url, *, data=None, token=None):
-    body = urlencode(data).encode() if data is not None else None
+def _json_request(url, *, data=None, token=None, json_data=None):
+    if data is not None and json_data is not None:
+        raise ValueError('Ambiguous request body')
+    body = json.dumps(json_data).encode() if json_data is not None else (urlencode(data).encode() if data is not None else None)
     headers = {'Accept': 'application/json'}
     if body is not None:
-        headers['Content-Type'] = 'application/x-www-form-urlencoded'
+        headers['Content-Type'] = 'application/json' if json_data is not None else 'application/x-www-form-urlencoded'
     if token:
         headers['Authorization'] = 'Bearer ' + token
     try:

@@ -1,4 +1,5 @@
 import io
+import json
 from unittest.mock import patch
 from urllib.error import HTTPError
 
@@ -108,6 +109,24 @@ class SharePointProbeTests(SimpleTestCase):
         with self.assertRaises(SharePointProbeError):
             self.probe([{'value': [], '@odata.nextLink': next_url},
                         {'value': [], '@odata.nextLink': next_url}])
+
+    def test_json_batch_transport_preserves_form_tokens_and_bounds(self):
+        with patch('tasks.sharepoint_probe.build_opener') as opener:
+            opener.return_value.open.return_value.__enter__.return_value.read.return_value = b'{"responses": []}'
+            payload = {'requests': [{'id': 'folder', 'method': 'GET', 'url': '/drives/drive/items/folder'}]}
+            _json_request('https://graph.microsoft.com/v1.0/$batch', token='delegated', json_data=payload)
+            req = opener.return_value.open.call_args.args[0]
+            self.assertEqual(req.get_method(), 'POST')
+            self.assertEqual(req.get_header('Content-type'), 'application/json')
+            self.assertEqual(json.loads(req.data), payload)
+            self.assertEqual(req.get_header('Authorization'), 'Bearer delegated')
+            _json_request('https://login.microsoftonline.com/token', data={'grant_type': 'refresh_token'})
+            req = opener.return_value.open.call_args.args[0]
+            self.assertEqual(req.get_header('Content-type'), 'application/x-www-form-urlencoded')
+            self.assertEqual(req.data, b'grant_type=refresh_token')
+            opener.return_value.open.return_value.__enter__.return_value.read.return_value = b'x' * 1_000_001
+            with self.assertRaises(SharePointProbeError):
+                _json_request('https://graph.microsoft.com/v1.0/$batch', json_data=payload)
 
     def test_access_denied_hides_provider_payload(self):
         denied = HTTPError('https://graph.microsoft.com', 403, 'private provider detail',
