@@ -4,6 +4,7 @@
   const status = document.getElementById('shared-document-status');
   if (!status || !window.fetch || !window.AbortController) return;
   let pending;
+  let pendingKey;
   const target = value => {
     const url = new URL(value, location.href);
     if (url.origin !== location.origin || url.pathname !== path) throw new Error('destination');
@@ -12,9 +13,14 @@
   async function navigate(value, append = false, push = true) {
     let url;
     try { url = target(value); } catch (_) { return; }
+    // Coalesce only an identical in-flight navigation. Completed responses are
+    // never reused: every later visit must recheck the user's current access.
+    const key = JSON.stringify([url.href, append, push]);
+    if (pending && pendingKey === key) return;
     if (pending) pending.abort();
     const controller = new AbortController();
     pending = controller;
+    pendingKey = key;
     const current = document.getElementById('shared-document-workspace');
     current.setAttribute('aria-busy', 'true');
     status.textContent = append ? '다음 항목을 불러오는 중입니다…' : '문서 목록을 불러오는 중입니다…';
@@ -53,6 +59,7 @@
       if (pending === controller) {
         document.getElementById('shared-document-workspace')?.removeAttribute('aria-busy');
         pending = null;
+        pendingKey = null;
       }
     }
   }
