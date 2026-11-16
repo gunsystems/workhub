@@ -42,6 +42,39 @@ class Mutable(GroupPermissionClient):
         return {}
 
 class GroupApiTests(TestCase):
+    def test_combined_save_copies_then_changes_only_selected_group(self):
+        api=Mutable(); api.value['unique']=False; before=api.state()
+        after=api.change(before,'configure_groups',[{'id':4,'role':'write'}],Mock())
+        self.assertTrue(after['unique'])
+        self.assertIn('breakroleinheritance(copyRoleAssignments=true,clearSubscopes=false)',api.operations[0])
+        self.assertIn('addroleassignment',api.operations[1])
+        self.assertEqual(after['rows'][:3],before['rows'])
+
+    def test_combined_invalid_or_empty_delta_never_breaks_inheritance(self):
+        for changes in ([],[{'id':999,'role':'write'}],[{'id':1,'role':'none'}],
+                        [{'id':4,'role':'write'},{'id':4,'role':'read'}]):
+            api=Mutable(); api.value['unique']=False
+            with self.assertRaises(SharePointProbeError):
+                api.change(api.state(),'configure_groups',changes,Mock())
+            self.assertEqual(api.operations,[])
+
+    def test_combined_unique_save_does_not_copy_inheritance(self):
+        api=Mutable(); api.change(api.state(),'configure_groups',[{'id':4,'role':'read'}],Mock())
+        self.assertEqual(len(api.operations),1)
+        self.assertIn('addroleassignment',api.operations[0])
+
+    def test_combined_copy_failure_stops_before_grant(self):
+        api=Mutable(); api.value['unique']=False
+        original=api.call
+        def lose_grant(*args,**kwargs):
+            result=original(*args,**kwargs)
+            api.value['rows']=[r for r in api.value['rows'] if r['id']!=2]
+            return result
+        api.call=lose_grant
+        with self.assertRaises(SharePointProbeError):
+            api.change(api.state(),'configure_groups',[{'id':4,'role':'read'}],Mock())
+        self.assertEqual(len(api.operations),1)
+
     def test_inheritance_copy_allows_only_sharepoint_traversal_metadata_changes(self):
         api = Mutable(); api.value['unique'] = False
         api.value['rows'].append(row(9, kind=1))
@@ -200,7 +233,7 @@ class WorkspaceTests(TestCase):
         response=self.client.get(self.url); self.assertContains(response,'그룹 구성원'); self.assertContains(response,'직원별 확인')
         self.assertContains(response,'permission-table'); self.preview(); self.api.change.assert_not_called()
     def test_fragment_has_panel_only(self):
-        response=self.client.get(self.url+'?panel=1'); self.assertContains(response,'상위 권한으로 복원')
+        response=self.client.get(self.url+'?panel=1'); self.assertContains(response,'되돌릴 내용 확인')
         self.assertNotContains(response,'permission-workspace')
     def test_explicit_apply_one_use_and_reason(self):
         nonce=self.preview(); self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'부서 공유'})
@@ -212,6 +245,29 @@ class WorkspaceTests(TestCase):
     def test_inherited_review_cannot_break(self):
         self.api.state.side_effect=lambda:state(False)
         self.assertEqual(self.client.post(self.url+'review/',{'action':'groups','group_2':'write'}).status_code,302)
+        self.api.change.assert_not_called()
+    def test_inherited_folder_can_be_edited_and_reviewed_in_one_flow(self):
+        self.api.state.side_effect=lambda:state(False)
+        response=self.client.get(self.url)
+        self.assertContains(response,'교육자료 · 접근 권한')
+        self.assertContains(response,'권한 저장')
+        self.assertContains(response,'value="configure_groups"')
+        import re
+        editable=re.search(r'<input[^>]+aria-label="Workhub_기술팀 편집"[^>]*>',response.content.decode()).group()
+        self.assertNotIn('disabled',editable)
+        nonce=self.preview(action='configure_groups',group_2='write')
+        self.api.change.assert_not_called()
+        self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'팀 폴더 설정'})
+        self.assertEqual(self.api.change.call_args.args[1],'configure_groups')
+        self.assertFalse(self.api.change.call_args.args[0]['unique'])
+
+    def test_combined_review_explains_scope_and_noop_is_read_only(self):
+        self.api.state.side_effect=lambda:state(False)
+        response=self.client.post(self.url+'review/',{'action':'configure_groups','group_2':'write'})
+        self.assertContains(response,'교육자료부터 별도로 적용합니다.')
+        self.assertContains(response,'이미 별도로 설정된 하위 폴더는 유지합니다.')
+        response=self.client.post(self.url+'review/',{'action':'configure_groups','group_2':'read'})
+        self.assertEqual(response.status_code,302)
         self.api.change.assert_not_called()
     def test_employee_denied_all_admin_endpoints(self):
         self.client.force_login(self.worker)

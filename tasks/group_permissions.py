@@ -52,12 +52,16 @@ def overview(request, drive='', item='root'):
         api = GroupPermissionClient(request.user)
         context['libraries'] = api.docs.libraries
         context['groups'] = groups = group_catalog(api)
-        drive = drive or request.GET.get('drive') or (api.docs.libraries[0]['id'] if api.docs.libraries else '')
+        default_library = next((r for r in api.docs.libraries if r['name'] == '전사 공통'),
+                               api.docs.libraries[0] if api.docs.libraries else {})
+        drive = drive or request.GET.get('drive') or default_library.get('id', '')
         context['drive'] = drive
         context['item'] = item = request.GET.get('folder', item)
         if not drive:
             raise SharePointProbeError('관리할 문서함이 없습니다.')
         context['target'] = api.bind(drive, item)
+        context['target_scope'] = '문서함 전체' if item == 'root' or 'root' in context['target'] else (
+            '폴더' if 'folder' in context['target'] else '파일')
         if 'root' in context['target'] or item == 'root':
             context['target'] = {**context['target'], 'name': next(
                 (library['name'] for library in api.docs.libraries if library['id'] == drive), '문서함 전체')}
@@ -72,7 +76,7 @@ def overview(request, drive='', item='root'):
             row = next((r for r in state['rows'] if r['id'] == group['id'] and r['type'] == 8), None)
             value = role_of(row)
             context['editable_groups'].append({**group, 'role': value,
-                'locked': not state['unique'] or bool(row and (row['protected'] or row['limited'] or value == 'custom')),
+                'locked': bool(row and (row['protected'] or row['limited'] or value == 'custom')),
                 'label': ROLE_NAMES.get(value, '사용자 정의')})
         if context['tab'] == 'groups':
             selected = request.GET.get('group', '')
@@ -153,6 +157,8 @@ def review(request, drive, item):
     try:
         api = GroupPermissionClient(request.user)
         target_row = api.bind(drive, item)
+        if item == 'root' or 'root' in target_row:
+            target_row = {**target_row, 'name': next((r['name'] for r in api.docs.libraries if r['id'] == drive), '문서함 전체')}
         before = api.state()
         action = request.POST.get('action', '')
         changes, summary = [], []
@@ -160,8 +166,8 @@ def review(request, drive, item):
         payload = {'action': action, 'drive': drive, 'item': item, 'before': before,
             'connection': str(api.connection.connected_at), 'site': api.config.site_url,
             'user': request.user.pk, 'name': target_row['name'], 'at': timezone.now().timestamp()}
-        if action == 'groups':
-            if not before['unique']:
+        if action in ('groups', 'configure_groups'):
+            if action == 'groups' and not before['unique']:
                 raise SharePointProbeError('상속 중인 폴더는 상속 원본에서 변경하거나 먼저 별도 설정하세요.')
             for group in catalog:
                 key = 'group_' + str(group['id'])
@@ -178,6 +184,7 @@ def review(request, drive, item):
             if not changes:
                 raise SharePointProbeError('변경한 권한이 없습니다.')
             payload['changes'] = changes
+            payload['separate'] = action == 'configure_groups' and not before['unique']
         elif action in ('break', 'reset'):
             if (action == 'break') == before['unique']:
                 raise SharePointProbeError('상속 상태가 변경되었습니다. 다시 조회하세요.')

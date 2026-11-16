@@ -1,12 +1,12 @@
 {% extends 'tasks/base.html' %}{% load static %}{% block content %}
 <link rel="stylesheet" href="{% static 'tasks/document_permissions.css' %}">
-<section class="heading"><div><div class="eyebrow">DOCUMENT ACCESS · 관리자 전용</div><h1>문서 권한 관리</h1><p>폴더에는 그룹을 연결하고, 직원의 접근은 그룹 구성원에서 관리하세요.</p></div><a class="button" href="{% url 'shared_documents' %}">공동 문서</a></section>
+<section class="heading"><div><div class="eyebrow">DOCUMENT ACCESS · 관리자 전용</div><h1>문서 권한 관리</h1><p>왼쪽에서 폴더를 선택한 뒤 그룹별 보기·편집 권한을 설정하세요.</p></div><a class="button" href="{% url 'shared_documents' %}">공동 문서</a></section>
 {% for message in messages %}<p class="permission-note" role="status">{{ message }}</p>{% endfor %}
 <div class="permission-workspace" data-permission-workspace data-tree-url="{% url 'document_permission_tree' %}">
 <aside class="permission-browser" aria-label="문서함과 폴더"><h2>폴더 탐색</h2>
 <label for="permission-library">문서함</label><select id="permission-library">{% for library in libraries %}<option value="{{ library.id }}" {% if library.id == drive %}selected{% endif %}>{{ library.name }}</option>{% endfor %}</select>
-<p class="helptext">폴더 이름은 권한 조회, 펼치기는 하위 폴더 조회입니다.</p>
-<div id="permission-tree" data-drive="{{ drive }}"><a data-permission-nav data-folder="root" href="{% url 'document_permission_manage' drive|default:'none' 'root' %}">문서함 전체</a><button type="button" data-expand="root" aria-expanded="false">하위 폴더 펼치기</button><div data-children="root"></div></div>
+<p class="helptext">폴더 이름을 누르면 오른쪽에서 권한을 설정할 수 있습니다.</p>
+<div id="permission-tree" data-drive="{{ drive }}"><a data-permission-nav data-folder="root" href="{% url 'document_permission_manage' drive|default:'none' 'root' %}">📂 문서함 전체 설정</a><button type="button" data-expand="root" aria-expanded="false">폴더 목록 불러오기</button><div data-children="root"></div></div>
 <p id="permission-status" role="status" aria-live="polite"></p>
 </aside>
 <div id="permission-detail" tabindex="-1">{% include 'tasks/group_permission_panel.html' %}</div></div>

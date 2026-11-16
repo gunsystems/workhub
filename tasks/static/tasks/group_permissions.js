@@ -8,19 +8,13 @@
   let generation = 0;
   const dirty = () => !!detail.querySelector('.permission-changed');
   const hrefFor = (folder) => `/work/shared-documents/${encodeURIComponent(tree.dataset.drive)}/${encodeURIComponent(folder)}/permissions/`;
-  function keepSelection(url) {
-    const current = new URL(location.href);
-    for (const key of ['tab', 'group', 'employee']) {
-      if (!url.searchParams.has(key) && current.searchParams.has(key)) url.searchParams.set(key, current.searchParams.get(key));
-    }
-    return url;
-  }
   async function panel(url, push = true) {
     if (dirty() && !confirm('변경한 권한이 아직 저장되지 않았습니다. 이동할까요?')) return;
     const mine = ++generation;
     const request = new URL(url);
     request.searchParams.set('panel', '1');
     status.textContent = '권한을 조회하고 있습니다.';
+    detail.inert = true;
     try {
       const response = await fetch(request, {credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}});
       if (!response.ok || response.redirected) throw new Error('session');
@@ -33,12 +27,15 @@
       tree.querySelectorAll('[data-folder]').forEach(a => a.classList.toggle('active', a.href.split('?')[0] === url.href.split('?')[0]));
       detail.focus({preventScroll: true});
     } catch (_) { if (mine === generation) status.textContent = '조회하지 못했습니다. 페이지를 새로고침하여 로그인 상태를 확인하세요.'; }
+    finally { if (mine === generation) detail.inert = false; }
   }
   async function expand(button) {
+    if (button.disabled) return;
     let container = button.nextElementSibling;
     if (button.dataset.loaded && !button.dataset.cursor) {
       container.hidden = !container.hidden;
       button.setAttribute('aria-expanded', String(!container.hidden));
+      button.textContent = button.dataset.label ? (container.hidden ? '▸' : '▾') : (container.hidden ? '폴더 목록 펼치기' : '폴더 목록 접기');
       return;
     }
     button.disabled = true;
@@ -56,7 +53,8 @@
         const link = document.createElement('a'); link.textContent = '📁 ' + row.name;
         link.href = hrefFor(row.id); link.dataset.permissionNav = ''; link.dataset.folder = row.id;
         const toggle = document.createElement('button'); toggle.type = 'button';
-        toggle.dataset.expand = row.id; toggle.textContent = '하위 폴더 펼치기'; toggle.setAttribute('aria-expanded', 'false');
+        toggle.dataset.expand = row.id; toggle.dataset.label = row.name; toggle.textContent = '▸';
+        toggle.setAttribute('aria-label', row.name + ' 하위 폴더 펼치기·접기'); toggle.setAttribute('aria-expanded', 'false');
         const children = document.createElement('div'); children.dataset.children = row.id;
         node.append(link, toggle, children); container.append(node);
       }
@@ -64,7 +62,7 @@
         const empty = document.createElement('p'); empty.className = 'helptext'; empty.textContent = '하위 폴더 없음'; container.append(empty);
       }
       button.dataset.loaded = '1'; button.dataset.cursor = data.cursor || '';
-      button.textContent = data.cursor ? '폴더 더 불러오기' : '하위 폴더 접기·펼치기';
+      button.textContent = data.cursor ? '폴더 더 보기' : button.dataset.label ? '▾' : '폴더 목록 접기';
       container.hidden = false; button.setAttribute('aria-expanded', 'true'); status.textContent = '';
     } catch (_) { status.textContent = '하위 폴더를 불러오지 못했습니다. 다시 시도해 주세요.'; }
     finally { button.disabled = false; }
@@ -83,7 +81,11 @@
     if (!link || e.ctrlKey || e.metaKey || e.shiftKey || e.button !== 0) return;
     e.preventDefault();
     const url = new URL(link.href);
-    panel(link.dataset.folder ? keepSelection(url) : url);
+    if (link.dataset.folder) {
+      url.searchParams.set('tab', 'folders');
+      url.searchParams.delete('group'); url.searchParams.delete('employee');
+    }
+    panel(url);
   });
   detail.addEventListener('input', e => {
     if (e.target.matches('[data-row-search],[data-department-filter]')) {
@@ -112,8 +114,10 @@
     const url = new URL(location.href); url.search = new URLSearchParams(new FormData(form)).toString(); panel(url);
   });
   document.getElementById('permission-library').addEventListener('change', e => {
-    if (dirty() && !confirm('변경한 권한이 아직 저장되지 않았습니다. 이동할까요?')) return;
+    if (dirty() && !confirm('변경한 권한이 아직 저장되지 않았습니다. 이동할까요?')) { e.target.value = tree.dataset.drive; return; }
     location.href = `/work/shared-documents/${encodeURIComponent(e.target.value)}/root/permissions/`;
   });
   window.addEventListener('popstate', () => { panel(new URL(location.href), false); });
+  const initialFolderList = tree.querySelector('[data-expand="root"]');
+  if (initialFolderList && tree.dataset.drive) expand(initialFolderList);
 })();

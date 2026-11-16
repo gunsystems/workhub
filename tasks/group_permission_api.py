@@ -233,6 +233,25 @@ class GroupPermissionClient(PermissionClient):
     def change(self, before, action, changes, observe, *, parent=None):
         if digest(self.state()) != digest(before):
             raise SharePointProbeError('권한이 변경되었습니다. 다시 검토하세요.')
+        if action == 'configure_groups':
+            # Validate the entire delta before the first external write. Copy only
+            # after the administrator has reviewed this combined operation.
+            role_ids = self.roles()
+            catalog = {r['id'] for r in self.groups()}
+            seen = set()
+            for change in changes:
+                pid, role = change['id'], change['role']
+                row = next((r for r in before['rows'] if r['id'] == pid), None)
+                if (pid in seen or pid not in catalog or role not in ('none', 'read', 'write', 'manage')
+                        or (role != 'none' and not role_ids.get(role))
+                        or (row and (row['protected'] or row['limited'] or row['type'] != 8
+                            or any(kind not in (2, 3, 6) for _, kind in row['roles'])))):
+                    raise SharePointProbeError('변경할 그룹 권한을 확인해 주세요.')
+                seen.add(pid)
+            if not changes:
+                raise SharePointProbeError('변경한 권한이 없습니다.')
+            current = before if before['unique'] else self.change(before, 'break', [], observe)
+            return self.change(current, 'groups', changes, observe)
         if action == 'break':
             if before['unique']:
                 raise SharePointProbeError('이미 별도 권한을 사용하고 있습니다.')
