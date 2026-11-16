@@ -9,6 +9,8 @@ def navigation(request):
     approval_pending_count=pending_for(employee).count() if employee else 0
     from .proposals import pending_for as proposal_pending
     approval_pending_count+=proposal_pending(employee).count() if employee else 0
+    from .certificates import pending_for as certificate_pending
+    approval_pending_count+=certificate_pending(user).count()
     def item(label,href,icon,active=False,key=''):
         return {'label':label,'href':href,'icon':icon,'active':active,'key':key}
     groups=[
@@ -89,6 +91,6 @@ def navigation(request):
         for group in groups:
             for entry in group['items']:
                 if entry['href']=='/work/':entry['active']=False
-        current='전자결재 · 관리자 미리보기' if user.is_superuser else '전자결재'
+        current=('전자결재 · 증명서·서류' if '/certificates/' in path or request.GET.get('tab')=='certificates' else '전자결재 · 관리자 미리보기') if user.is_superuser else '전자결재'
     from .version import VERSION
     return {'approval_pending_count':approval_pending_count,'workhub_version':VERSION,'nav_groups':groups,'nav_current_title':current,'nav_display_name':employee.name if employee else user.get_username(),'staff_management_section':staff_section,'offboarding_admin':offboarding_admin}

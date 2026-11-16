@@ -74,6 +74,9 @@ def action_alerts(user):
             add(f'transfer:{item.pk}','이관 업무 인수 확인',item.task.title,reverse('transfer_detail',args=[item.pk]),2)
         elif item.requester_id==user.pk or item.source.user_id==user.pk:
             add(f'transfer:{item.pk}',item.get_state_display(),item.task.title,reverse('transfer_detail',args=[item.pk]),1)
+    from .certificates import pending_for as certificate_pending
+    for item in certificate_pending(user):
+        add(f'certificate:{item.pk}','증명서·서류 발급 요청',item.title,reverse('certificate_detail',args=[item.pk]),2)
     return sorted(alerts,key=lambda a:(-a['level'],a['key']))
 
 

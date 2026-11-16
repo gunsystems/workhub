@@ -744,3 +744,5 @@ from .meeting_models import MicrosoftConnection, Meeting, MeetingAttendee, Meeti
 from .transfer_models import TaskTransfer, TransferStep
 from .shared_document_models import DocumentConnection, SharedDocument, SharedDocumentLink
 from .document_permission_models import DocumentPermissionConnection, DocumentPermissionLease, DocumentAccessGroup
+
+from .certificate_models import CertificatePolicy, CertificateRequest, CertificateEvent, CertificateNotice

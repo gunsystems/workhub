@@ -92,6 +92,8 @@ def tick(now=None,sync_google=True):
             run_stage('leave_delivery',deliver_leave,now)
             from .proposals import deliver_pending as deliver_proposals
             run_stage('proposal_delivery',deliver_proposals,now)
+            from .certificates import deliver_pending as deliver_certificates
+            run_stage('certificate_delivery',deliver_certificates,now)
             from .microsoft_meetings import synchronize as sync_meetings
             from .meetings import deliver_pending as deliver_meetings,remind_upcoming
             run_stage('meeting_sync',sync_meetings)

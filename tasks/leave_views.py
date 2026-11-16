@@ -230,7 +230,7 @@ def approval_portal(request):
         try: person=get_object_or_404(people,pk=int(selected))
         except (ValueError,TypeError): person=None
     tab=request.GET.get('tab','leave')
-    if tab not in ('leave','requests','inbox','calendar','history','proposals'):tab='leave'
+    if tab not in ('leave','requests','inbox','calendar','history','proposals','certificates'):tab='leave'
     own=LeaveRequest.objects.filter(employee=person,start__year=year).select_related('employee__department') if person else LeaveRequest.objects.none()
     pending=list(leave.pending_for(person))
     if person:
@@ -255,6 +255,9 @@ def approval_portal(request):
     proposal_history=proposal_scope.filter(created_at__year=year).filter(Q(state__in=['approved','rejected','withdrawn'])|Q(steps__decision__in=['approve','reject'])).distinct()
     history=[{'kind':'leave','item':item,'at':item.last_event or item.created_at} for item in leave_history.annotate(last_event=Max('events__created_at'))]
     history += [{'kind':'proposal','item':item,'at':item.last_event or item.created_at} for item in proposal_history.annotate(last_event=Max('events__created_at'))]
+    from .certificate_views import portal_context
+    certificate_context = portal_context(request.user, year)
+    history += [{'kind':'certificate','item':item,'at':item.updated_at} for item in certificate_context['certificate_history']]
     history.sort(key=lambda row:(row['at'],row['item'].pk),reverse=True)
     history_page=Paginator(history,30).get_page(request.GET.get('page'))
     annual_rows=[]
@@ -267,4 +270,9 @@ def approval_portal(request):
       'balance':leave.balance(person,year) if person else None,'reserved':leave.reserved(person,year) if person else None,
       'has_grant':entries.exclude(key__startswith='leave:').exclude(key__startswith='holiday:').exists(),
       'portal_preview':request.user.is_superuser,'annual_rows':annual_rows,'can_apply':bool(person and not request.user.is_superuser),'can_approve':bool(person and (person.position in ('leader','head','executive') or person.role=='manager' or pending or proposal_pending))}
+    context.update(certificate_context)
+    context['approval_total'] += certificate_context['certificate_count']
+    context['can_approve'] = context['can_approve'] or certificate_context['certificate_handler']
+    context['certificate_own_page'] = Paginator(certificate_context['certificate_own'], 30).get_page(request.GET.get('cert_page'))
+    context['certificate_manage_page'] = Paginator(certificate_context['certificate_managed'], 30).get_page(request.GET.get('cert_manage_page'))
     return render(request,'tasks/approval_portal.html',context)
