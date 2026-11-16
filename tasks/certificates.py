@@ -200,7 +200,7 @@ def deliver_pending(now=None):
     from accounts.services import deliver
     from django.conf import settings
     from django.urls import reverse
-    from django.utils.html import format_html
+    from django.template.loader import render_to_string
     for row in CertificateNotice.objects.filter(mail_state='pending').select_related('user', 'event__request__employee')[:50]:
         if not CertificateNotice.objects.filter(pk=row.pk, mail_state='pending').update(mail_state='sending'):
             continue
@@ -217,7 +217,9 @@ def deliver_pending(now=None):
             continue
         url = settings.WORKHUB_BASE_URL.rstrip('/') + reverse('certificate_detail', args=[item.pk])
         try:
-            deliver('[Workhub] ' + row.message, row.message + '\n로그인 후 신청내역에서 확인하세요.\n' + url, user.email, html_body=format_html('<p>{}</p><p>로그인 후 신청내역에서 확인하세요.</p><p><a href="{}">서류 신청 확인하기</a></p>', row.message, url))
+            deliver('[Workhub] ' + row.message, row.message + '\n로그인 후 신청내역에서 확인하세요.\n' + url,
+                user.email, html_body=render_to_string('tasks/email_certificate.html',
+                    {'notice':row, 'url':url, 'issued':item.state == 'issued'}))
         except Exception:
             state = 'unknown'
         else:

@@ -26,10 +26,15 @@ class RequestForm(forms.ModelForm):
         widgets['notes'] = forms.Textarea(attrs={'rows':3})
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        kind = self.data.get(self.add_prefix('kind')) if self.is_bound else self.initial.get('kind')
+        self.fields['document_name'].disabled = kind != 'other'
         self.fields['purpose'].help_text = '예: 금융기관 제출, 자격 심사, 개인 보관'
         self.fields['document_name'].help_text = '기타 서류를 선택했을 때만 입력하세요.'
         self.fields['destination'].help_text = '제출할 기관이 있으면 적어 주세요.'
-        self.fields['period_start'].help_text = '경력·급여·세무 서류의 필요한 기간이 있으면 선택하세요.'
+        self.fields['period_start'].label = '서류에 포함할 기간 · 시작일'
+        self.fields['period_end'].label = '서류에 포함할 기간 · 종료일'
+        self.fields['period_start'].help_text = '예: 급여명세서의 급여 기간, 경력증명서에 기재할 근무 기간. 필요한 경우에만 선택하세요.'
+        self.fields['period_end'].help_text = '서류 발급일이나 휴가 기간이 아닙니다. 재직증명서처럼 기간 지정이 필요 없으면 비워 두세요.'
         self.fields['notes'].help_text = '포함할 경력이나 필요한 기재사항을 알려 주세요. 주민등록번호 등 민감한 정보는 적지 마세요.'
     def clean(self):
         data = super().clean()

@@ -45,3 +45,5 @@ jobs:
 
       - run: node tasks/test_proposal_form.cjs
       - run: node tasks/test_shared_documents_browser.cjs
+
+      - run: node tasks/test_certificate_form.cjs
