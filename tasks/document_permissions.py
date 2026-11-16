@@ -120,7 +120,8 @@ def callback(request):
 
 def employees():
     return Employee.objects.filter(is_active=True).annotate(email=Coalesce(
-        NullIf('user__email', Value('')), 'invitation__email', Value(''))).filter(
+        NullIf('user__email', Value('')), NullIf('invitation__email', Value('')),
+        'hiworkslink__email', Value(''))).filter(
         email__iendswith='@gunsystems.co.kr').select_related('department').order_by('department__name', 'name')
 
 

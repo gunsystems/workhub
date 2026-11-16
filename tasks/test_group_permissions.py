@@ -135,6 +135,16 @@ class AncestorTests(TestCase):
             with self.assertRaises(SharePointProbeError): api.state()
 
 class MembershipTests(TestCase):
+    def test_registered_employee_before_first_login_can_be_selected(self):
+        from .document_permissions import employees
+        from .models import HiworksLink
+        department=Department.objects.create(name='기술팀')
+        staff=Employee.objects.create(name='등록 직원',department=department)
+        HiworksLink.objects.create(employee=staff,user_id='registered',remote_id='registered',email='registered@gunsystems.co.kr')
+        self.assertEqual(list(employees().values_list('pk','email')),[(staff.pk,'registered@gunsystems.co.kr')])
+        staff.is_active=False; staff.save()
+        self.assertFalse(employees().exists())
+
     def test_default_groups_cannot_be_enrolled_even_after_rename(self):
         api=object.__new__(GroupPermissionClient)
         api.call=Mock(side_effect=[{'Id':3},{'Id':5},{'Id':4}])
