@@ -5,6 +5,8 @@ The server application token is intentionally never used in these views.
 import base64
 import hashlib
 import json
+import logging
+from time import perf_counter
 import re
 import secrets
 import uuid
@@ -185,10 +187,10 @@ class UserDocuments:
                 raise SharePointProbeError('다음 문서 목록의 주소를 확인하지 못했습니다.')
         raise SharePointProbeError('폴더의 항목이 많습니다. SharePoint에서 폴더를 나눠 주세요.')
 
-    def children_page(self, drive, folder='', *, cursor='', query='', order='name'):
+    def children_page(self, drive, folder='', *, cursor='', query='', order='name', batch_folder=False):
         """One bounded Graph page. Never drain nextLink before first render."""
         self.library(drive)
-        if folder and 'folder' not in self.item(drive, folder):
+        if folder and not batch_folder and 'folder' not in self.item(drive, folder):
             raise Http404
         ordering = {'name': 'name asc', 'name_desc': 'name desc', 'modified': 'lastModifiedDateTime desc'}
         if order not in ordering:
@@ -216,7 +218,39 @@ class UserDocuments:
                 return False
         if not valid_next(url):
             raise SharePointProbeError('문서 목록 주소를 확인하지 못했습니다.')
-        page = _json_request(url, token=self.token)
+        if folder and batch_folder:
+            # Fresh delegated reads only. Never reuse a listing or an ACL across
+            # requests. The library/site boundary was checked before this batch.
+            item_url = f'/drives/{segment(drive)}/items/{segment(folder)}' + '?$select=id,name,webUrl,file,folder,size,lastModifiedDateTime,parentReference,eTag,root'
+            batch = _json_request(GRAPH + '/$batch', token=self.token, json_data={'requests': [
+                {'id': 'folder', 'method': 'GET', 'url': item_url},
+                {'id': 'children', 'method': 'GET', 'url': url[len(GRAPH):]},
+            ]})
+            responses = batch.get('responses')
+            if (not isinstance(responses, list) or len(responses) != 2 or
+                    any(not isinstance(row, dict) for row in responses)):
+                raise SharePointProbeError('문서 응답을 확인하지 못했습니다.')
+            parts = {row.get('id'): row for row in responses if isinstance(row.get('id'), str)}
+            if set(parts) != {'folder', 'children'}:
+                raise SharePointProbeError('문서 응답을 확인하지 못했습니다.')
+            for part in parts.values():
+                if type(part.get('status')) is not int or part['status'] != 200:
+                    reason = {401: '문서 계정을 다시 연결해 주세요.',
+                              403: '문서 접근 권한이 없습니다. 관리자에게 문의하세요.',
+                              404: '폴더가 이동되거나 삭제되었습니다.',
+                              429: 'Microsoft 요청이 많습니다. 잠시 후 다시 확인하세요.'}
+                    raise SharePointProbeError(reason.get(part.get('status') if type(part.get('status')) is int else 0, '문서 목록을 확인하지 못했습니다.'))
+                if not isinstance(part.get('body'), dict):
+                    raise SharePointProbeError('문서 응답을 확인하지 못했습니다.')
+            current = parts['folder']['body']
+            self.validate_item(current, drive)
+            if current['id'] != folder or 'folder' not in current:
+                raise SharePointProbeError('폴더 정보를 확인하지 못했습니다.')
+            # Current request only; ancestry can reuse this freshly validated item.
+            self._items[(drive, folder)] = current
+            page = parts['children']['body']
+        else:
+            page = _json_request(url, token=self.token)
         values, rows = page.get('value'), []
         if not isinstance(values, list) or len(values) > 200:
             raise SharePointProbeError('문서 목록을 확인하지 못했습니다.')
@@ -371,6 +405,14 @@ def parent_context(user, params):
 @require_GET
 @never_cache
 def listing(request):
+    started = perf_counter()
+    timings = {}
+    checkpoint = started
+    def measure(name):
+        nonlocal checkpoint
+        now = perf_counter()
+        timings[name] = (now - checkpoint) * 1000
+        checkpoint = now
     kind, parent = parent_context(request.user, request.GET)
     context = {'connection': DocumentConnection.objects.filter(user=request.user).first(),
                'can_manage_folders': can_override_work(request.user), 'kind': kind, 'parent': parent, 'q': request.GET.get('q', '')[:200].strip(), 'callback_url': callback_url(),
@@ -382,6 +424,7 @@ def listing(request):
     try:
         client = UserDocuments(request.user)
         context['libraries'] = client.libraries
+        measure('connection')
         drive, folder = request.GET.get('drive', ''), request.GET.get('folder', '')
         context.update(drive=drive, folder=folder)
         if parent:
@@ -399,10 +442,15 @@ def listing(request):
             context['linked_documents'] = documents
         if drive:
             context['library'] = client.library(drive)
-            context['breadcrumbs'] = client.ancestry(drive, folder) if folder else []
-            context['up_folder'] = context['breadcrumbs'][-2]['id'] if len(context['breadcrumbs']) > 1 else ''
-            context['rows'], context['next_cursor'], context['scanned'] = client.children_page(
-                drive, folder, cursor=request.GET.get('cursor', ''), query=context['q'], order=context['order'])
+            measure('linked')
+            rows, next_cursor, scanned = client.children_page(
+                drive, folder, cursor=request.GET.get('cursor', ''), query=context['q'], order=context['order'], batch_folder=True)
+            measure('page')
+            breadcrumbs = client.ancestry(drive, folder) if folder else []
+            measure('ancestry')
+            # Publish nothing until every folder/ancestor boundary has passed.
+            context.update(rows=rows, next_cursor=next_cursor, scanned=scanned, breadcrumbs=breadcrumbs)
+            context['up_folder'] = breadcrumbs[-2]['id'] if len(breadcrumbs) > 1 else ''
             context['continuation'] = bool(request.GET.get('cursor'))
             params = {'drive': drive, 'folder': folder, 'q': context['q'], 'order': context['order']}
             if parent:
@@ -416,6 +464,13 @@ def listing(request):
     response = render(request, template, context)
     response['Vary'] = 'X-Workhub-Documents, Cookie'
     response['Referrer-Policy'] = 'no-referrer'
+    measure('render')
+    timings['total'] = (perf_counter() - started) * 1000
+    # Durations only: no user, file name, item ID, token, URL or provider body.
+    response['Server-Timing'] = ', '.join(f'{name};dur={duration:.1f}' for name, duration in timings.items())
+    logging.getLogger('gunicorn.error').info('document_browse_timing outcome=%s %s',
+        'error' if context.get('error') else 'ok',
+        ' '.join(f'{name}_ms={duration:.1f}' for name, duration in timings.items()))
     return response
 
 
