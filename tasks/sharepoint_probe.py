@@ -61,9 +61,13 @@ def _json_request(url, *, data=None, token=None, json_data=None):
     if token:
         headers['Authorization'] = 'Bearer ' + token
     try:
-        with build_opener(NoRedirect()).open(
-                Request(url, data=body, headers=headers), timeout=12) as response:
-            raw = response.read(1_000_001)
+        if urlsplit(url).netloc == 'graph.microsoft.com' and data is None:
+            from .document_read_transport import read_graph
+            raw = read_graph(url, token=token, json_data=json_data)
+        else:
+            with build_opener(NoRedirect()).open(
+                    Request(url, data=body, headers=headers), timeout=12) as response:
+                raw = response.read(1_000_001)
         if len(raw) > 1_000_000:
             raise ValueError
         value = json.loads(raw)
