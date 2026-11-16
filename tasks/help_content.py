@@ -315,3 +315,21 @@ DOCUMENT_PERMISSIONS=topic('문서 권한 관리','그룹 구성원과 폴더의
      '결과가 불확실하면 자동 재시도하지 않습니다. 현재 권한과 시스템 로그를 확인하세요.'])
 TOPICS.update({key:DOCUMENT_PERMISSIONS for key in ['document_permission_setup','document_permission_manage',
     'document_permission_apply','document_permission_workspace','document_permission_review']})
+
+
+CERTIFICATES=topic('증명서·서류 신청','필요한 회사 서류를 신청하고 발급된 PDF를 받습니다.',
+    ['전자결재의 증명서·서류에서 서류 신청을 누릅니다.',
+     '서류 종류·언어·발급 용도를 입력합니다. 필요하면 제출처·희망일·대상 기간과 추가 요청을 적습니다.',
+     '신청내역에서 접수 대기·발급 준비 중·발급 완료 상태를 확인합니다.',
+     '발급 완료 알림을 받으면 신청내역에서 서류 받기를 눌러 PDF를 내려받습니다.'],
+    ['접수 대기 중에는 신청을 취소할 수 있습니다. 이미 접수된 내용의 변경은 담당자에게 문의하세요.',
+     '반려된 경우 처리 기록의 사유를 확인하고 필요한 내용을 보완해 새로 신청하세요.',
+     '주민등록번호 등 민감한 정보는 추가 요청에 입력하지 마세요.'])
+TOPICS.update({key:CERTIFICATES for key in ['certificate_new','certificate_detail']})
+TOPICS['certificate_settings']=topic('서류 발급담당자 설정','신규 신청을 받을 담당자를 정하고 진행 중 신청을 재배정합니다.',
+    ['담당자를 지정하지 않으면 관리자에게 바로 접수됩니다.',
+     '발급담당자를 선택하고 저장하면 이후 신규 신청부터 적용됩니다.',
+     '기존 신청도 변경하려면 진행 중인 신청도 함께 재배정을 선택합니다. 종료된 신청은 변경하지 않습니다.'],
+    ['개별 신청은 신청 상세의 담당자 변경에서 재배정할 수 있습니다.',
+     '발급담당자는 배정받은 신청을 확인하고 최종 PDF를 첨부해 발급합니다.'])
+TOPICS['approval_portal']['steps'].append('증명서·서류에서 필요한 서류를 신청하고, 발급 완료된 PDF를 받습니다. 발급·반려·취소 기록은 처리 내역에서도 확인할 수 있습니다.')

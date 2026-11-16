@@ -8,7 +8,7 @@ from . import quick
 from . import schedule_control,requests as work_requests
 from . import leave_views,task_trash
 from . import offboarding
-from . import proposal_views
+from . import proposal_views, certificate_views
 from . import calendar_quick
 from . import meetings, microsoft_meetings
 from . import transfers
@@ -57,6 +57,10 @@ urlpatterns=[
     path("approvals/proposals/new/",proposal_views.edit,name="proposal_new"),
     path("approvals/proposals/<int:pk>/",proposal_views.detail,name="proposal_detail"),
     path("approvals/proposals/<int:pk>/edit/",proposal_views.edit,name="proposal_edit"),
+    path('approvals/certificates/new/',certificate_views.new,name='certificate_new'),
+    path('approvals/certificates/settings/',certificate_views.settings_view,name='certificate_settings'),
+    path('approvals/certificates/<int:pk>/',certificate_views.detail,name='certificate_detail'),
+    path('approvals/certificates/<int:pk>/download/',certificate_views.download,name='certificate_download'),
     path("approvals/",leave_views.approval_portal,name="approval_portal"),
     path("leave/",leave_views.overview,name="leave_list"),
     path("leave/new/",leave_views.new,name="leave_new"),
