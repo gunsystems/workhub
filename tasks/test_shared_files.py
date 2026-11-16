@@ -192,6 +192,28 @@ class FileTransferTests(TestCase):
             self.assertEqual(put.call_args.kwargs['data'].read(), b'abc')
             self.assertFalse(put.call_args.kwargs['allow_redirects'])
 
+    def test_office_stored_size_may_change_without_bypassing_identity_checks(self):
+        for suffix in ('.docx', '.xlsx', '.pptx'):
+            file = SimpleUploadedFile('verification' + suffix, b'package')
+            row = dict(self.row, name=file.name, size=9300)
+            with patch('tasks.shared_file_http.requests.put', return_value=self.response(data=row)) as put:
+                self.assertEqual(upload(self.client, 'drive', '', file)['size'], 9300)
+                self.assertEqual(put.call_count, 1)
+                self.assertEqual(put.call_args.kwargs['headers']['Content-Length'], '7')
+                self.assertEqual(put.call_args.kwargs['headers']['If-None-Match'], '*')
+            for changed in ({'name': 'other.docx'}, {'size': -1}, {'size': 0}, {'size': True}, {'size': '9300'}):
+                with patch('tasks.shared_file_http.requests.put', return_value=self.response(data=dict(row, **changed))):
+                    with self.assertRaises(SharePointProbeError):
+                        upload(self.client, 'drive', '', file)
+            with patch('tasks.shared_file_http.requests.put', return_value=self.response(data=dict(row, id='different'))):
+                with self.assertRaises(SharePointProbeError):
+                    upload(self.client, 'drive', '', file, existing=dict(row, id='original'))
+        for suffix in ('.txt', '.pdf', '.docm'):
+            file = SimpleUploadedFile('verification' + suffix, b'package')
+            with patch('tasks.shared_file_http.requests.put', return_value=self.response(data=dict(self.row, name=file.name, size=9300))):
+                with self.assertRaises(SharePointProbeError):
+                    upload(self.client, 'drive', '', file)
+
     def test_upload_conflict_and_redirect_never_retry_or_follow(self):
         for status in (409, 302, 403):
             with patch('tasks.shared_file_http.requests.put', return_value=self.response(status)) as put:
