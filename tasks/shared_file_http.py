@@ -1,5 +1,6 @@
 """Delegated file transfer. Provider URLs and credentials never enter HTML/logs."""
 from urllib.parse import urlsplit, quote
+from pathlib import PurePath
 import requests
 from .sharepoint_probe import SharePointProbeError
 from .shared_document_http import graph_write
@@ -54,8 +55,17 @@ def upload(client, drive, folder, file, existing=None):
                 raise failure(response.status_code)
             result = response.json()
             client.validate_item(result, drive)
-            if ('file' not in result or result.get('name') != name or result.get('size') != file.size
-                    or (existing and result.get('id') != existing['id'])):
+            # SharePoint can promote/demote Office properties and rewrite the
+            # package on upload. Returned stored size need not equal sent bytes.
+            # Keep exact size verification for other formats and all identity,
+            # delegated site/drive and overwrite protections for every format.
+            stored_size = result.get('size')
+            office_package = PurePath(name).suffix.casefold() in {'.docx', '.xlsx', '.pptx'}
+            if ('file' not in result or result.get('name') != name or
+                    type(stored_size) is not int or stored_size < 0 or
+                    (stored_size != file.size and not office_package) or
+                    (office_package and stored_size == 0) or
+                    (existing and result.get('id') != existing['id'])):
                 raise ValueError
             return result
     except (requests.RequestException, ValueError, TypeError, KeyError):
