@@ -48,3 +48,4 @@ jobs:
 
       - run: node tasks/test_certificate_form.cjs
       - run: node tasks/test_group_permissions_browser.cjs
+      - run: node tasks/test_permission_report_browser.cjs

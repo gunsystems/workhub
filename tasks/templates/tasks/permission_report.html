@@ -1,0 +1,15 @@
+{% extends 'tasks/base.html' %}{% load static %}{% block content %}
+<link rel="stylesheet" href="{% static 'tasks/permission_report.css' %}">
+<section class="heading"><div><div class="eyebrow">DOCUMENT ACCESS · 관리자 전용</div><h1>폴더 권한 현황</h1><p>문서함부터 하위 폴더까지, 접근 그룹과 구성원을 구조도로 확인하세요.</p></div><a class="button" href="{% url 'document_permission_workspace' %}">폴더 접근 관리</a></section>
+{% if error %}<section class="detail"><p role="alert">{{ error }}</p><a class="button" href="{% url 'document_permission_setup' %}">관리자 연결 확인</a></section>{% else %}
+{{ libraries|json_script:'permission-report-libraries' }}
+<section class="detail permission-report" data-permission-report data-node-url="{% url 'permission_report_node' %}" data-member-url="{% url 'permission_report_members' 0 %}">
+<div class="report-toolbar"><label>폴더·그룹·직원 검색<input type="search" data-report-search placeholder="예: 회사 양식, 보안기술팀, 김예린"></label><div class="report-buttons"><button type="button" class="button primary" data-report-refresh>최신 권한 조회</button><button type="button" class="button" data-report-stop disabled>조회 중지</button><button type="button" class="button" data-report-expand>모두 펼치기</button><button type="button" class="button" data-report-collapse>모두 접기</button></div></div>
+<p role="status" aria-live="polite" data-report-status>권한 현황을 조회합니다.</p>
+<p class="report-note">보기: 열람·다운로드 · 편집: 파일 추가·수정·삭제 · 관리: 권한 변경 포함</p>
+<p class="report-note">조회 시점의 그룹 구성원을 기준으로 순차 표시합니다. 전체가 동시에 조회된 스냅샷은 아닙니다. 중첩 그룹·개별 파일의 별도 공유·사이트 관리자 권한은 직원별 최종 접근 결과와 다를 수 있습니다. ‘구성원 없음’인 그룹은 현재 그 그룹을 통한 직원 접근이 없습니다.</p>
+<div class="report-tree" data-report-tree aria-label="문서함 전체 폴더 권한 구조도"></div>
+<p data-report-empty hidden>검색어와 일치하는 폴더·그룹·직원이 없습니다.</p>
+<noscript><p>전체 구조도를 조회하려면 JavaScript를 사용할 수 있어야 합니다. 폴더 접근 관리에서 개별 폴더 권한을 확인할 수 있습니다.</p></noscript>
+</section><script src="{% static 'tasks/permission_report.js' %}" defer></script>{% endif %}
+{% endblock %}

@@ -12,8 +12,12 @@ from . import proposal_views, certificate_views
 from . import calendar_quick
 from . import meetings, microsoft_meetings
 from . import transfers
-from . import shared_documents, shared_files, document_permissions, group_permissions
+from . import shared_documents, shared_files, document_permissions, group_permissions, shared_history, permission_report
 urlpatterns=[
+    path('shared-documents/permissions/report/',permission_report.overview,name='permission_report'),
+    path('shared-documents/permissions/report/node/',permission_report.node,name='permission_report_node'),
+    path('shared-documents/permissions/report/groups/<int:group>/',permission_report.members,name='permission_report_members'),
+    path('shared-documents/<str:drive>/<str:item>/history/',shared_history.history,name='shared_document_history'),
     path('shared-documents/',shared_documents.listing,name='shared_documents'),
     path('shared-documents/permissions/',document_permissions.setup,name='document_permission_setup'),
     path('shared-documents/permissions/connect/',document_permissions.connect,name='document_permission_connect'),
