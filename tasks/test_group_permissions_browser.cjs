@@ -21,7 +21,7 @@ const click=(href)=>handlers.click({button:0,preventDefault(){},target:{closest:
  fetchImpl=async()=>({ok:true,redirected:true});click('https://workhub.test/work/shared-documents/drive/other/permissions/?edit=1');await tick();
  assert.equal(states.length,1);assert.equal(detail.inert,false);assert.match(status.textContent,/불러오지 못했습니다/);
  console.log('Folder list, explicit access-management navigation, loading protection and expired-session checks passed');
- await memberScenario(false);await memberScenario(true);
+ await memberScenario(false);await memberScenario(true);await addScenario();
 })().catch(e=>{console.error(e);process.exitCode=1;});
 
 async function memberScenario(fail){
@@ -40,4 +40,38 @@ async function memberScenario(fail){
  if(fail){assert.match(text,/최근 확인 구성원/);assert.match(text,/현재 구성원을 확인하지 못했습니다/);assert.doesNotMatch(text,/0명/);}
  else{assert.match(text,/현재 그룹 구성원 · 1명/);assert.match(text,/이지수/);assert.doesNotMatch(text,/최근 확인/);}
  console.log('Access editor member preview '+(fail?'failure preservation':'live Korean names and empty group')+' passed');
+}
+
+async function addScenario(){
+ const handlers={},calls=[],status={};
+ class Node{
+  constructor(tag='div'){this.tag=tag;this.dataset={};this.children=[];this.isConnected=true;this.classList={toggle(){}};}
+  append(...nodes){this.children.push(...nodes);}
+  replaceChildren(...nodes){this.children=nodes;}
+  setAttribute(name,value){this[name]=value;}
+  querySelector(selector){return selector==='select'?this.children.find(n=>n.tag==='select'):null;}
+  get value(){return this._value??(this.children.find(n=>n.tag==='option')?.value||'');}
+  set value(value){this._value=value;}
+  focus(){this.focused=true;}
+ }
+ const cards=new Node(),count={},save={},picker={value:'19',selectedIndex:0,options:[{value:'19',textContent:'전 직원',disabled:false}]};
+ const form={action:{tagName:'INPUT',value:'configure_groups'},getAttribute:name=>name==='action'?'/work/shared-documents/drive/item/permissions/review/':null,
+  querySelector:s=>({'[data-access-picker]':picker,'[data-access-cards]':cards,'[data-access-count]':count,'.access-save button':save}[s]||null),querySelectorAll:()=>cards.children};
+ const add={closest:()=>form};
+ const detail={querySelector:s=>s==='[data-access-editor]'?form:null,querySelectorAll:()=>[],addEventListener(){}};
+ const workspace={dataset:{memberUrl:'/groups/0/'},addEventListener:(name,fn)=>handlers[name]=fn};
+ vm.runInNewContext(fs.readFileSync('tasks/static/tasks/group_permissions.js','utf8'),{document:{querySelector:s=>s==='[data-access-workspace]'?workspace:null,getElementById:id=>({'permission-detail':detail,'permission-status':status,'permission-library':{addEventListener(){}}}[id]),createElement:tag=>new Node(tag)},
+  location:{href:'https://workhub.test/work/shared-documents/drive/item/permissions/?edit=1'},URL,URLSearchParams,window:{addEventListener(){}},
+  fetch:async(url,options)=>{calls.push({url:String(url),options});return{ok:true,redirected:false,headers:{get:()=>'application/json'},json:async()=>({members:[{name:'직원',kind:'person'}],at:'2026-11-17T00:00:00Z'})};}});
+ handlers.click({target:{closest:s=>s==='[data-access-add]'?add:null}});
+ for(let i=0;i<8;i++)await tick();
+ assert.equal(cards.children.length,1,'group added despite hidden input named action');
+ const row=cards.children[0],role=row.querySelector('select');
+ assert.equal(role.name,'group_19');assert.equal(role.value,'read');
+ assert.equal(count.textContent,'변경 1건');assert.equal(save.disabled,false);
+ assert.equal(picker.options[0].disabled,true,'prevent duplicate group addition');
+ assert.equal(calls.length,1);assert.equal(calls[0].url,'/groups/19/');
+ assert.equal(calls[0].options.method,undefined,'adding a draft group does not submit permission changes');
+ const link=row.children[0].children.find(n=>n.tag==='a');assert.match(String(link.href),/permissions\/\?tab=groups&group=19$/);
+ console.log('Draft group add with named action input, safe relative URL, read default, duplicate prevention and GET-only member preview passed');
 }
