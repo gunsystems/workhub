@@ -3,6 +3,33 @@
   const workspace=document.querySelector('[data-access-workspace]'); if(!workspace)return;
   const detail=document.getElementById('permission-detail'),status=document.getElementById('permission-status'),library=document.getElementById('permission-library');
   let generation=0;
+  let memberGeneration=0,memberRequests=new Map();
+  async function loadMembers(targets=detail.querySelectorAll('[data-access-members]')){
+    const mine=memberGeneration;
+    for(const target of targets){
+      const group=target.dataset.group;
+      if(target.dataset.pending==='1')continue;
+      target.dataset.pending='1';
+      try{
+        if(!memberRequests.has(group))memberRequests.set(group,(async()=>{
+          const response=await fetch(workspace.dataset.memberUrl.replace('/0/','/'+encodeURIComponent(group)+'/'),{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
+          if(!response.ok||response.redirected||!response.headers.get('content-type')?.includes('application/json'))throw new Error();
+          return response.json();
+        })());
+        const data=await memberRequests.get(group);if(mine!==memberGeneration||!target.isConnected)return;
+        const label=document.createElement('span');label.className='access-members-label';
+        label.textContent=`현재 그룹 구성원 · ${data.members.length}${data.members.every(m=>m.kind==='person')?'명':'개 (그룹 포함)'}`;
+        const names=document.createElement('span');names.textContent=data.members.length?data.members.map(m=>(m.name||m.email||'이름 없음')+(m.kind!=='person'?' (그룹·기타 대상)':'')).join(' · '):'등록된 구성원이 없습니다.';
+        const at=document.createElement('small');at.textContent='현재 구성원 확인: '+new Date(data.at).toLocaleString('ko-KR',{timeZone:'Asia/Seoul'});
+        target.replaceChildren(label,names,at);
+      }catch(_){
+        if(mine!==memberGeneration||!target.isConnected)return;
+        const note=document.createElement('small');note.className='access-members-error';note.textContent='현재 구성원을 확인하지 못했습니다. 표시된 최근 정보가 있으면 최신 상태와 다를 수 있습니다.';
+        const retry=document.createElement('button');retry.type='button';retry.className='access-members-retry';retry.dataset.accessMemberRetry='';retry.textContent='구성원 다시 확인';
+        if(!target.querySelector('.access-members-error'))target.append(note,retry);
+      }
+    }
+  }
   const dirty=()=>!!detail.querySelector('.permission-changed');
   function refresh(){
     const form=detail.querySelector('[data-access-editor]');if(!form)return;
@@ -13,25 +40,29 @@
   }
   async function panel(url,push=true){
     if(dirty()&&!confirm('저장하지 않은 변경이 있습니다. 이동할까요?'))return;
-    const mine=++generation,request=new URL(url);request.searchParams.set('panel','1');detail.inert=true;status.textContent='불러오는 중입니다.';
+    const mine=++generation,request=new URL(url);memberGeneration++;memberRequests=new Map();request.searchParams.set('panel','1');detail.inert=true;status.textContent='불러오는 중입니다.';
     try{
       const response=await fetch(request,{credentials:'same-origin',headers:{'X-Requested-With':'XMLHttpRequest'}});
       if(!response.ok||response.redirected)throw new Error();
       const html=await response.text();if(mine!==generation)return;
-      detail.innerHTML=html;if(push)history.pushState({},'',url);refresh();status.textContent='';detail.focus({preventScroll:true});
+      detail.innerHTML=html;if(push)history.pushState({},'',url);refresh();loadMembers();status.textContent='';detail.focus({preventScroll:true});
     }catch(_){if(mine===generation)status.textContent='불러오지 못했습니다. 로그인 상태를 확인하고 다시 시도하세요.';}
     finally{if(mine===generation)detail.inert=false;}
   }
   workspace.addEventListener('click',e=>{
+    const retry=e.target.closest('[data-access-member-retry]');
+    if(retry){const target=retry.closest('[data-access-members]');memberRequests.delete(target.dataset.group);target.dataset.pending='';target.querySelector('.access-members-error')?.remove();retry.remove();loadMembers([target]);return;}
     const add=e.target.closest('[data-access-add]');
     if(add){
       const form=add.closest('form'),picker=form.querySelector('[data-access-picker]'),selected=picker.options[picker.selectedIndex];
       if(!picker.value||selected.disabled){status.textContent='추가할 그룹을 선택하세요.';return;}
       const row=document.createElement('div');row.className='access-group-card';row.dataset.accessRow='';row.dataset.original='none';
       const name=document.createElement('strong');name.textContent=selected.textContent;
+      const info=document.createElement('div'),members=document.createElement('div');members.className='access-members';members.dataset.accessMembers='';members.dataset.group=picker.value;members.setAttribute('aria-live','polite');members.textContent='구성원을 확인하고 있습니다.';
+      const link=document.createElement('a'),groupUrl=new URL(form.action);groupUrl.pathname=groupUrl.pathname.replace(/\/review\/$/,'/');groupUrl.search=new URLSearchParams({tab:'groups',group:picker.value});link.href=groupUrl;link.dataset.permissionNav='';link.className='access-members-link';link.textContent='이 그룹의 구성원 관리';info.append(name,members,link);
       const select=document.createElement('select');select.name='group_'+picker.value;select.dataset.accessRole='';select.setAttribute('aria-label',selected.textContent+' 권한');
       for(const[value,label]of[['read','보기 가능'],['write','편집 가능'],['none','추가 취소']]){const option=document.createElement('option');option.value=value;option.textContent=label;select.append(option);}
-      row.append(name,select);form.querySelector('[data-access-cards]').append(row);form.querySelector('[data-access-empty]')?.remove();selected.disabled=true;picker.value='';status.textContent='그룹을 추가했습니다. 권한을 선택한 뒤 저장하세요.';refresh();select.focus();return;
+      row.append(info,select);form.querySelector('[data-access-cards]').append(row);form.querySelector('[data-access-empty]')?.remove();selected.disabled=true;picker.value='';status.textContent='그룹을 추가했습니다. 권한을 선택한 뒤 저장하세요.';refresh();loadMembers([members]);select.focus();return;
     }
     const all=e.target.closest('[data-select-visible]');
     if(all){all.closest('form').querySelectorAll('[data-search-row]:not([hidden]) input[name=add]').forEach(input=>{input.checked=true;input.closest('label').classList.add('permission-changed');});return;}
@@ -44,5 +75,5 @@
   });
   detail.addEventListener('submit',e=>{const form=e.target.closest('[data-panel-filter]');if(!form)return;e.preventDefault();const url=new URL(location.href);url.search=new URLSearchParams(new FormData(form)).toString();panel(url);});
   library.addEventListener('change',e=>{if(dirty()&&!confirm('저장하지 않은 변경이 있습니다. 이동할까요?')){e.target.value=library.dataset.drive;return;}location.href=`/work/shared-documents/${encodeURIComponent(e.target.value)}/root/permissions/`;});
-  window.addEventListener('popstate',()=>panel(new URL(location.href),false));refresh();
+  window.addEventListener('popstate',()=>panel(new URL(location.href),false));refresh();loadMembers();
 })();

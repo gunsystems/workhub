@@ -236,6 +236,22 @@ class WorkspaceTests(TestCase):
     def test_fragment_has_panel_only(self):
         response=self.client.get(self.url+'?panel=1&edit=1'); self.assertContains(response,'상위 위치와 같은 접근 설정으로 되돌리기')
         self.assertNotContains(response,'permission-workspace')
+    def test_editor_shows_saved_members_and_keeps_owner_separate_without_writes(self):
+        self.api.groups.return_value.append({'id':1,'name':'문서함 관리자','login':''})
+        previews={2:[{'id':8,'name':'김예린','kind':'person'}],1:[{'id':7,'name':'이상건','kind':'person'}]}
+        with patch('tasks.permission_inventory.member_previews',return_value=(previews,timezone.now())):
+            response=self.client.get(self.url+'?edit=1')
+        self.assertContains(response,'김예린');self.assertContains(response,'이상건')
+        self.assertContains(response,'최근 확인 구성원 · 1명');self.assertContains(response,'관리자 접근 유지')
+        self.assertContains(response,'data-access-members');self.assertContains(response,'group=2')
+        self.assertContains(response,'data-original="read"');self.assertNotContains(response,'name="group_1"')
+        self.api.change.assert_not_called();self.api.members.assert_not_called()
+
+    def test_empty_member_preview_is_explicit_and_does_not_mean_failed_lookup(self):
+        with patch('tasks.permission_inventory.member_previews',return_value=({2:[]},timezone.now())):
+            response=self.client.get(self.url+'?edit=1')
+        self.assertContains(response,'최근 확인 구성원 · 0명')
+        self.assertContains(response,'등록된 구성원이 없습니다.')
     def test_folder_list_does_not_mix_in_groups_or_fetch_acl(self):
         response=self.client.get(self.url)
         self.assertContains(response,'실제 폴더 목록')

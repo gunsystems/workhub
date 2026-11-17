@@ -87,6 +87,25 @@ def normalize_people(payload, site):
     return result, list(unmatched.values()), names
 
 
+def named_members(values, site):
+    """Presentation only: retain the original IDs/emails/membership flags."""
+    people = [{**r, 'kind':'person' if r['type']==1 else 'other'} for r in values]
+    payload, _, _ = normalize_people({'nodes':[{'grants':[{'kind':'group','members':people}]}]},site)
+    labels = {r['id']:r['name'] for r in payload['nodes'][0]['grants'][0]['members']}
+    return [{**r,'name':labels[r['id']]} for r in values]
+
+
+def member_previews(user):
+    """Fast labeled display while the editor separately verifies live membership."""
+    row = current(user)
+    payload, _, _ = normalize_people(row.payload,row.site_url)
+    result = {}
+    for node in payload.get('nodes',[]):
+        for grant in node['grants']:
+            if grant['kind']=='group': result[grant['id']] = grant['members']
+    return result, row.completed_at
+
+
 def build(api, progress=lambda n: None):
     from .permission_report import grants
     from django.urls import reverse

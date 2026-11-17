@@ -90,6 +90,15 @@ def overview(request, drive='', item='root'):
         context['connected_groups'] = [g for g in context['editable_groups'] if g['role'] in ('read', 'write') and not g['locked']]
         context['available_groups'] = [g for g in context['editable_groups'] if g['role'] == 'none' and not g['locked']]
         context['protected_groups'] = [g for g in context['editable_groups'] if g['locked']]
+        context['preserved_access_groups'] = [g for g in context['protected_groups'] if g['role'] in ('manage','custom')]
+        if context['tab']=='folders':
+            from .permission_inventory import member_previews
+            try:
+                previews, context['members_checked_at'] = member_previews(request.user)
+            except SharePointProbeError:
+                previews, context['members_checked_at'] = {}, None
+            for group in context['connected_groups']+context['preserved_access_groups']:
+                group['member_preview'] = previews.get(group['id'])
         if context['tab'] == 'groups':
             selected = request.GET.get('group', '')
             group = next((r for r in groups if str(r['id']) == selected), None)
@@ -101,7 +110,8 @@ def overview(request, drive='', item='root'):
                         context['can_register_group'] = True
                     except SharePointProbeError:
                         context['can_register_group'] = False
-                members = api.members(group['id'])
+                from .permission_inventory import named_members
+                members = named_members(api.members(group['id']),api.config.site_url)
                 context['members'] = members
                 emails = {r['email'] for r in members if r['type'] == 1}
                 context['available_staff'] = [s for s in context['staff'] if s.email.casefold() not in emails]

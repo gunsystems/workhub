@@ -128,3 +128,12 @@ class InventoryTests(TestCase):
             {'id':3,'name':'직원','email':'','type':8,'roles':[(1,2)],'limited':False}]}
         api.members.side_effect=SharePointProbeError('incomplete')
         with self.assertRaises(SharePointProbeError):build(api)
+
+    def test_live_member_labels_preserve_ids_addresses_and_security_flags(self):
+        from .permission_inventory import named_members
+        HiworksDirectoryCache.objects.create(key='access',rows=[{'email':'jslee@example.com','name':'이지수'}])
+        PermissionReportName.objects.create(site_url=SITE,principal_id=20,identity='jslee@tenant.onmicrosoft.com',directory_email='jslee@example.com')
+        values=[{'id':20,'name':'LEEJISOO','email':'jslee@tenant.onmicrosoft.com','type':1,'site_admin':False,'login':'original'}]
+        result=named_members(values,SITE)
+        self.assertEqual(result[0],{**values[0],'name':'이지수'})
+        self.assertEqual(values[0]['name'],'LEEJISOO')

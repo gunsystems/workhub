@@ -11,6 +11,7 @@ class PermissionReportTests(TestCase):
         self.admin = get_user_model().objects.create_superuser('report-admin', 'admin@example.com', 'unused')
         self.client.force_login(self.admin)
         self.api = Mock()
+        self.api.config.site_url='https://example.sharepoint.com/sites/Workhub'
         self.api.docs.libraries = [{'id':'drive', 'name':'전사 공통'}]
         self.api.bind.return_value = {'id':'folder', 'name':'회사 양식', 'folder':{}}
         self.state = {'unique':False, 'source':{'name':'문서 사이트'}, 'rows':[

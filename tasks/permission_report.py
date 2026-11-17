@@ -142,9 +142,9 @@ def members(request, group):
         # A numeric ID is not permission: validate against this selected site's catalog.
         if not any(r['id'] == group for r in api.groups()):
             raise Http404
-        directory = {s.email.casefold(): s.name for s in employees()}
-        values = api.members(group)
-        return JsonResponse({'members': [{'name': directory.get(r['email'], r['name']),
+        from .permission_inventory import named_members
+        values = named_members(api.members(group),api.config.site_url)
+        return JsonResponse({'members': [{'name': r['name'],
             'email': r['email'], 'kind': 'person' if r['type'] == 1 else 'other'} for r in values],
             'at': timezone.now().isoformat()})
     except (SharePointProbeError, ValueError, TypeError):
