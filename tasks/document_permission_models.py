@@ -56,3 +56,19 @@ class PermissionReportName(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['site_url', 'principal_id'], name='permission_report_name_site_id')]
+
+
+class DocumentStaffGroup(models.Model):
+    """Explicitly approved automation for one ordinary selected-site group."""
+    group = models.OneToOneField(DocumentAccessGroup, on_delete=models.PROTECT)
+    owner = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    connection_key = models.CharField(max_length=64)
+    enabled = models.BooleanField(default=False)
+    bindings = models.JSONField(default=dict)
+    revision = models.PositiveIntegerField(default=0)
+    next_at = models.DateTimeField(default=timezone.now)
+    last_checked_at = models.DateTimeField(null=True)
+    error = models.CharField(max_length=240, blank=True)
+    pending = models.PositiveIntegerField(default=0)
+    lease_token = models.CharField(max_length=64, blank=True)
+    lease_until = models.DateTimeField(default=timezone.now)

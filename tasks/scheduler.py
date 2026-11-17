@@ -158,6 +158,17 @@ def start():
             finally:
                 close_old_connections()
     threading.Thread(target=document_inventory,name='workhub-document-inventory',daemon=True).start()
+    def staff_document_groups():
+        while not _stop.wait(15):
+            close_old_connections()
+            try:
+                from .staff_document_group import synchronize_due
+                synchronize_due()
+            except Exception:
+                log.warning('Staff document group synchronization will retry.')
+            finally:
+                close_old_connections()
+    threading.Thread(target=staff_document_groups,name='workhub-staff-document-group',daemon=True).start()
 
 
 def stop():

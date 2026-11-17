@@ -170,7 +170,7 @@ class GroupPermissionClient(PermissionClient):
 
     def create_group(self, name):
         # The site owner stays the owner of new groups. Members cannot edit membership.
-        if not name.startswith('Workhub_') or len(name) > 100:
+        if not name or len(name)>80 or any(c in name for c in '<>"\\/\r\n'):
             raise SharePointProbeError('그룹 이름을 확인해 주세요.')
         result = self.call('sitegroups', 'POST', {'Title': name,
             'Description': 'Workhub 문서 접근 그룹', 'OnlyAllowMembersViewMembership': False,
@@ -182,6 +182,19 @@ class GroupPermissionClient(PermissionClient):
         except (KeyError, ValueError, TypeError):
             raise SharePointProbeError('그룹 생성 결과를 다시 확인해 주세요.') from None
         return gid
+
+    def rename_group(self,group_id,name):
+        self.check_membership_group(group_id)
+        if not name or len(name)>80 or any(c in name for c in '<>"\\/\r\n'):
+            raise SharePointProbeError('그룹 이름을 확인하세요.')
+        groups=self.groups()
+        group=next((g for g in groups if g['id']==int(group_id)),None)
+        if not group or any(g['id']!=int(group_id) and g['name'].casefold()==name.casefold() for g in groups):
+            raise SharePointProbeError('그룹 이름과 중복 여부를 다시 확인하세요.')
+        if group['name']!=name:
+            self.call(f'sitegroups/getbyid({int(group_id)})','MERGE',{'Title':name})
+        if not any(g['id']==int(group_id) and g['name']==name for g in self.groups()):
+            raise SharePointProbeError('그룹 이름 변경 결과를 다시 확인하세요.')
 
     def check_membership_group(self, group_id):
         """Never enroll the site's owner/member/visitor infrastructure groups."""

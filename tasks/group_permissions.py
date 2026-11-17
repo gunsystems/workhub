@@ -5,6 +5,7 @@ from urllib.parse import urlencode
 from cryptography.fernet import InvalidToken
 from django.contrib import messages
 from django.db import IntegrityError, transaction
+from django.db.models import F
 from django.http import JsonResponse, Http404
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -14,7 +15,7 @@ from django.views.decorators.http import require_GET, require_POST
 from .document_permissions import admin_only, employees, safe_snapshot
 from .document_permission_api import digest
 from .group_permission_api import GroupPermissionClient, entries
-from .models import DocumentAccessGroup, DocumentPermissionLease
+from .models import DocumentAccessGroup, DocumentPermissionLease, DocumentStaffGroup
 from .sharepoint_probe import SharePointProbeError
 from .audit import write
 
@@ -74,6 +75,7 @@ def overview(request, drive='', item='root'):
             template = 'tasks/group_permission_panel.html' if request.GET.get('panel') == '1' else 'tasks/group_permissions.html'
             return render(request, template, context)
         context['groups'] = groups = group_catalog(api)
+        automatic={p.group.principal_id:p for p in DocumentStaffGroup.objects.filter(group__site_url=api.config.site_url,enabled=True).select_related('group')}
         context['snapshot'] = state = api.state()
         state['direct_people'] = [r for r in state['rows'] if r['type'] == 1 and not r['protected'] and not r['limited']]
         context['personal_count'] = len(state['direct_people'])
@@ -104,6 +106,7 @@ def overview(request, drive='', item='root'):
             group = next((r for r in groups if str(r['id']) == selected), None)
             context['selected_group'] = group
             if group:
+                context['automatic_group'] = automatic.get(group['id'])
                 if not group['managed']:
                     try:
                         api.check_membership_group(group['id'])
@@ -218,10 +221,27 @@ def review(request, drive, item):
             name = request.POST.get('name', '').strip()
             if not name or len(name) > 80 or any(c in name for c in '<>"\\/\r\n'):
                 raise SharePointProbeError('그룹 이름을 80자 이내로 입력하세요.')
-            payload['group_name'] = 'Workhub_' + name
+            payload['group_name'] = name.removeprefix('Workhub_').strip()
+            if not payload['group_name']:raise SharePointProbeError('그룹 이름을 입력하세요.')
             if any(g['name'].casefold() == payload['group_name'].casefold() for g in catalog):
                 raise SharePointProbeError('같은 이름의 그룹이 있습니다.')
             summary = [payload['group_name'] + ' · 빈 그룹 생성 (문서 접근 권한은 별도 연결)']
+        elif action in ('auto_staff','auto_staff_disable'):
+            from .staff_document_group import seed_bindings,roster
+            from .permission_inventory import scope
+            group=next((g for g in catalog if str(g['id'])==request.POST.get('group') and g['managed']),None)
+            if not group:raise SharePointProbeError('관리할 그룹을 먼저 연결하세요.')
+            if action=='auto_staff' and DocumentStaffGroup.objects.filter(group__site_url=api.config.site_url,group__principal_id=group['id'],enabled=True).exists():
+                raise SharePointProbeError('이미 전 직원 자동 관리 중인 그룹입니다.')
+            api.check_membership_group(group['id'])
+            source=roster();members,bindings=seed_bindings(api,group['id'],source)
+            name='전 직원'
+            if action=='auto_staff' and any(g['id']!=group['id'] and g['name']==name for g in catalog):
+                raise SharePointProbeError('전 직원 이름의 다른 그룹이 있습니다. 기존 그룹을 확인하세요.')
+            payload.update(group=group,members=members,bindings=bindings,roster_digest=digest(source),scope_key=scope(request.user)[0])
+            summary=([group['name']+' → 전 직원 (그룹 ID·폴더 권한 유지)',
+                '재직 직원 등록 시 자동 추가 · 사용 중지/퇴사 시 자동 제외 · 1분 주기로 확인',
+                '현재 구성원 계정 연결 확인:']+[b['name']+' · '+b['identity'] for b in bindings.values()]) if action=='auto_staff' else [group['name']+' · 자동 구성원 관리 중지 (현재 구성원·폴더 권한 유지)']
         elif action == 'register_group':
             group = next((g for g in catalog if str(g['id']) == request.POST.get('group')), None)
             if not group or group['managed']:
@@ -233,6 +253,8 @@ def review(request, drive, item):
             group = next((g for g in catalog if str(g['id']) == request.POST.get('group') and g['managed']), None)
             if not group:
                 raise SharePointProbeError('먼저 이 그룹의 구성원 관리를 연결해 주세요.')
+            if DocumentStaffGroup.objects.filter(group__site_url=api.config.site_url,group__principal_id=group['id'],enabled=True).exists():
+                raise SharePointProbeError('전 직원 자동 관리 그룹입니다. 직원 등록·사용 상태에서 변경하세요.')
             staff = {str(s.pk): s for s in employees()}
             add_ids = request.POST.getlist('add')
             if any(pk not in staff for pk in add_ids) or len(set(add_ids)) != len(add_ids):
@@ -293,13 +315,15 @@ def apply(request, drive, item):
         action = payload['action']
         if digest(api.state()) != digest(payload['before']):
             raise SharePointProbeError('권한이 변경되었습니다. 다시 검토하세요.')
-        if action in ('members', 'register_group'):
+        if action in ('members', 'register_group','auto_staff','auto_staff_disable'):
             api.check_membership_group(payload['group']['id'])
         if action == 'register_group':
             catalog = group_catalog(api)
             if not any(g == payload['group'] for g in catalog):
                 raise SharePointProbeError('그룹 정보가 변경되었습니다. 다시 검토하세요.')
         if action == 'members':
+            if DocumentStaffGroup.objects.filter(group__site_url=api.config.site_url,group__principal_id=payload['group']['id'],enabled=True).exists():
+                raise SharePointProbeError('자동 관리 그룹의 구성원을 수동 변경할 수 없습니다.')
             live = {str(s.pk): s.email.casefold() for s in employees()}
             if any(live.get(str(r['employee'])) != r['email'] for r in payload['additions']):
                 raise SharePointProbeError('직원 정보가 변경되었습니다. 다시 검토하세요.')
@@ -315,7 +339,22 @@ def apply(request, drive, item):
                 raise SharePointProbeError('처리 잠금이 만료되었습니다. 실제 권한을 다시 확인하세요.')
             write('update', 'SharePointGroupPermission', item, label+' · '+payload['name'],
                 after={'결과': value, '사유': reason}, actor=request.user)
-        if action == 'register_group':
+        if action in ('auto_staff','auto_staff_disable'):
+            from .staff_document_group import roster,seed_bindings
+            from .permission_inventory import scope
+            if scope(request.user)[0]!=payload['scope_key'] or digest(roster())!=payload['roster_digest'] or digest(api.members(payload['group']['id']))!=digest(payload['members']):
+                raise SharePointProbeError('직원·계정 연결이 변경되었습니다. 다시 검토하세요.')
+            managed=DocumentAccessGroup.objects.filter(site_url=api.config.site_url,principal_id=payload['group']['id'],name=payload['group']['name']).first()
+            if not managed:raise SharePointProbeError('관리 그룹 정보가 변경되었습니다. 다시 검토하세요.')
+            if action=='auto_staff':
+                api.rename_group(managed.principal_id,'전 직원')
+                managed.name='전 직원';managed.save(update_fields=['name'])
+                DocumentStaffGroup.objects.update_or_create(group=managed,defaults={'owner':request.user,'connection_key':payload['scope_key'],
+                    'bindings':payload['bindings'],'enabled':True,'next_at':timezone.now(),'error':''})
+            else:
+                DocumentStaffGroup.objects.filter(group=managed).update(enabled=False,revision=F('revision')+1)
+            write('update','DocumentStaffGroup',managed.pk,'전 직원 자동 관리 '+('설정' if action=='auto_staff' else '중지'),after={'그룹':managed.name,'사유':reason},actor=request.user)
+        elif action == 'register_group':
             group = payload['group']
             DocumentAccessGroup.objects.update_or_create(site_url=api.config.site_url,
                 principal_id=group['id'], defaults={'name': group['name']})
@@ -351,7 +390,7 @@ def apply(request, drive, item):
         if lease:
             DocumentPermissionLease.objects.filter(pk=lease.pk).delete()
     url = return_url(drive, item)
-    if payload.get('action') in ('members', 'create_group', 'register_group'):
+    if payload.get('action') in ('members', 'create_group', 'register_group','auto_staff','auto_staff_disable'):
         url += '?' + urlencode({'tab': 'groups', 'group': (payload.get('group') or {}).get('id', '')})
     elif payload.get('action') in ('configure_groups', 'reset'):
         url += '?edit=1'

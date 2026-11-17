@@ -252,6 +252,33 @@ class WorkspaceTests(TestCase):
             response=self.client.get(self.url+'?edit=1')
         self.assertContains(response,'최근 확인 구성원 · 0명')
         self.assertContains(response,'등록된 구성원이 없습니다.')
+
+    def test_new_group_uses_plain_name_without_system_prefix(self):
+        self.api.create_group.return_value=44
+        nonce=self.preview(action='create_group',name='신규 업무 그룹')
+        self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'업무 그룹'})
+        self.api.create_group.assert_called_once_with('신규 업무 그룹')
+        self.assertTrue(DocumentAccessGroup.objects.filter(principal_id=44,name='신규 업무 그룹').exists())
+
+    def test_all_staff_configuration_is_reviewed_and_preserves_group_and_acl(self):
+        from .models import DocumentStaffGroup
+        with patch('tasks.permission_inventory.scope',return_value=('approved-scope',self.api.config.site_url)):
+            nonce=self.preview(action='auto_staff',group='2')
+            self.assertFalse(DocumentStaffGroup.objects.exists())
+            self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'전 직원 자동 관리'})
+        policy=DocumentStaffGroup.objects.get()
+        self.assertTrue(policy.enabled);self.assertEqual(policy.group.principal_id,2);self.assertEqual(policy.group.name,'전 직원')
+        self.api.rename_group.assert_called_once_with(2,'전 직원')
+        self.api.change.assert_not_called();self.api.group_change.assert_not_called()
+
+    def test_manual_member_edits_blocked_for_automatic_group(self):
+        from .models import DocumentStaffGroup
+        group=DocumentAccessGroup.objects.get(principal_id=2)
+        DocumentStaffGroup.objects.create(group=group,owner=self.admin,connection_key='scope',enabled=True)
+        response=self.client.get(self.url+'?tab=groups&group=2')
+        self.assertContains(response,'전 직원 · 자동 관리');self.assertNotContains(response,'<h4>직원 추가</h4>',html=True)
+        self.assertEqual(self.client.post(self.url+'review/',{'action':'members','group':'2','add':self.staff.pk}).status_code,302)
+        self.api.group_change.assert_not_called()
     def test_folder_list_does_not_mix_in_groups_or_fetch_acl(self):
         response=self.client.get(self.url)
         self.assertContains(response,'실제 폴더 목록')

@@ -56,6 +56,9 @@ class PermissionClient:
         url = self.config.site_url + '/_api/web' + (suffix if suffix.startswith('?') else '/' + suffix.lstrip('/'))
         headers = {'Authorization': 'Bearer ' + self.token, 'Accept': 'application/json;odata=nometadata',
                    'Content-Type': 'application/json;odata=nometadata'}
+        if method=='MERGE':
+            headers.update({'X-HTTP-Method':'MERGE','IF-MATCH':'*'})
+            method='POST'
         try:
             with requests.request(method, url, headers=headers, json=data, timeout=(10, 20),
                                   allow_redirects=False) as response:
