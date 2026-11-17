@@ -3,6 +3,21 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.33.1",
+      "status": "deployed",
+      "summary": "전 직원 자동 구성원 반영 5분 주기로 조정",
+      "release_notes": "releases/v0.33.1.md",
+      "commit": "1ac6d37061b34d781cfea1b022ff97eac68130e3",
+      "deploy": "dep-dbtumpbl550s739dltt0",
+      "verification": {
+        "full_django_tests": 935,
+        "ci_run": 44026599948,
+        "ci_job": 133848324548,
+        "live": "Production UI shows automatic all-staff group, five existing members, five-minute cadence and successful last synchronization at 14:52:48 Asia/Seoul. Company forms Read and original manager access preserved. Automated tests cover hiring, suspension, departure, return and identity failures; no real employee state changed for testing."
+      },
+      "rollback_commit": "c52af2b2be508588c59ce4a808901ec2341d027a"
+    },
+    {
       "version": "0.33.0",
       "status": "deployed",
       "summary": "전 직원 그룹 자동 구성원 관리·접두어 없는 그룹명",
@@ -15,7 +30,7 @@
         "ci_run": 44025627774,
         "ci_job": 133845146048,
         "js": "Group navigation, live member previews, failure preservation and full CI browser checks passed.",
-        "live": "Production group conversion review rendered with five verified existing identities. No rename or membership writes yet: automatic activation pending action-time confirmation.",
+        "live": "Activated ordinary group with same ID and five existing verified identities after user confirmation. First scheduled synchronization completed without errors. Company forms retained Read for all staff and existing manager access. No folder ACL writes.",
         "authorization": "Disabled by default. Only an explicitly reviewed ordinary site group can enroll active registered employees with verified company Microsoft identities. Folder ACLs and tenant roles untouched."
       },
       "rollback_commit": "b6aba1e2ff3f1c9b80919929bc0b10672370e493"
