@@ -43,7 +43,7 @@
     try {
       while (queue.length) {
         if (signal.aborted) throw new DOMException('중지', 'AbortError');
-        if (count >= 500) { errors++; break; }
+        if (seen.size >= 500) { errors++; break; }
         const task = queue.shift(), key = task.drive + '/' + task.item;
         if (seen.has(key)) { errors++; continue; } seen.add(key);
         status.textContent = `조회 중 · 폴더 ${count}곳 확인 · 대기 ${queue.length + 1}곳`;
@@ -84,6 +84,7 @@
               task.node._body.append(el('div', '확인: ' + new Date(data.at).toLocaleString('ko-KR', {timeZone:'Asia/Seoul'}), 'report-stamp'));
             }
             for (const child of data.children) {
+              if (seen.size + queue.length >= 500) throw Error('폴더 수가 많아 일부 조회만 표시합니다.');
               const n = makeNode(child.name, task.node._children);
               if (task.depth >= 63) { errors++; n._body.append(el('p', '폴더 단계가 많아 확인이 필요합니다.', 'report-error')); }
               else queue.push({drive:task.drive,item:child.id,node:n,depth:task.depth+1});
