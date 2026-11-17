@@ -29,3 +29,30 @@ class DocumentAccessGroup(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=['site_url', 'principal_id'], name='document_group_site_id')]
+
+
+class PermissionReportSnapshot(models.Model):
+    """Administrator display only. NEVER consulted by document authorization."""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    scope_key = models.CharField(max_length=64)
+    site_url = models.URLField(max_length=500)
+    payload = models.JSONField(default=dict)
+    completed_at = models.DateTimeField(null=True)
+    next_at = models.DateTimeField(default=timezone.now)
+    attempted_at = models.DateTimeField(null=True)
+    error = models.CharField(max_length=240, blank=True)
+    progress = models.PositiveIntegerField(default=0)
+    revision = models.PositiveIntegerField(default=0)
+    lease_token = models.CharField(max_length=64, blank=True)
+    lease_until = models.DateTimeField(default=timezone.now)
+
+
+class PermissionReportName(models.Model):
+    """Explicit display-name link, not identity authentication or an access grant."""
+    site_url = models.URLField(max_length=500)
+    principal_id = models.PositiveIntegerField()
+    identity = models.CharField(max_length=500)
+    directory_email = models.EmailField()
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['site_url', 'principal_id'], name='permission_report_name_site_id')]

@@ -5,7 +5,7 @@ from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_POST
 from .document_permissions import admin_only, employees
 from .group_permission_api import GroupPermissionClient
 from .sharepoint_probe import SharePointProbeError
@@ -38,11 +38,73 @@ def grants(state):
 def overview(request):
     context = {}
     try:
-        api = GroupPermissionClient(request.user)
-        context['libraries'] = [{'id': r['id'], 'name': r['name']} for r in api.docs.libraries]
+        from .permission_inventory import current
+        context['initial'] = display_state(current(request.user))
     except SharePointProbeError as exc:
         context['error'] = str(exc)
     return render(request, 'tasks/permission_report.html', context)
+
+
+def display_state(row, known=''):
+    from .permission_inventory import normalize_people
+    at = row.completed_at.isoformat() if row.completed_at else ''
+    now = timezone.now()
+    result = {'at':at,'pending':row.lease_until>now or row.next_at<=now,
+              'progress':row.progress,'error':row.error,'payload':None}
+    if not known or known != at:
+        payload, unmatched, directory = normalize_people(row.payload, row.site_url)
+        result.update(payload=payload,unmatched=unmatched,
+            directory=[{'email':email,'name':name} for email,name in sorted(directory.items(),key=lambda r:r[1])])
+    return result
+
+
+@admin_only
+@never_cache
+@require_GET
+def status(request):
+    from .permission_inventory import current
+    try:
+        return JsonResponse(display_state(current(request.user),request.GET.get('known','')))
+    except SharePointProbeError:
+        return JsonResponse({'error':'관리자 문서 연결을 확인해 주세요.'},status=400)
+
+
+@admin_only
+@never_cache
+@require_POST
+def refresh(request):
+    from .permission_inventory import current
+    from .models import PermissionReportSnapshot
+    try:
+        row = current(request.user)
+        PermissionReportSnapshot.objects.filter(pk=row.pk).update(next_at=timezone.now(),error='')
+        row.refresh_from_db()
+        return JsonResponse(display_state(row),status=202)
+    except SharePointProbeError:
+        return JsonResponse({'error':'관리자 문서 연결을 확인해 주세요.'},status=400)
+
+
+@admin_only
+@never_cache
+@require_POST
+def names(request):
+    from .permission_inventory import current, normalize_people
+    from .models import PermissionReportName
+    from .audit import write
+    try:
+        row = current(request.user)
+        _, unmatched, directory = normalize_people(row.payload,row.site_url)
+        selected = next((r for r in unmatched if str(r['id'])==request.POST.get('principal')),None)
+        email = request.POST.get('email','').strip().casefold()
+        if not selected or email not in directory:
+            raise SharePointProbeError('이름을 연결할 직원과 Microsoft 계정을 다시 확인하세요.')
+        PermissionReportName.objects.update_or_create(site_url=row.site_url,principal_id=selected['id'],
+            defaults={'identity':selected['identity'],'directory_email':email})
+        write('update','PermissionReportName',selected['id'],'문서 현황 직원 이름 연결',
+              after={'Microsoft 계정':selected['identity'],'직원 이메일':email},actor=request.user)
+        return JsonResponse(display_state(row))
+    except SharePointProbeError:
+        return JsonResponse({'error':'이름을 연결할 직원과 계정을 다시 확인하세요.'},status=400)
 
 
 @admin_only

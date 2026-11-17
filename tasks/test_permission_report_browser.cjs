@@ -1,41 +1,37 @@
-const assert=require('node:assert/strict'), fs=require('node:fs'),vm=require('node:vm');
-class Element {
-  constructor(tag='div'){this.tagName=tag;this.children=[];this.dataset={};this.handlers={};this.textContent='';this.value='';}
-  append(...nodes){this.children.push(...nodes);}
-  replaceChildren(){this.children=[];}
-  addEventListener(name,fn){this.handlers[name]=fn;}
-  querySelectorAll(selector){return this.children.flatMap(n=>[...(selector==='details'&&n.tagName==='details'?[n]:[]),...n.querySelectorAll(selector)]);}
-  querySelector(selector){if(selector==='.report-badge') return this.children[0].children[1];return this.parts?.[selector];}
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+class Element{
+ constructor(tag='div'){this.tagName=tag;this.children=[];this.dataset={};this.handlers={};this.textContent='';this.value='';}
+ append(...nodes){this.children.push(...nodes);}replaceChildren(){this.children=[];}
+ addEventListener(n,f){this.handlers[n]=f;}setAttribute(n,v){this[n]=v;}
+ querySelectorAll(s){return this.children.flatMap(n=>[...(s==='details'&&n.tagName==='details'?[n]:[]),...n.querySelectorAll(s)]);}
+ querySelector(s){return this.parts?.[s];}
 }
-const tick=()=>new Promise(r=>setImmediate(r));
-const source=fs.readFileSync('tasks/static/tasks/permission_report.js','utf8');
-function mount(fail=false){
-  const root=new Element(),tree=new Element(),status=new Element(),search=new Element();
-  root.dataset={nodeUrl:'/report/node/',memberUrl:'/report/groups/0/'};
-  root.parts={'[data-report-tree]':tree,'[data-report-status]':status,'[data-report-search]':search};
-  for(const key of ['stop','refresh','expand','collapse','empty'])root.parts[`[data-report-${key}]`]=new Element();
-  const calls=[];let nodes=0;
-  const data=(name,children,cursor='')=>({name,unique:true,source:'문서함',at:'2026-11-17T00:00:00Z',manage_url:'/manage/',
-    grants:[{id:19,name:'전 직원',role:'보기',kind:'group'}],children,cursor});
-  vm.runInNewContext(source,{document:{querySelector:()=>root,createElement:tag=>new Element(tag),getElementById:()=>({textContent:JSON.stringify([{id:'drive',name:'전사 공통'}])})},
-    URL,URLSearchParams,location:{origin:'https://workhub.test'},AbortController,DOMException,
-    fetch:async url=>{url=new URL(url,'https://workhub.test');calls.push(url.href);
-      let result;if(url.pathname.includes('groups')){if(fail)return{ok:false,headers:{get:()=>''}};result={members:[{name:'김예린',email:'staff@example.com',kind:'person'}]};}
-      else {nodes++;result=url.searchParams.get('item')==='root'?(url.searchParams.get('cursor')?data('전사 공통',[{id:'second',name:'두번째 폴더'}]):data('전사 공통',[{id:'first',name:'회사 양식'}],'page2')):data('하위',[]);}
-      return{ok:true,headers:{get:()=>'application/json'},json:async()=>result};}
-  });
-  return{root,tree,status,search,calls};
-}
+const root=new Element(),tree=new Element(),status=new Element(),search=new Element();
+root.dataset={statusUrl:'/report/status/',refreshUrl:'/report/refresh/',namesUrl:'/report/names/'};
+root.parts={'[data-report-tree]':tree,'[data-report-status]':status,'[data-report-search]':search};
+for(const key of ['refresh','expand','collapse','empty','updated','name-links','name-rows','name-count'])root.parts[`[data-report-${key}]`]=new Element();
+root.parts['[name=csrfmiddlewaretoken]']=new Element();root.parts['[name=csrfmiddlewaretoken]'].value='csrf';
+const node=(key,parent,name)=>({key,parent,name,unique:true,source:'공통',at:'2026-11-17T00:00:00Z',manage_url:'/manage/',grants:[{id:19,name:'전 직원',role:'보기',kind:'group',members:[{name:'김예린',email:'staff@example.com',kind:'person'}]}]});
+const initial={at:'2026-11-17T00:00:00Z',pending:false,progress:2,error:'',payload:{nodes:[node('root',null,'공통'),node('folder','root','회사 양식')]},unmatched:[],directory:[]};
+const calls=[],timers=[];let response=initial;
+vm.runInNewContext(fs.readFileSync('tasks/static/tasks/permission_report.js','utf8'),{
+ document:{querySelector:()=>root,createElement:t=>new Element(t),getElementById:()=>({textContent:JSON.stringify(initial)})},
+ URL,URLSearchParams,location:{origin:'https://workhub.test'},setTimeout(fn,ms){timers.push({fn,ms});return timers.length;},clearTimeout(){},
+ fetch:async(url,options)=>{calls.push({url:String(url),options});if(response instanceof Error)throw response;return{ok:true,headers:{get:()=>'application/json'},json:async()=>response};}
+});
 (async()=>{
-  const ui=mount();for(let i=0;i<50&&!ui.status.textContent.includes('조회 완료');i++)await tick();
-  assert.match(ui.status.textContent,/전체 조회 완료.*하위 폴더 2개/);
-  assert.equal(ui.calls.filter(x=>x.includes('/groups/19/')).length,1,'shared group members read once per report, not once per folder');
-  assert.equal(ui.tree.children[0]._children.children.length,2,'drains bounded pages without losing later folders');
-  ui.search.value='김예린';ui.search.handlers.input();assert.equal(ui.tree.children[0].hidden,false);
-  ui.root.parts['[data-report-collapse]'].handlers.click();assert.equal(ui.tree.children[0].open,false);
-  const bad=mount(true);for(let i=0;i<50&&!bad.status.textContent.includes('조회 완료');i++)await tick();
-  assert.match(bad.status.textContent,/일부 조회 완료/);assert.doesNotMatch(bad.status.textContent,/^전체/);
-  const content=bad.tree.children[0]._body.children[1].children[0].children.map(n=>n.textContent).join(' ');
-  assert.match(content,/구성원 확인 필요/);assert.doesNotMatch(content,/구성원 없음/);
-  console.log('Permission report pagination, group request deduplication, staff search, collapse and partial-failure checks passed');
+ assert.equal(calls.length,0,'stored complete tree renders immediately without any Microsoft or fetch request');
+ assert.equal(tree.children[0]._children.children.length,1);assert.match(status.textContent,/저장된 현황/);
+ search.value='김예린';search.handlers.input();assert.equal(tree.children[0].hidden,false);
+ root.parts['[data-report-collapse]'].handlers.click();assert.equal(tree.children[0].open,false);
+ response={...initial,pending:true,payload:null};await root.parts['[data-report-refresh]'].handlers.click();
+ assert.equal(calls[0].options.method,'POST');assert.equal(calls[0].options.headers['X-CSRFToken'],'csrf');
+ assert.equal(tree.children.length,1,'refresh must keep the previous complete report visible');assert.match(status.textContent,/저장된 현황을 계속/);
+ assert.equal(timers.at(-1).ms,3000);
+ response={...initial,at:'2026-11-17T01:00:00Z'};await timers.at(-1).fn();
+ assert.match(calls.at(-1).url,/status/);assert.match(calls.at(-1).url,/known=/);
+ assert.equal(tree.children[0].open,true,'active staff search expands matching ancestors');
+ response=Error('offline');await root.parts['[data-report-refresh]'].handlers.click();
+ assert.equal(tree.children.length,1);assert.match(status.textContent,/최신 정보 확인 필요/);
+ console.log('Cached immediate rendering, CSRF queue-only refresh, retained tree, status polling, staff search and failure retention passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

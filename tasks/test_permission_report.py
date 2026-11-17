@@ -42,6 +42,10 @@ class PermissionReportTests(TestCase):
                 self.assertEqual(response.status_code, 200)
                 self.assertIn('no-store', response.headers['Cache-Control'])
                 self.assertEqual(self.client.post(url).status_code, 405)
+        from types import SimpleNamespace
+        from django.utils import timezone
+        row=SimpleNamespace(completed_at=None,lease_until=timezone.now(),next_at=timezone.now(),progress=0,error='',payload={},site_url='https://example.sharepoint.com/sites/Test')
+        with patch('tasks.permission_inventory.current',return_value=row):
             self.assertContains(self.client.get(self.base), '개별 파일의 별도 공유')
 
     def test_node_fresh_acl_bounded_page_and_protected_person(self):

@@ -15,6 +15,9 @@ from . import transfers
 from . import shared_documents, shared_files, document_permissions, group_permissions, shared_history, permission_report
 urlpatterns=[
     path('shared-documents/permissions/report/',permission_report.overview,name='permission_report'),
+    path('shared-documents/permissions/report/status/',permission_report.status,name='permission_report_status'),
+    path('shared-documents/permissions/report/refresh/',permission_report.refresh,name='permission_report_refresh'),
+    path('shared-documents/permissions/report/names/',permission_report.names,name='permission_report_names'),
     path('shared-documents/permissions/report/node/',permission_report.node,name='permission_report_node'),
     path('shared-documents/permissions/report/groups/<int:group>/',permission_report.members,name='permission_report_members'),
     path('shared-documents/<str:drive>/<str:item>/history/',shared_history.history,name='shared_document_history'),

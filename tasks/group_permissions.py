@@ -335,6 +335,9 @@ def apply(request, drive, item):
             write('permission_attention', 'SharePointGroupPermission', item, '문서 권한 결과 확인 필요',
                   after={'결과': '일부 변경이 반영되었을 수 있습니다. 실제 상태 재조회 필요'}, actor=request.user)
     finally:
+        if started:
+            from .permission_inventory import invalidate
+            invalidate(api.config.site_url)
         if lease:
             DocumentPermissionLease.objects.filter(pk=lease.pk).delete()
     url = return_url(drive, item)

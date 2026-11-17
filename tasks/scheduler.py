@@ -147,6 +147,17 @@ def start():
             except Exception:log.warning('Public holiday synchronization will retry.')
             finally:close_old_connections()
     threading.Thread(target=holidays,name='workhub-public-holidays',daemon=True).start()
+    def document_inventory():
+        while not _stop.wait(15):
+            close_old_connections()
+            try:
+                from .permission_inventory import synchronize_due
+                synchronize_due()
+            except Exception:
+                log.warning('Administrator document inventory will retry.')
+            finally:
+                close_old_connections()
+    threading.Thread(target=document_inventory,name='workhub-document-inventory',daemon=True).start()
 
 
 def stop():
