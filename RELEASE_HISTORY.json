@@ -3,6 +3,24 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.33.2",
+      "status": "deployed",
+      "summary": "폴더·파일·문서함 접근 관리 명칭과 도움말 통일",
+      "release_notes": "releases/v0.33.2.md",
+      "commit": "0bca2a6031566e2d8aa3357b415d49cb2878ba29",
+      "deploy": "dep-dbtv2vhsrm7s73e4m00g",
+      "verification": {
+        "full_django_tests": 935,
+        "ci_run": 44029228287,
+        "ci_job": 133856846320,
+        "tested_commit": "4fed5e4543522375a5515b980facc840c7d89235",
+        "copy_followup": "Final title particle-only follow-up was template-rendered locally; no logic or permission change.",
+        "js": "Permission report rendering, group navigation, request deduplication, member previews and failure preservation passed.",
+        "live": "Verified shared document entry buttons, folder list and per-folder access labels, AJAX title transition to group membership, help definitions and file menu/title/scope text. No document or permission mutations. Transient 502 during final deploy transition cleared on reload; normal file management page verified."
+      },
+      "rollback_commit": "1ac6d37061b34d781cfea1b022ff97eac68130e3"
+    },
+    {
       "version": "0.33.1",
       "status": "deployed",
       "summary": "전 직원 자동 구성원 반영 5분 주기로 조정",
