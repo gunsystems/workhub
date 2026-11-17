@@ -3,6 +3,23 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.32.0",
+      "status": "deployed",
+      "summary": "폴더 목록과 그룹 접근 설정 화면 분리",
+      "release_notes": "releases/v0.32.0.md",
+      "commit": "18d98df5fa3ddfa6488042b21619519e0f7dc5bc",
+      "deploy": "dep-dbtq3j142hec73alvclg",
+      "verification": {
+        "full_django_tests": 882,
+        "focused_tests": 101,
+        "ci_run": 43989124345,
+        "ci_job": 133724877607,
+        "js": "folder access navigation, loading protection and expired-session checks passed",
+        "live": "Folder rows with Access Management; group picker adds one card; view/edit choice and server preview verified; preview cancelled. New Folder GET/return verified. No live folder creation or ACL changes."
+      },
+      "rollback_commit": "5ec68ebf76b8c04b890e4e79bff2d96cb64ba1fc"
+    },
+    {
       "version": "0.31.3",
       "status": "deployed",
       "summary": "폴더 선택 후 그룹별 권한 직접 설정·저장",
