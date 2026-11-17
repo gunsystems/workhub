@@ -1,6 +1,6 @@
 {% extends 'tasks/base.html' %}{% load static %}{% block content %}
 <link rel="stylesheet" href="{% static 'tasks/document_permissions.css' %}">
-<section class="heading"><div><div class="eyebrow">DOCUMENT ACCESS · 관리자 전용</div><h1>{% if tab == "groups" %}그룹 구성원 관리{% elif tab == "people" %}직원별 접근 확인{% elif target_scope == "파일" %}파일 접근 관리{% elif not folder_listing and target_scope == "문서함 전체" %}문서함 접근 관리{% else %}폴더 접근 관리{% endif %}</h1><p>{% if tab == "groups" %}그룹에 속한 직원을 확인하고 관리하세요.{% elif tab == "people" %}직원을 선택해 현재 위치의 접근 권한을 확인하세요.{% elif target_scope == "파일" %}이 파일을 사용할 그룹과 권한을 지정하세요.{% else %}폴더 목록에서 위치를 찾고 폴더 접근 관리를 선택하세요.{% endif %}</p></div><a class="button" href="{% url 'shared_documents' %}">공동 문서</a></section>
+<section class="heading"><div><div class="eyebrow">DOCUMENT ACCESS · 관리자 전용</div><h1 data-access-page-title>{% include 'tasks/access_page_title.html' %}</h1><p data-access-page-intro>{% include 'tasks/access_page_intro.html' %}</p></div><a class="button" href="{% url 'shared_documents' %}">공동 문서</a></section>
 {% for message in messages %}<p class="permission-note" role="status">{{ message }}</p>{% endfor %}
 <p><a class="button" href="{% url 'permission_report' %}">폴더 권한 현황</a></p>
 <div class="folder-access-workspace" data-access-workspace data-member-url="{% url 'permission_report_members' 0 %}">

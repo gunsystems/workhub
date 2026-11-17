@@ -1,0 +1,1 @@
+{% if tab == "groups" %}그룹 구성원 관리{% elif tab == "people" %}직원별 접근 확인{% elif target_scope == "파일" %}파일 접근 관리{% elif not folder_listing and target_scope == "문서함 전체" %}문서함 접근 관리{% else %}폴더 접근 관리{% endif %}

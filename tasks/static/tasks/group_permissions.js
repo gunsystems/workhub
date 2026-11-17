@@ -32,6 +32,10 @@
   }
   const dirty=()=>!!detail.querySelector('.permission-changed');
   function refresh(){
+    const title=detail.querySelector('[data-access-panel-title]'),intro=detail.querySelector('[data-access-panel-intro]');
+    const heading=document.querySelector('[data-access-page-title]'),description=document.querySelector('[data-access-page-intro]');
+    if(title&&heading)heading.textContent=title.textContent.trim();
+    if(intro&&description)description.textContent=intro.textContent.trim();
     const form=detail.querySelector('[data-access-editor]');if(!form)return;
     let count=0;
     form.querySelectorAll('[data-access-row]').forEach(row=>{const changed=row.querySelector('select').value!==row.dataset.original;row.classList.toggle('permission-changed',changed);if(changed)count++;});
