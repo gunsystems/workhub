@@ -3,6 +3,25 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.32.1",
+      "status": "deployed",
+      "summary": "관리자 전체 폴더 권한 구조도와 문서 저장 버전 이력",
+      "release_notes": "releases/v0.32.1.md",
+      "commit": "b3a40a30f64d10220c2751623391eb83364db359",
+      "deploy": "dep-dbts4u1srm7s73dsou9g",
+      "verification": {
+        "full_django_tests": 898,
+        "focused_tests": 67,
+        "ci_run": 44005613425,
+        "ci_job": 133780115034,
+        "tested_logic_commit": "9e3a6f6f5a0a3cb72e107df37b7a3dab4b3d90cd",
+        "js": "pagination, group request deduplication, staff search, folding and partial-failure checks passed",
+        "live": "Three libraries and nine folders fully queried. Group permissions/members, inherited/unique sources, company forms view-only grant and owner management match live settings. Search/fold/expand and responsive layout verified; validation file version 1.0 shown with editor/time/size. Read-only; no document or permission changes during verification.",
+        "style_followup": "CSS-only compact rows/search field; final live visual verification passed."
+      },
+      "rollback_commit": "18d98df5fa3ddfa6488042b21619519e0f7dc5bc"
+    },
+    {
       "version": "0.32.0",
       "status": "deployed",
       "summary": "폴더 목록과 그룹 접근 설정 화면 분리",
