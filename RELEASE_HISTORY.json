@@ -3,6 +3,23 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.31.3",
+      "status": "deployed",
+      "summary": "폴더 선택 후 그룹별 권한 직접 설정·저장",
+      "release_notes": "releases/v0.31.3.md",
+      "commit": "a1250bc871111844199584c5e291a6fd9f89260d",
+      "deploy": "dep-dbtpid3l550s738vdi10",
+      "verification": {
+        "full_django_tests": 879,
+        "focused_tests": 49,
+        "ci_run": 43983765407,
+        "ci_job": 133706558833,
+        "js": "auto folder list, folder selection, loading guard and expired-session navigation passed",
+        "live": "Automatic common-library folder list; inherited folder permission controls enabled; selected group edit review explains combined separate settings. Preview cancelled; no live business folder ACL changes."
+      },
+      "rollback_commit": "9467c2c18aa79654e0dee21bd244b64745fb1f0b"
+    },
+    {
       "version": "0.31.2",
       "status": "deployed",
       "summary": "팀·업무 문서 그룹의 Workhub 구성원 관리 연결",
