@@ -171,12 +171,12 @@ def synchronize_due():
             check()
             if not DocumentPermissionLease.objects.filter(pk=lease.pk,expires_at__gt=timezone.now()).exists():raise SharePointProbeError('처리 잠금이 만료되었습니다.')
         bindings,pending=sync_members(api,policy,guarded)
-        fence.update(bindings=bindings,pending=pending,last_checked_at=timezone.now(),next_at=timezone.now()+timedelta(minutes=1),error='계정 확인 대기 직원이 있습니다.' if pending else '')
+        fence.update(bindings=bindings,pending=pending,last_checked_at=timezone.now(),next_at=timezone.now()+timedelta(minutes=5),error='계정 확인 대기 직원이 있습니다.' if pending else '')
         return True
     except Exception:
         if fence.filter(error='').exists():
             write('permission_attention','DocumentStaffGroup',policy.pk,'전 직원 자동 반영 확인 필요',after={'상태':'관리자 연결·직원 계정·외부 변경 확인 필요'},actor=policy.owner)
-        fence.update(next_at=timezone.now()+timedelta(minutes=1),error='자동 반영 확인 필요 · 관리자 연결과 직원 계정을 확인하세요.')
+        fence.update(next_at=timezone.now()+timedelta(minutes=5),error='자동 반영 확인 필요 · 관리자 연결과 직원 계정을 확인하세요.')
         return False
     finally:
         if lease:DocumentPermissionLease.objects.filter(pk=lease.pk).delete()

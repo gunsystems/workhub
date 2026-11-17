@@ -240,7 +240,7 @@ def review(request, drive, item):
                 raise SharePointProbeError('전 직원 이름의 다른 그룹이 있습니다. 기존 그룹을 확인하세요.')
             payload.update(group=group,members=members,bindings=bindings,roster_digest=digest(source),scope_key=scope(request.user)[0])
             summary=([group['name']+' → 전 직원 (그룹 ID·폴더 권한 유지)',
-                '재직 직원 등록 시 자동 추가 · 사용 중지/퇴사 시 자동 제외 · 1분 주기로 확인',
+                '재직 직원 등록 시 자동 추가 · 사용 중지/퇴사 시 자동 제외 · 5분 주기로 확인',
                 '현재 구성원 계정 연결 확인:']+[b['name']+' · '+b['identity'] for b in bindings.values()]) if action=='auto_staff' else [group['name']+' · 자동 구성원 관리 중지 (현재 구성원·폴더 권한 유지)']
         elif action == 'register_group':
             group = next((g for g in catalog if str(g['id']) == request.POST.get('group')), None)
