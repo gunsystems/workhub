@@ -1,4 +1,5 @@
 {% if error %}<section class="detail permission-panel"><p class="permission-error" role="alert">{{ error }}</p><a class="button" href="{% url 'document_permission_setup' %}">관리자 연결 확인</a></section>{% else %}
+<nav class="permission-tabs" aria-label="문서 접근 관리 메뉴"><a data-permission-nav class="{% if tab == 'folders' %}active{% endif %}" href="{% url 'document_permission_manage' drive 'root' %}">폴더 목록</a><a data-permission-nav class="{% if tab == 'groups' %}active{% endif %}" href="{% url 'document_permission_manage' drive item %}?tab=groups">그룹 구성원</a><a data-permission-nav class="{% if tab == 'people' %}active{% endif %}" href="{% url 'document_permission_manage' drive item %}?tab=people">직원별 확인</a></nav>
 {% if folder_listing %}{% include 'tasks/folder_access_list.html' %}
 {% elif tab == 'folders' %}{% include 'tasks/folder_access_editor.html' %}
 {% else %}<section class="detail permission-panel"><h2>{% if tab == 'groups' %}그룹 구성원 관리{% else %}직원별 접근 확인{% endif %}</h2>
