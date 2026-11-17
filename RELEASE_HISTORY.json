@@ -3,6 +3,22 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.33.3",
+      "status": "deployed",
+      "summary": "폴더·파일 접근 관리의 그룹 추가 버튼 오류 수정",
+      "release_notes": "releases/v0.33.3.md",
+      "commit": "51833693c4c4ec18def53467963f85ef2ebf7ef1",
+      "deploy": "dep-dbtvfsmk1f9s739sfnvg",
+      "verification": {
+        "full_django_tests": 935,
+        "ci_run": 44033192364,
+        "ci_job": 133869748232,
+        "regression": "Reproduced invalid URL before fix with a form input named action shadowing form.action. Corrected test passes with relative action attribute, default Read, duplicate prevention and GET-only member preview.",
+        "live": "Reproduced production Invalid URL on draft addition. After deployment, added all-staff group to Product introduction folder draft, verified five live members and enabled preview. Review showed exactly one change: all staff none to Read. Did not apply permission changes or alter security team membership/ACL."
+      },
+      "rollback_commit": "0bca2a6031566e2d8aa3357b415d49cb2878ba29"
+    },
+    {
       "version": "0.33.2",
       "status": "deployed",
       "summary": "폴더·파일·문서함 접근 관리 명칭과 도움말 통일",
