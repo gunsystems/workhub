@@ -3,6 +3,28 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.32.2",
+      "status": "deployed",
+      "summary": "저장된 관리자 권한 현황 즉시 표시·백그라운드 동기화·직원 이름 연결",
+      "release_notes": "releases/v0.32.2.md",
+      "commit": "1271c0b7eebde426129edc2c1d4946c34c10b7e3",
+      "deploy": "dep-dbtsg8kipgvc73a1bm4g",
+      "verification": {
+        "full_django_tests": 912,
+        "focused_tests": 120,
+        "ci_run": 44009165265,
+        "ci_job": 133791712608,
+        "js": "immediate cached rendering without fetch; CSRF queue-only refresh; retained tree during sync/failure; polling and staff search passed",
+        "live": "12 locations stored. Two warm reloads displayed full tree in 652ms and 622ms (UI automation wall clock). Explicit alternate-account display-name mapping persisted across reload and full refresh; SharePoint rights unchanged. One refresh failure preserved complete snapshot and showed attention; manual retry completed and advanced synchronization timestamp.",
+        "warm_reload_ms": [
+          652,
+          622
+        ],
+        "authorization": "Snapshot is administrator display only; document access remains live delegated Microsoft permission checks."
+      },
+      "rollback_commit": "b3a40a30f64d10220c2751623391eb83364db359"
+    },
+    {
       "version": "0.32.1",
       "status": "deployed",
       "summary": "관리자 전체 폴더 권한 구조도와 문서 저장 버전 이력",
