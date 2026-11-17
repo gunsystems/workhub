@@ -3,6 +3,24 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.33.0",
+      "status": "deployed",
+      "summary": "전 직원 그룹 자동 구성원 관리·접두어 없는 그룹명",
+      "release_notes": "releases/v0.33.0.md",
+      "commit": "c52af2b2be508588c59ce4a808901ec2341d027a",
+      "deploy": "dep-dbtuifh42hec73b243s0",
+      "verification": {
+        "full_django_tests": 935,
+        "focused_tests": 70,
+        "ci_run": 44025627774,
+        "ci_job": 133845146048,
+        "js": "Group navigation, live member previews, failure preservation and full CI browser checks passed.",
+        "live": "Production group conversion review rendered with five verified existing identities. No rename or membership writes yet: automatic activation pending action-time confirmation.",
+        "authorization": "Disabled by default. Only an explicitly reviewed ordinary site group can enroll active registered employees with verified company Microsoft identities. Folder ACLs and tenant roles untouched."
+      },
+      "rollback_commit": "b6aba1e2ff3f1c9b80919929bc0b10672370e493"
+    },
+    {
       "version": "0.32.3",
       "status": "deployed",
       "summary": "폴더 접근 관리에서 그룹 구성원 이름·수·현재 확인 상태 표시",
