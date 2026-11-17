@@ -1,6 +1,6 @@
 {% extends 'tasks/base.html' %}{% load static %}{% block content %}
 <link rel="stylesheet" href="{% static 'tasks/document_permissions.css' %}">
-<section class="heading"><div><div class="eyebrow">ADMINISTRATION · 관리자 전용</div><h1>문서 권한 관리 연결</h1><p>폴더의 그룹 권한과 구성원을 실제 회사 문서함에서 관리합니다.</p></div><a class="button" href="{% url 'document_permission_workspace' %}">문서 권한 관리</a></section>
+<section class="heading"><div><div class="eyebrow">ADMINISTRATION · 관리자 전용</div><h1>접근 관리용 관리자 연결</h1><p>폴더의 그룹 권한과 구성원을 실제 회사 문서함에서 관리합니다.</p></div><a class="button" href="{% url 'document_permission_workspace' %}">폴더 접근 관리</a></section>
 {% for message in messages %}<p class="permission-note" role="status">{{ message }}</p>{% endfor %}
 <section class="detail permission-panel"><h2>관리자 계정</h2>
 {% if permission_connection %}<p>{{ permission_connection.email }} · 연결됨</p>{% else %}<p>회사 문서 사이트의 권한을 관리할 수 있는 Microsoft 계정을 연결하세요.</p>{% endif %}

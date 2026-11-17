@@ -29,7 +29,7 @@
         else text=grant.kind==='person'?'개인 직접 권한'+(grant.email?' · '+grant.email:''):'그룹·특수 대상: 구성원 별도 확인';
         li.append(el('span',text,'report-members'));list.append(li);n._search+=' '+grant.name+' '+grant.role+' '+text+' '+(grant.members||[]).map(m=>m.email).join(' ');
       }
-      body.append(list);const link=el('a','접근 관리','report-edit');link.href=data.manage_url;body.append(link,el('div','확인: '+date(data.at),'report-stamp'));
+      body.append(list);const link=el('a',data.parent?'폴더 접근 관리':'문서함 접근 관리','report-edit');link.href=data.manage_url;body.append(link,el('div','확인: '+date(data.at),'report-stamp'));
       n.append(head,body,n._children);nodes.set(data.key,n);(data.parent?nodes.get(data.parent)._children:tree).append(n);
     }
     filter();

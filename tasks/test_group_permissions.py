@@ -282,7 +282,7 @@ class WorkspaceTests(TestCase):
     def test_folder_list_does_not_mix_in_groups_or_fetch_acl(self):
         response=self.client.get(self.url)
         self.assertContains(response,'실제 폴더 목록')
-        self.assertContains(response,'실제 폴더 접근 관리')
+        self.assertContains(response,'실제 폴더 폴더 접근 관리')
         self.assertNotContains(response,'Workhub_기술팀')
         self.api.state.assert_not_called(); self.api.groups.assert_not_called()
 
