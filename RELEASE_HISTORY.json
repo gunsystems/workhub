@@ -3,6 +3,23 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.32.3",
+      "status": "deployed",
+      "summary": "폴더 접근 관리에서 그룹 구성원 이름·수·현재 확인 상태 표시",
+      "release_notes": "releases/v0.32.3.md",
+      "commit": "b6aba1e2ff3f1c9b80919929bc0b10672370e493",
+      "deploy": "dep-dbttj508v5cc73baps00",
+      "verification": {
+        "full_django_tests": 915,
+        "focused_tests": 73,
+        "ci_run": 44017912967,
+        "ci_job": 133820178633,
+        "js": "cached/live member display, per-panel request deduplication, empty vs failed lookup, preservation on failure and existing navigation checks passed",
+        "live": "Navigated from entire report to company forms access editor. Saved names displayed immediately, then live membership returned 5/0/1 for dedicated viewers/empty global readers/protected administrators. View selectors remained read; review disabled at zero changes. Korean display names verified. No permission or membership writes."
+      },
+      "rollback_commit": "1271c0b7eebde426129edc2c1d4946c34c10b7e3"
+    },
+    {
       "version": "0.32.2",
       "status": "deployed",
       "summary": "저장된 관리자 권한 현황 즉시 표시·백그라운드 동기화·직원 이름 연결",
