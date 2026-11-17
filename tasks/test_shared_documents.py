@@ -503,6 +503,17 @@ class SharedDocumentsTests(TestCase):
             self.client.post('/work/shared-documents/drive-id/folder/', payload)
             factory.return_value.create_folder.assert_called_once_with('drive-id', '', '교육')
 
+    def test_create_from_access_management_returns_to_new_folder_access(self):
+        self.parents()
+        with patch('tasks.shared_documents.UserDocuments') as factory:
+            factory.return_value.library.return_value=self.library
+            factory.return_value.create_folder.return_value={'id':'new-folder'}
+            response=self.client.get('/work/shared-documents/drive-id/folder/?origin=permissions')
+            self.assertContains(response,'name="origin" value="permissions"')
+            response=self.client.post('/work/shared-documents/drive-id/folder/',
+                {'proof':response.context['proof'],'name':'보안기술팀','action':'create','folder':'','origin':'permissions'})
+            self.assertEqual(response.url,'/work/shared-documents/drive-id/new-folder/permissions/?edit=1')
+
     def test_nonempty_folder_delete_never_calls_write(self):
         self.parents()
         with patch('tasks.shared_documents.UserDocuments') as factory, patch('tasks.shared_documents.graph_write') as write:

@@ -223,6 +223,7 @@ class WorkspaceTests(TestCase):
         self.api=self.factory.return_value; self.api.config.site_url='https://tenant.sharepoint.com/sites/work'
         self.api.connection.connected_at=timezone.now(); self.api.identity={'Id':1}
         self.api.docs.libraries=[{'id':'drive','name':'공통'}]; self.api.bind.return_value={'name':'교육자료','folder':{}}
+        self.api.docs.children_page.return_value=([{'id':'child','name':'실제 폴더','folder':{}}],'',50)
         self.api.state.side_effect=lambda:state(); self.api.change.return_value=state()
         self.api.groups.return_value=[{'id':2,'name':'Workhub_기술팀','login':''}]; self.api.members.return_value=[]
         DocumentAccessGroup.objects.create(site_url=self.api.config.site_url,principal_id=2,name='Workhub_기술팀')
@@ -231,10 +232,24 @@ class WorkspaceTests(TestCase):
         self.assertEqual(response.status_code,200); return response.context['nonce']
     def test_get_and_review_are_read_only(self):
         response=self.client.get(self.url); self.assertContains(response,'그룹 구성원'); self.assertContains(response,'직원별 확인')
-        self.assertContains(response,'permission-table'); self.preview(); self.api.change.assert_not_called()
+        self.assertContains(response,'실제 폴더'); self.assertContains(response,'접근 관리'); self.assertNotContains(response,'permission-table'); self.preview(); self.api.change.assert_not_called()
     def test_fragment_has_panel_only(self):
-        response=self.client.get(self.url+'?panel=1'); self.assertContains(response,'되돌릴 내용 확인')
+        response=self.client.get(self.url+'?panel=1&edit=1'); self.assertContains(response,'상위 위치와 같은 접근 설정으로 되돌리기')
         self.assertNotContains(response,'permission-workspace')
+    def test_folder_list_does_not_mix_in_groups_or_fetch_acl(self):
+        response=self.client.get(self.url)
+        self.assertContains(response,'실제 폴더 목록')
+        self.assertContains(response,'실제 폴더 접근 관리')
+        self.assertNotContains(response,'Workhub_기술팀')
+        self.api.state.assert_not_called(); self.api.groups.assert_not_called()
+
+    def test_unused_group_appears_only_in_add_picker(self):
+        self.api.groups.return_value.append({'id':4,'name':'새 업무 그룹','login':''})
+        response=self.client.get(self.url+'?edit=1')
+        self.assertContains(response,'Workhub_기술팀')
+        self.assertContains(response,'<option value="4">새 업무 그룹</option>',html=True)
+        self.assertNotContains(response,'name="group_4"')
+        self.assertContains(response,'name="group_2"')
     def test_explicit_apply_one_use_and_reason(self):
         nonce=self.preview(); self.client.post(self.url+'apply/',{'nonce':nonce,'confirmed':'yes','reason':'부서 공유'})
         self.assertEqual(self.api.change.call_count,1); self.assertEqual(self.api.change.call_args.args[2],[{'id':2,'role':'write'}])
@@ -248,12 +263,12 @@ class WorkspaceTests(TestCase):
         self.api.change.assert_not_called()
     def test_inherited_folder_can_be_edited_and_reviewed_in_one_flow(self):
         self.api.state.side_effect=lambda:state(False)
-        response=self.client.get(self.url)
-        self.assertContains(response,'교육자료 · 접근 권한')
-        self.assertContains(response,'권한 저장')
+        response=self.client.get(self.url+'?edit=1')
+        self.assertContains(response,'교육자료')
+        self.assertContains(response,'저장할 내용 확인')
         self.assertContains(response,'value="configure_groups"')
         import re
-        editable=re.search(r'<input[^>]+aria-label="Workhub_기술팀 편집"[^>]*>',response.content.decode()).group()
+        editable=re.search(r'<select[^>]+aria-label="Workhub_기술팀 권한"[^>]*>',response.content.decode()).group()
         self.assertNotIn('disabled',editable)
         nonce=self.preview(action='configure_groups',group_2='write')
         self.api.change.assert_not_called()

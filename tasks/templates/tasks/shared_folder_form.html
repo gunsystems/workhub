@@ -7,6 +7,7 @@
 {% if library and not error and not blocked %}
 <form method="post" class="shared-link-form">{% csrf_token %}
 <input type="hidden" name="action" value="{{ action }}"><input type="hidden" name="folder" value="{{ folder }}"><input type="hidden" name="proof" value="{{ proof }}">
+{% if permission_origin %}<input type="hidden" name="origin" value="permissions"><p>폴더를 만든 다음 사용할 그룹과 접근 권한을 설정합니다.</p>{% endif %}
 {% if action == 'delete' %}<h2>{{ target.name }}</h2><p>이 빈 폴더를 SharePoint 휴지통으로 이동할까요?</p><p class="helptext">복원이 필요하면 SharePoint 휴지통에서 복원할 수 있습니다.</p>{% else %}{{ form.as_p }}{% endif %}
 <div class="shared-actions"><button class="button {% if action == 'delete' %}shared-danger{% else %}primary{% endif %}">{% if action == 'delete' %}휴지통으로 이동{% elif action == 'rename' %}이름 변경{% else %}폴더 만들기{% endif %}</button><a class="button" href="{{ cancel_url }}">취소</a></div>
 </form>{% else %}<a class="button" href="{{ cancel_url }}">문서함으로 돌아가기</a>{% endif %}

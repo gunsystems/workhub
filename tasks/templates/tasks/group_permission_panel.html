@@ -1,27 +1,8 @@
 {% if error %}<section class="detail permission-panel"><p class="permission-error" role="alert">{{ error }}</p><a class="button" href="{% url 'document_permission_setup' %}">관리자 연결 확인</a></section>{% else %}
-<nav class="permission-tabs" aria-label="권한 관리 보기">
-<a data-permission-nav class="{% if tab == 'folders' %}active{% endif %}" href="{% url 'document_permission_manage' drive item %}">폴더 권한</a>
-<a data-permission-nav class="{% if tab == 'groups' %}active{% endif %}" href="{% url 'document_permission_manage' drive item %}?tab=groups">그룹 구성원</a>
-<a data-permission-nav class="{% if tab == 'people' %}active{% endif %}" href="{% url 'document_permission_manage' drive item %}?tab=people">직원별 확인</a></nav>
-<section class="detail permission-panel"><div class="permission-title"><div><p class="permission-target-label">선택한 {{ target_scope }}</p><h2>{{ target.name }}{% if tab == 'folders' %} · 접근 권한{% endif %}</h2><p class="helptext">조회 {{ checked_at|date:'m.d H:i' }} · 현재 SharePoint 기준</p></div><span class="permission-badge">{% if snapshot.unique %}별도 권한{% else %}상위 권한 사용{% endif %}</span></div>
-{% if not snapshot.unique %}<div class="permission-note">현재 <strong>{{ snapshot.source.name }}</strong>의 권한을 따릅니다. 아래에서 권한을 바꾸고 저장하면 <strong>선택한 {{ target_scope }}부터 별도로 적용</strong>됩니다. 기존 관리자 접근과 변경하지 않은 권한은 유지합니다.</div>{% endif %}
-{% if tab == 'folders' %}
-<div class="permission-metrics"><div><strong>{{ group_count }}</strong><span>연결된 그룹</span></div><div><strong>{{ personal_count }}</strong><span>개인 직접 권한</span></div></div>
-{% if personal_count %}<p class="permission-warning">개인에게 직접 부여된 권한이 있습니다. 그룹에서 제외해도 이 권한은 남습니다. 기존 개인 권한은 자동 삭제하지 않습니다.</p>{% endif %}
-<form method="post" action="{% url 'document_permission_review' drive item %}" data-permission-form>{% csrf_token %}<input type="hidden" name="action" value="configure_groups">
-<div class="permission-filter"><label>그룹 검색<input type="search" data-row-search placeholder="그룹 이름 검색"></label></div>
-<div class="permission-table-wrap"><table class="permission-table"><thead><tr><th scope="col">그룹</th><th scope="col">연결 없음</th><th scope="col">보기</th><th scope="col">편집</th></tr></thead><tbody>
-{% for group in editable_groups %}<tr data-search-row="{{ group.name }}"><th scope="row"><strong>{{ group.name }}</strong>{% if group.locked %}<small>🔒 {{ group.label }} · 접근 유지</small>{% endif %}</th>
-{% if group.locked %}<td colspan="3"><span class="permission-badge">{{ group.label }} · 보호됨</span></td>{% else %}
-<td><input aria-label="{{ group.name }} 연결 없음" type="radio" name="group_{{ group.id }}" value="none" data-original="{{ group.role }}" {% if group.role == 'none' %}checked{% endif %}></td>
-<td><input aria-label="{{ group.name }} 보기" type="radio" name="group_{{ group.id }}" value="read" data-original="{{ group.role }}" {% if group.role == 'read' %}checked{% endif %} {% if group.locked %}disabled{% endif %}></td>
-<td><input aria-label="{{ group.name }} 편집" type="radio" name="group_{{ group.id }}" value="write" data-original="{{ group.role }}" {% if group.role == 'write' %}checked{% endif %} {% if group.locked %}disabled{% endif %}></td>
-{% endif %}</tr>{% endfor %}</tbody></table></div>
-<p class="helptext">보기: 열람·다운로드 · 편집: 파일 추가·수정·삭제. 연결 없음은 해당 그룹의 직접 권한만 제거하며 다른 경로의 접근을 차단하지 않습니다.</p>
-<div class="permission-savebar"><span data-change-count aria-live="polite">변경 0건</span><button class="button primary">권한 저장</button></div></form>
-<details class="permission-existing"><summary>개인·기타 권한 확인</summary><ul>{% for row in snapshot.rows %}{% if row.type != 8 and not row.limited %}<li>{{ row.name }}{% if row.protected %} <span class="permission-badge">관리자 접근 유지</span>{% else %} · 개인 직접 권한{% endif %}</li>{% endif %}{% endfor %}</ul></details>
-{% if snapshot.unique %}<details class="permission-existing"><summary>상위 폴더와 같은 권한으로 되돌리기</summary><form method="post" action="{% url 'document_permission_review' drive item %}">{% csrf_token %}<input type="hidden" name="action" value="reset"><p>이 {{ target_scope }}에 지정한 설정을 해제하고 상위 권한을 다시 따릅니다.</p><button class="button">되돌릴 내용 확인</button></form></details>{% endif %}
-{% elif tab == 'groups' %}
+{% if folder_listing %}{% include 'tasks/folder_access_list.html' %}
+{% elif tab == 'folders' %}{% include 'tasks/folder_access_editor.html' %}
+{% else %}<section class="detail permission-panel"><h2>{% if tab == 'groups' %}그룹 구성원 관리{% else %}직원별 접근 확인{% endif %}</h2>
+{% if tab == 'groups' %}
 <p>그룹 구성원을 바꾸면 이 그룹을 연결한 모든 폴더에 적용됩니다. 하위 폴더마다 직원을 다시 추가할 필요가 없습니다.</p>
 <form method="get" data-panel-filter><input type="hidden" name="tab" value="groups"><label>그룹 선택<select name="group"><option value="">그룹을 선택하세요</option>{% for group in groups %}<option value="{{ group.id }}" {% if selected_group.id == group.id %}selected{% endif %}>{{ group.name }}</option>{% endfor %}</select></label><button class="button">조회</button></form>
 {% if selected_group %}<h3>{{ selected_group.name }}</h3>{% if not selected_group.managed %}<p class="permission-note">이 그룹의 구성원을 여기서 관리하려면 아래의 관리 연결을 한 번 진행하세요. 문서 권한이나 구성원은 자동 변경되지 않습니다.</p>{% endif %}
@@ -31,7 +12,7 @@
 {% if selected_group.managed %}<h4>직원 추가</h4><div class="permission-filter"><label>직원 검색<input type="search" data-row-search placeholder="이름·부서 검색"></label><label>부서<select data-department-filter><option value="">전체 부서</option>{% for department in departments %}<option>{{ department }}</option>{% endfor %}</select></label></div><button type="button" class="button" data-select-visible>표시된 직원 모두 선택</button><div class="permission-member-list">{% for employee in available_staff %}<label data-department="{{ employee.department }}" data-search-row="{{ employee.department }} {{ employee.name }} {{ employee.email }}"><input type="checkbox" name="add" value="{{ employee.pk }}"><span><strong>{{ employee.department }} · {{ employee.name }}</strong><small>{{ employee.email }}</small></span></label>{% empty %}<p>추가할 직원이 없습니다.</p>{% endfor %}</div><div class="permission-actions"><button class="button primary">구성원 변경 검토</button></div>{% endif %}</form>{% endif %}
 <details class="permission-existing"><summary>새 그룹 만들기</summary><form method="post" action="{% url 'document_permission_review' drive item %}">{% csrf_token %}<input type="hidden" name="action" value="create_group"><label>그룹 이름<input name="name" maxlength="80" placeholder="예: 보안기술팀_편집" required></label><p class="helptext">Workhub_ 접두어로 구분됩니다. 생성 후 구성원을 추가하고 필요한 폴더에 연결하세요.</p><button class="button">그룹 생성 검토</button></form></details>
 {% else %}
-<p>직원을 선택하면 소속 그룹과 현재 선택한 폴더의 실제 접근 권한을 확인합니다. 왼쪽에서 다른 폴더를 선택해 계속 확인할 수 있습니다.</p>
+<p>직원을 선택하면 소속 그룹과 현재 선택한 폴더의 실제 접근 권한을 확인합니다. 폴더 목록에서 다른 폴더를 선택해 확인할 수 있습니다.</p>
 <form method="get" data-panel-filter><input type="hidden" name="tab" value="people"><label>직원<select name="employee"><option value="">직원을 선택하세요</option>{% for employee in staff %}<option value="{{ employee.pk }}" {% if selected_employee.pk == employee.pk %}selected{% endif %}>{{ employee.department }} · {{ employee.name }}</option>{% endfor %}</select></label><button class="button">조회</button></form>
 {% if selected_employee %}<h3>{{ selected_employee.name }} · {{ effective_role }}</h3><p>선택한 폴더의 접근 권한입니다. 개인 직접 권한과 다른 그룹을 포함한 SharePoint 계산 결과입니다.</p><h4>직접 소속된 사이트 그룹</h4><div class="permission-chips">{% for group in employee_groups %}<a data-permission-nav href="{% url 'document_permission_manage' drive item %}?tab=groups&amp;group={{ group.id }}">{{ group.name }}</a>{% empty %}<span>직접 소속 그룹 없음</span>{% endfor %}</div><p class="helptext">Entra 그룹의 중첩 구성원이나 공유 링크는 이 목록에 펼쳐 표시하지 않습니다. 접근 판단은 위의 실제 권한을 기준으로 확인하세요.</p>{% endif %}
-{% endif %}</section>{% endif %}
+{% endif %}</section>{% endif %}{% endif %}

@@ -51,7 +51,6 @@ def overview(request, drive='', item='root'):
     try:
         api = GroupPermissionClient(request.user)
         context['libraries'] = api.docs.libraries
-        context['groups'] = groups = group_catalog(api)
         default_library = next((r for r in api.docs.libraries if r['name'] == '전사 공통'),
                                api.docs.libraries[0] if api.docs.libraries else {})
         drive = drive or request.GET.get('drive') or default_library.get('id', '')
@@ -60,11 +59,21 @@ def overview(request, drive='', item='root'):
         if not drive:
             raise SharePointProbeError('관리할 문서함이 없습니다.')
         context['target'] = api.bind(drive, item)
+        context['parent_item'] = (context['target'].get('parentReference') or {}).get('id', 'root')
         context['target_scope'] = '문서함 전체' if item == 'root' or 'root' in context['target'] else (
             '폴더' if 'folder' in context['target'] else '파일')
         if 'root' in context['target'] or item == 'root':
             context['target'] = {**context['target'], 'name': next(
                 (library['name'] for library in api.docs.libraries if library['id'] == drive), '문서함 전체')}
+        context['folder_listing'] = context['tab'] == 'folders' and request.GET.get('edit') != '1' and context['target_scope'] != '파일'
+        if context['folder_listing']:
+            rows, cursor, _ = api.docs.children_page(drive, '' if item == 'root' else item,
+                                                    cursor=request.GET.get('cursor', ''))
+            context['folders'] = [row for row in rows if 'folder' in row]
+            context['cursor'] = cursor
+            template = 'tasks/group_permission_panel.html' if request.GET.get('panel') == '1' else 'tasks/group_permissions.html'
+            return render(request, template, context)
+        context['groups'] = groups = group_catalog(api)
         context['snapshot'] = state = api.state()
         state['direct_people'] = [r for r in state['rows'] if r['type'] == 1 and not r['protected'] and not r['limited']]
         context['personal_count'] = len(state['direct_people'])
@@ -78,6 +87,9 @@ def overview(request, drive='', item='root'):
             context['editable_groups'].append({**group, 'role': value,
                 'locked': bool(row and (row['protected'] or row['limited'] or value == 'custom')),
                 'label': ROLE_NAMES.get(value, '사용자 정의')})
+        context['connected_groups'] = [g for g in context['editable_groups'] if g['role'] in ('read', 'write') and not g['locked']]
+        context['available_groups'] = [g for g in context['editable_groups'] if g['role'] == 'none' and not g['locked']]
+        context['protected_groups'] = [g for g in context['editable_groups'] if g['locked']]
         if context['tab'] == 'groups':
             selected = request.GET.get('group', '')
             group = next((r for r in groups if str(r['id']) == selected), None)
@@ -328,4 +340,6 @@ def apply(request, drive, item):
     url = return_url(drive, item)
     if payload.get('action') in ('members', 'create_group', 'register_group'):
         url += '?' + urlencode({'tab': 'groups', 'group': (payload.get('group') or {}).get('id', '')})
+    elif payload.get('action') in ('configure_groups', 'reset'):
+        url += '?edit=1'
     return redirect(url)

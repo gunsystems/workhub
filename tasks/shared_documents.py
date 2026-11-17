@@ -580,6 +580,7 @@ def folder_manage(request, drive):
         raise Http404
     context = {'drive': drive, 'folder': folder, 'action': action,
                'cancel_url': folder_location(drive, folder if action == 'create' else '')}
+    permission_origin = params.get('origin') == 'permissions' and request.user.is_superuser and action == 'create'
     try:
         client = UserDocuments(request.user)
         context['library'] = client.library(drive)
@@ -594,6 +595,9 @@ def folder_manage(request, drive):
         form = FolderForm(request.POST if request.method == 'POST' else None,
                           initial={'name': row['name'] if row and action == 'rename' else ''})
         context['form'] = form
+        if permission_origin:
+            context['permission_origin'] = True
+            context['cancel_url'] = reverse('document_permission_manage', args=[drive, folder or 'root'])
         if action == 'delete' and client.children(drive, folder):
             context['blocked'] = '자료가 있는 폴더는 삭제할 수 없습니다. 내부 자료를 먼저 정리하세요.'
         if request.method == 'POST':
@@ -623,6 +627,8 @@ def folder_manage(request, drive):
                       after={'문서함': drive, '폴더': target_id, '폴더명': form.cleaned_data['name'] if action != 'delete' else row['name'], '휴지통': action == 'delete'}, actor=request.user)
                 messages.success(request, {'create': '폴더를 만들었습니다.', 'rename': '폴더 이름을 변경했습니다.',
                                            'delete': '폴더를 SharePoint 휴지통으로 이동했습니다.'}[action])
+                if permission_origin:
+                    return redirect(reverse('document_permission_manage', args=[drive, target_id]) + '?edit=1')
                 return redirect(context['cancel_url'])
     except SharePointProbeError as exc:
         context['error'] = str(exc)
