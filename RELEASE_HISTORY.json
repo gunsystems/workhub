@@ -3,6 +3,24 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.33.4",
+      "status": "deployed_employee_retest_pending",
+      "summary": "직원 문서 연결 HTTPS 출처 확인·CSRF 오류 복귀 보완",
+      "release_notes": "releases/v0.33.4.md",
+      "commit": "f5301fdc886e5f2736e25554476ad70c455ba356",
+      "deploy": "dep-dbuk51o8v5cc739bt8s0",
+      "verification": {
+        "full_django_tests": 940,
+        "focused_https_tests": 5,
+        "ci_run": 44249534540,
+        "ci_job": 134616532894,
+        "production_evidence": "Server access logs showed rejected document connect POST 403 followed by retry GET 405. Shared document form response used no-referrer. Updated same-origin form provenance and safe GET recovery without bypassing CSRF, tenant, identity or selected-site checks.",
+        "security": "Three independent test users, same-origin HTTPS Referer-only POST, stale CSRF recovery and new explicit POST passed; foreign/null Origin and missing cookie remain rejected. GET connection recovery does not start OAuth. External document/OAuth callback no-referrer retained.",
+        "live": "Render deployment live. User arranged affected employee direct test; no employee credentials requested or impersonated. Individual Microsoft login, selected-site access and file opening for all employees remain pending actual user confirmation. No document access grants or account permission changes."
+      },
+      "rollback_commit": "51833693c4c4ec18def53467963f85ef2ebf7ef1"
+    },
+    {
       "version": "0.33.3",
       "status": "deployed",
       "summary": "폴더·파일 접근 관리의 그룹 추가 버튼 오류 수정",
