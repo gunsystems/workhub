@@ -328,9 +328,11 @@ class UserDocuments:
 
 
 @login_required
-@require_POST
+@require_http_methods(['GET', 'POST'])
 @never_cache
 def connect(request):
+    if request.method == 'GET':
+        return redirect('shared_documents')  # Recover old retry links; never start OAuth on GET.
     try:
         config = ProbeConfig.from_settings()
     except SharePointProbeError as exc:
@@ -463,7 +465,7 @@ def listing(request):
     template = 'tasks/shared_document_workspace.html' if request.headers.get('X-Workhub-Documents') == '1' else 'tasks/shared_documents.html'
     response = render(request, template, context)
     response['Vary'] = 'X-Workhub-Documents, Cookie'
-    response['Referrer-Policy'] = 'no-referrer'
+    response['Referrer-Policy'] = 'same-origin'
     measure('render')
     timings['total'] = (perf_counter() - started) * 1000
     # Durations only: no user, file name, item ID, token, URL or provider body.

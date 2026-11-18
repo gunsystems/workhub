@@ -186,7 +186,10 @@ class SharedDocumentsTests(TestCase):
             self.assertEqual(graph.call_count, 1)
 
     def test_no_oauth_get_mutations(self):
-        self.assertEqual(self.client.get('/work/shared-documents/connect/').status_code, 405)
+        response = self.client.get('/work/shared-documents/connect/')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/work/shared-documents/')
+        self.assertNotIn('document_oauth', self.client.session)
         self.assertEqual(self.client.get('/work/shared-documents/disconnect/').status_code, 405)
 
     def page_client(self):

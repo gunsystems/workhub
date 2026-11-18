@@ -37,15 +37,32 @@ def csrf_failure(request, reason=''):
                 'token_missing' if 'token missing' in reason else
                 'origin_rejected' if 'Origin' in reason else
                 'referer_rejected' if 'Referer' in reason else 'other')
-    # Never log cookies, submitted values, credentials, or tokenized paths.
-    logging.getLogger('django.request').warning('csrf_rejected category=%s logout=%s', category, request.path == '/logout/')
+    from django.urls import resolve, reverse, Resolver404
+    recovery = {
+        'shared_documents_connect': 'shared_documents',
+        'shared_documents_disconnect': 'shared_documents',
+        'document_permission_connect': 'document_permission_setup',
+        'microsoft_connect': 'microsoft_settings',
+        'microsoft_disconnect': 'microsoft_settings',
+        'google_calendar_connect': 'calendar_settings',
+        'google_calendar_disconnect': 'calendar_settings',
+    }
+    try:
+        route = resolve(request.path).url_name
+    except Resolver404:
+        route = ''
+    # Finite flow labels only; never log cookies, tokens, form values or URL paths.
+    logging.getLogger('gunicorn.error').warning('csrf_rejected category=%s flow=%s',
+        category, route if route in recovery else ('logout' if request.path == '/logout/' else 'other'))
     if request.path == '/logout/':
         from .logout_views import confirmation
         return confirmation(request, status=403)
     # No provider details, tokens, submitted credentials or internal error text.
-    response = page(request, '다시 시도해 주세요',
-                    notice='요청을 확인하는 과정에서 문제가 발생했습니다. 아래 버튼을 눌러 입력 페이지로 이동한 후 다시 진행해 주세요. 입력하신 비밀번호와 인증 코드는 처리되지 않았습니다.',
-                    retry_url=request.path)
+    connection_flow = route in recovery
+    response = page(request, '연결 화면을 다시 열어 주세요' if connection_flow else '다시 시도해 주세요',
+                    notice=('연결 요청을 확인하지 못했습니다. 아래 버튼으로 연결 화면을 다시 연 뒤 계정 연결을 눌러 주세요. 이번 연결 요청은 처리되지 않았습니다.' if connection_flow else
+                        '요청을 확인하는 과정에서 문제가 발생했습니다. 아래 버튼을 눌러 입력 페이지로 이동한 후 다시 진행해 주세요. 입력하신 비밀번호와 인증 코드는 처리되지 않았습니다.'),
+                    retry_url=reverse(recovery[route]) if connection_flow else request.path)
     response.status_code = 403
     response['Referrer-Policy'] = 'same-origin'
     return response
