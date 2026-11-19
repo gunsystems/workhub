@@ -304,6 +304,13 @@ class TeamsTests(TestCase):
         self.assertEqual(manifest['permissions'], [])
         self.assertNotIn('webApplicationInfo', manifest)
         self.assertEqual(set(package.namelist()), {'manifest.json', 'color.png', 'outline.png'})
+        from PIL import Image
+        color = Image.open(io.BytesIO(package.read('color.png')))
+        outline = Image.open(io.BytesIO(package.read('outline.png'))).convert('RGBA')
+        self.assertEqual(color.size, (192, 192))
+        self.assertEqual(outline.size, (32, 32))
+        self.assertGreater(sum(pixel[3] == 0 for pixel in outline.get_flattened_data()), 512)
+        self.assertTrue(all(pixel[:3] == (255, 255, 255) for pixel in outline.get_flattened_data()))
 
     def test_proposal_pending_only_current_turn_and_mail_preserved(self):
         from .proposals import event
