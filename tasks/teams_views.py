@@ -34,7 +34,7 @@ def authentication_failure_reason(error):
     if type(error) is ValueError:
         allowed = {'activity', 'disabled', 'bearer', 'token', 'algorithm', 'keys',
                    'endorsement', 'service', 'service claim', 'scope', 'conversation'}
-        if error.args and error.args[0] in allowed:
+        if error.args and isinstance(error.args[0], str) and error.args[0] in allowed:
             return error.args[0]
     name = type(error).__name__
     return name if name in {'InvalidAudienceError', 'InvalidIssuerError',
@@ -205,3 +205,4 @@ def messages(request):
     except IntegrityError:
         return JsonResponse({})
     return JsonResponse({})
+
