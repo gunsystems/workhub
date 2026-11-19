@@ -15,6 +15,8 @@ from django.core.cache import cache
 
 KEYS_URL = 'https://login.botframework.com/v1/.well-known/keys'
 ISSUER = 'https://api.botframework.com'
+MAX_KEYS_BYTES = 2 * 1024 * 1024
+MAX_SIGNING_KEYS = 1024
 
 
 def config():
@@ -46,12 +48,20 @@ def _keys(refresh=False):
     key = 'workhub:teams:signing-keys:v1'
     keys = None if refresh else cache.get(key)
     if keys is None:
-        response = requests.get(KEYS_URL, timeout=5, allow_redirects=False)
-        response.raise_for_status()
-        if response.status_code != 200 or len(response.content) > 100000:
-            raise ValueError('keys')
-        keys = response.json()['keys']
-        if not isinstance(keys, list) or len(keys) > 100:
+        # Microsoft's rolling key set can contain hundreds of endorsed keys.
+        # Bound the streamed body before parsing, without truncating valid rotations.
+        with requests.get(KEYS_URL, timeout=5, allow_redirects=False, stream=True) as response:
+            response.raise_for_status()
+            if response.status_code != 200:
+                raise ValueError('keys')
+            body = bytearray()
+            for chunk in response.iter_content(chunk_size=16384):
+                body.extend(chunk)
+                if len(body) > MAX_KEYS_BYTES:
+                    raise ValueError('keys')
+            keys = json.loads(body)['keys']
+        if not isinstance(keys, list) or not keys or len(keys) > MAX_SIGNING_KEYS or any(
+                not isinstance(key, dict) for key in keys):
             raise ValueError('keys')
         cache.set(key, keys, 3600)
     return keys
