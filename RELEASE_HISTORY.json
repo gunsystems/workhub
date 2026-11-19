@@ -3,8 +3,42 @@
   "timezone": "Asia/Seoul",
   "releases": [
     {
+      "version": "0.34.1",
+      "status": "deployed_microsoft_setup_pending",
+      "summary": "Teams 개인 업무 배정·전자결재·처리 결과 알림 및 이관 결재 보완",
+      "release_notes": "releases/v0.34.1.md",
+      "commit": "9cde825d9f70dfcdee03e7a5f4449a6a652150c8",
+      "deploy": "dep-dbv9jll6e07s73b66er0",
+      "verification": {
+        "full_django_tests": 971,
+        "node_checks": 13,
+        "ci_run": 44473105783,
+        "ci_job": 135387081939,
+        "focused_transfer_tests": 3,
+        "security": "RS256, fixed issuer and key source, Teams key endorsement, audience, validity, signed service URL, tenant and personal scope. One-use linking, immutable identity checks, live access/approval turn checks, deduplication, opt-in and conservative uncertain-delivery handling.",
+        "live": "Render live and health version/commit checked. Teams remains disabled. Azure subscription, dedicated notification app, credentials, Teams installation and representative-only live delivery test remain pending. Existing Hiworks/mail unchanged. No Microsoft grants or employee messages performed."
+      },
+      "rollback_commit": "5e975965288bbcb5ebd736d53a08ab6c98092d3f"
+    },
+    {
+      "version": "0.34.0",
+      "status": "superseded_microsoft_setup_pending",
+      "summary": "Teams 개인 알림 기본 연결·발송 대기열·설정 화면",
+      "release_notes": "releases/v0.34.0.md",
+      "commit": "5e975965288bbcb5ebd736d53a08ab6c98092d3f",
+      "deploy": "dep-dbv9bot6e07s73b5f54g",
+      "verification": {
+        "full_django_tests": 969,
+        "node_checks": 13,
+        "ci_run": 44470862201,
+        "ci_job": 135379695848,
+        "live": "Health 0.34.0 / 5e97596 / ok and public Teams privacy page confirmed. Sending disabled; Microsoft configuration pending."
+      },
+      "rollback_commit": "f5301fdc886e5f2736e25554476ad70c455ba356"
+    },
+    {
       "version": "0.33.4",
-      "status": "deployed_employee_retest_pending",
+      "status": "deployed_affected_employee_confirmed",
       "summary": "직원 문서 연결 HTTPS 출처 확인·CSRF 오류 복귀 보완",
       "release_notes": "releases/v0.33.4.md",
       "commit": "f5301fdc886e5f2736e25554476ad70c455ba356",
@@ -16,7 +50,8 @@
         "ci_job": 134616532894,
         "production_evidence": "Server access logs showed rejected document connect POST 403 followed by retry GET 405. Shared document form response used no-referrer. Updated same-origin form provenance and safe GET recovery without bypassing CSRF, tenant, identity or selected-site checks.",
         "security": "Three independent test users, same-origin HTTPS Referer-only POST, stale CSRF recovery and new explicit POST passed; foreign/null Origin and missing cookie remain rejected. GET connection recovery does not start OAuth. External document/OAuth callback no-referrer retained.",
-        "live": "Render deployment live. User arranged affected employee direct test; no employee credentials requested or impersonated. Individual Microsoft login, selected-site access and file opening for all employees remain pending actual user confirmation. No document access grants or account permission changes."
+        "live": "Render deployment live. User arranged affected employee direct test; no employee credentials requested or impersonated. Individual Microsoft login, selected-site access and file opening for all employees remain pending actual user confirmation. No document access grants or account permission changes.",
+        "user_retest": "User confirmed the affected employee document connection works normally. Other employee accounts and live coauthoring remain independently unverified."
       },
       "rollback_commit": "51833693c4c4ec18def53467963f85ef2ebf7ef1"
     },
