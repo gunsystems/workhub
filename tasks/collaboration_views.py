@@ -65,7 +65,7 @@ def notifications(request):
     personal=PersonalReminder.objects.filter(card__column__board__owner=request.user,delivered_at__isnull=False).select_related('card').order_by('-delivered_at','-pk')
     from .models import RequestNotification
     from .permissions import visible_requests
-    notices=RequestNotification.objects.filter(user=request.user,request__in=visible_requests(request.user)).select_related('request','event').order_by('-event__created_at','-pk')
+    notices=RequestNotification.objects.filter(user=request.user,request__in=visible_requests(request.user)).select_related('request','request__task','event').order_by('-event__created_at','-pk')
     from .models import QuickDelivery
     from .quick import visible as visible_quick
     quick_items=QuickDelivery.objects.filter(user=request.user,channel='app',event__request__in=visible_quick(request.user)).select_related('event__request').order_by('-event__created_at','-pk')
@@ -85,6 +85,11 @@ def notifications(request):
     from .models import ProposalNotice
     from .proposals import visible as visible_proposals
     proposal_items=ProposalNotice.objects.filter(user=request.user,event__proposal__in=visible_proposals(request.user)).select_related('event__proposal')[:100]
+    from .proposals import pending_for as pending_proposals
+    from .permissions import profile
+    current_proposal_ids=set(pending_proposals(profile(request.user)).values_list('pk',flat=True))
+    for row in proposal_items:
+        row.actionable=bool(row.kind=='pending' and row.event.proposal_id in current_proposal_ids and str(row.event.snapshot.get('revision',row.event.proposal.revision))==str(row.event.proposal.revision))
     from .models import CertificateNotice
     from .certificates import visible as certificate_visible
     certificate_items=CertificateNotice.objects.filter(user=request.user,event__request__in=certificate_visible(request.user)).select_related('event__request')[:100]

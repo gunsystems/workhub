@@ -4,7 +4,7 @@
 <section class="notification-feed" aria-label="최신순 업무 알림">
 {% for item in notification_feed %}<article class="notification-entry">
 <div class="notification-entry-content"><div class="notification-entry-meta"><span class="notification-kind">{{ item.kind }}</span>{% if item.unread %}<span class="notification-new">새 알림</span>{% endif %}<time datetime="{{ item.at|date:'c' }}">{{ item.at|date:'Y-m-d H:i' }}</time></div>
-<h2>{{ item.title }}</h2><p class="notification-entry-message">{{ item.message }}</p>{% if item.detail %}<p class="notification-entry-detail">{{ item.detail }}</p>{% endif %}{% if item.closed %}<span class="notification-closed">처리 종료</span>{% endif %}</div>
+<h2>{{ item.title }}</h2><p class="notification-entry-message">{{ item.message }}</p>{% if item.detail %}<p class="notification-entry-detail">{{ item.detail }}</p>{% endif %}{% if item.closed %}<span class="notification-closed">{{ item.status_label }}</span>{% endif %}</div>
 {% if item.url %}<div class="notification-entry-action">{% if item.post %}<form method="post" action="{{ item.url }}">{% csrf_token %}<button class="button">{{ item.button }}</button></form>{% else %}<a class="button" href="{{ item.url }}">{{ item.button }}</a>{% endif %}</div>{% endif %}
 </article>{% empty %}<div class="notification-empty"><h2>새로운 알림이 없습니다.</h2><p>업무가 배정되거나 결재·신청에 변경 사항이 생기면 이곳에서 확인할 수 있습니다.</p></div>{% endfor %}
 </section>{% endblock %}

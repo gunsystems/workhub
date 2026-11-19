@@ -12,8 +12,8 @@ class FeedOrderingTests(SimpleTestCase):
     def test_mixed_types_use_notification_time_not_type_or_future_schedule(self):
         now = timezone.now()
         work = Row(pk=1, created_at=now, read_at=None, message='배정 안내', task=Row(title='최신 업무'))
-        proposal = Row(pk=1, created_at=now-timedelta(hours=1), read_at=now,
-            message='승인 결과', event=Row(proposal=Row(pk=9,title='장비 구매',get_state_display=lambda:'승인 완료')))
+        proposal = Row(pk=1, kind='result', created_at=now-timedelta(hours=1), read_at=now,
+            message='승인 결과', event=Row(proposal=Row(pk=9,state='approved',title='장비 구매',get_state_display=lambda:'승인 완료')))
         personal = Row(pk=1, delivered_at=now-timedelta(hours=2), scheduled_for=now+timedelta(days=3),
             read_at=None, card=Row(title='다음 주 일정'))
         rows = build_feed(work=[work],proposals=[proposal],personal=[personal],requests=[],quick=[],followups=[],leave=[],certificates=[])
@@ -30,6 +30,34 @@ class FeedOrderingTests(SimpleTestCase):
         self.assertEqual(result['title'],'직원 · 계정 정리')
         self.assertEqual(result['url'],'')
         self.assertFalse(result['unread'])
+
+    def test_pending_proposal_uses_current_terminal_state(self):
+        for state, label in [('approved','승인 완료'),('rejected','반려'),('withdrawn','회수')]:
+            with self.subTest(state=state):
+                row=Row(pk=1,kind='pending',created_at=timezone.now(),read_at=None,
+                    actionable=False,message='품의 결재가 필요합니다.',event=Row(proposal=Row(
+                        pk=9,state=state,title='구매',get_state_display=lambda:label)))
+                result=build_feed(work=[],personal=[],requests=[],quick=[],followups=[],leave=[],proposals=[row],certificates=[])[0]
+                self.assertTrue(result['closed'])
+                self.assertFalse(result['unread'])
+                self.assertEqual(result['status_label'],label)
+                self.assertNotIn('결재가 필요',result['message'])
+                self.assertEqual(result['button'],'처리 결과 보기')
+                self.assertEqual(result['url'],'/work/approvals/proposals/9/')
+
+    def test_current_pending_is_actionable_but_previous_step_is_closed(self):
+        row=Row(pk=1,kind='pending',created_at=timezone.now(),read_at=None,
+            actionable=True,message='품의 결재가 필요합니다.',event=Row(proposal=Row(
+                pk=9,state='pending',title='구매',get_state_display=lambda:'결재 중')))
+        def result():
+            return build_feed(work=[],personal=[],requests=[],quick=[],followups=[],leave=[],proposals=[row],certificates=[])[0]
+        self.assertFalse(result()['closed'])
+        self.assertTrue(result()['unread'])
+        self.assertEqual(result()['message'],row.message)
+        row.actionable=False
+        self.assertTrue(result()['closed'])
+        self.assertEqual(result()['status_label'],'내 처리 종료')
+        self.assertNotIn('결재가 필요',result()['message'])
 
 
 @override_settings(WORKHUB_REQUIRE_HIWORKS=False,WORKHUB_SCHEDULER_ENABLED=False)
@@ -81,3 +109,15 @@ class NotificationFeedTests(TestCase):
         self.assertEqual(self.client.post(action).status_code,302)
         notice.refresh_from_db();self.assertIsNotNone(notice.read_at)
 
+    def test_completed_pending_notice_is_rendered_without_stale_call_to_action(self):
+        notice=self.proposal_notice(self.employee,'승인된 구매 품의',timezone.now())
+        notice.kind='pending';notice.message='품의 결재가 필요합니다.';notice.save()
+        response=self.client.get('/work/notifications/')
+        self.assertContains(response,'승인 완료')
+        self.assertContains(response,'처리 결과 보기')
+        self.assertNotContains(response,'품의 결재가 필요합니다.')
+        row=response.context['notification_feed'][0]
+        self.assertTrue(row['closed']);self.assertFalse(row['unread'])
+        notice.refresh_from_db()
+        self.assertIsNone(notice.read_at)
+        self.assertEqual(notice.message,'품의 결재가 필요합니다.')
