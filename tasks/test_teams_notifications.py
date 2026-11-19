@@ -371,6 +371,55 @@ class TeamsTests(TestCase):
         record(task, self.other, 'approved', '승인')
         self.assertEqual(TeamsDelivery.objects.filter(kind='pending').count(), 2)
 
+    def test_transfer_approval_and_result_keep_current_access(self):
+        from .models import TaskTransfer, TransferStep
+        from .transfers import event
+        self.link(self.other)
+        self.link(self.admin)
+        reviewer = Employee.objects.create(user=self.admin, name='대표', department=self.employee.department, position='executive')
+        task = self.task()
+        item = TaskTransfer.objects.create(task=task, source=self.employee, target=self.approver,
+            requester=self.user, reason='비공개 이관 사유')
+        step = TransferStep.objects.create(transfer=item, approver=reviewer, position=1, label='대표')
+        event(item, self.user, '이관 요청')
+        job = TeamsDelivery.objects.get()
+        self.assertEqual(job.user_id, self.admin.pk)
+        self.assertIsNotNone(notices.destination(job))
+        step.decision = 'approved'
+        step.save()
+        item.state = 'acceptance'
+        item.revision += 1
+        item.save()
+        self.assertIsNone(notices.destination(job))
+        event(item, self.admin, '이관 승인')
+        self.assertEqual(set(TeamsDelivery.objects.filter(kind='result').values_list('user_id', flat=True)), {self.user.pk, self.other.pk})
+        self.assertTrue(all(notices.destination(row) for row in TeamsDelivery.objects.filter(kind='result')))
+
+    def test_transfer_next_approver_only_and_withdrawn_queue_skipped(self):
+        from .models import TaskTransfer, TransferStep
+        from .transfers import event
+        self.link(self.other)
+        self.link(self.admin)
+        reviewer = Employee.objects.create(user=self.admin, name='대표', department=self.employee.department, position='executive')
+        target = Employee.objects.create(name='인수 직원', department=self.employee.department)
+        item = TaskTransfer.objects.create(task=self.task(), source=self.employee, target=target,
+            requester=self.user, reason='이관')
+        first = TransferStep.objects.create(transfer=item, approver=self.approver, position=1, label='1차')
+        TransferStep.objects.create(transfer=item, approver=reviewer, position=2, label='2차')
+        event(item, self.user, '이관 요청')
+        self.assertEqual(TeamsDelivery.objects.get().user_id, self.other.pk)
+        first.decision = 'approved'
+        first.save()
+        item.revision += 1
+        item.save()
+        event(item, self.other, '1차 승인')
+        second = TeamsDelivery.objects.get(user=self.admin)
+        self.assertIsNotNone(notices.destination(second))
+        item.state = 'withdrawn'
+        item.revision += 1
+        item.save()
+        self.assertIsNone(notices.destination(second))
+
     def test_leave_pending_and_result_keep_existing_mail_outbox(self):
         from .models import LeaveRequest, LeaveApproval, LeaveEvent, LeaveNotice
         from .leave_notifications import enqueue

@@ -56,6 +56,9 @@ def notice(row):
 def task_event(event):
     if not transport.enabled():
         return
+    if event.kind == 'handover' and event.snapshot.get('transfer_id'):
+        transfer_event(event)
+        return
     task = event.task
     if event.kind not in ('submitted', 'approved', 'returned', 'override', 'handover'):
         return
@@ -83,9 +86,40 @@ def quick_event(event):
         enqueue(user_id, 'quick', event.pk, 'result', {'revision': item.revision})
 
 
+def transfer_event(event):
+    from .models import TaskTransfer
+    from .transfers import current_step
+    item = TaskTransfer.objects.select_related('source', 'target').filter(pk=event.snapshot['transfer_id'], task_id=event.task_id).first()
+    if not item:
+        return
+    data = {'transfer': item.pk, 'revision': item.revision, 'state': item.state}
+    step = current_step(item) if item.state == 'pending' else None
+    if step:
+        enqueue(step.approver.user_id, 'transfer', event.pk, 'pending', data,
+                dedupe_key=f'transfer-turn:{item.pk}:{step.pk}:{step.approver.user_id}')
+    elif item.state in ('acceptance', 'done', 'rejected', 'withdrawn'):
+        for user_id in {item.requester_id, item.source.user_id, item.target.user_id}:
+            enqueue(user_id, 'transfer', event.pk, 'result', data)
+
+
 def destination(job):
     """Recheck live authorization and current approval turn; never trust a stored URL."""
     user = job.user
+    if job.source == 'transfer':
+        from .models import TaskEvent
+        from .transfers import visible, current_step, can_decide, ACTIVE
+        event = TaskEvent.objects.filter(pk=job.source_id).first()
+        item = visible(user).filter(pk=job.snapshot.get('transfer'), revision=job.snapshot.get('revision'),
+                                    state=job.snapshot.get('state')).select_related('source', 'target').first()
+        if not event or not item or event.task_id != item.task_id or event.snapshot.get('transfer_id') != item.pk:
+            return None
+        if job.kind == 'pending':
+            step = current_step(item) if item.state == 'pending' else None
+            if not step or step.approver.user_id != user.pk or not can_decide(user, item) or item.task.status not in ACTIVE:
+                return None
+        elif user.pk not in {item.requester_id, item.source.user_id, item.target.user_id}:
+            return None
+        return ('업무 이관 결재가 필요합니다.' if job.kind == 'pending' else '업무 이관 처리 결과를 확인해 주세요.'), reverse('transfer_detail', args=[item.pk])
     if job.source == 'assignment':
         from .models import Task
         from .permissions import visible_tasks
