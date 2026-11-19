@@ -2,6 +2,7 @@
 import hashlib
 import io
 import json
+import logging
 import re
 import secrets
 from datetime import timedelta
@@ -24,6 +25,22 @@ from django.views.decorators.http import require_POST, require_http_methods
 from accounts.lifecycle import account_allowed, system_admin
 from .models import TeamsConnection, TeamsDelivery
 from . import teams_transport as transport
+
+logger = logging.getLogger(__name__)
+
+
+def authentication_failure_reason(error):
+    """Bounded diagnostic only: never log tokens, activities or exception text."""
+    if type(error) is ValueError:
+        allowed = {'activity', 'disabled', 'bearer', 'token', 'algorithm', 'keys',
+                   'endorsement', 'service', 'service claim', 'scope', 'conversation'}
+        if error.args and error.args[0] in allowed:
+            return error.args[0]
+    name = type(error).__name__
+    return name if name in {'InvalidAudienceError', 'InvalidIssuerError',
+        'ExpiredSignatureError', 'InvalidSignatureError', 'MissingRequiredClaimError',
+        'ImmatureSignatureError', 'DecodeError', 'HTTPError', 'ConnectionError',
+        'Timeout', 'ReadTimeout', 'ConnectTimeout', 'SSLError'} else 'invalid'
 
 
 def verified_user(user):
@@ -145,7 +162,8 @@ def messages(request):
         if not isinstance(activity, dict):
             raise ValueError('activity')
         tenant, app, service, conversation = transport.validate_activity(request.headers.get('Authorization'), activity)
-    except Exception:
+    except Exception as error:
+        logger.warning('teams_auth_rejected reason=%s', authentication_failure_reason(error))
         return HttpResponse(status=401)
     kind = activity.get('type')
     if kind == 'installationUpdate' and activity.get('action') == 'remove':
