@@ -350,6 +350,20 @@ class TeamsTests(TestCase):
         record(item, self.user, '결과 회신')
         self.assertTrue(TeamsDelivery.objects.filter(user=self.other, kind='result').exists())
 
+    def test_parallel_approval_stage_notifies_each_person_once(self):
+        from .workflow import record
+        self.link(self.other)
+        self.link(self.admin)
+        task = self.task(status='review', report_round=1)
+        first = ApprovalStep.objects.create(task=task, approver=self.other, approver_name='팀장', position=1, stage=1, decision='pending')
+        ApprovalStep.objects.create(task=task, approver=self.admin, approver_name='검토자', position=2, stage=1, decision='pending')
+        record(task, self.user, 'submitted', '완료 보고')
+        self.assertEqual(TeamsDelivery.objects.filter(kind='pending').count(), 2)
+        first.decision = 'approved'
+        first.save()
+        record(task, self.other, 'approved', '승인')
+        self.assertEqual(TeamsDelivery.objects.filter(kind='pending').count(), 2)
+
     def test_leave_pending_and_result_keep_existing_mail_outbox(self):
         from .models import LeaveRequest, LeaveApproval, LeaveEvent, LeaveNotice
         from .leave_notifications import enqueue

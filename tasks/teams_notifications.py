@@ -26,13 +26,13 @@ def eligible(connection):
         user.email.casefold() == access.email.casefold() == connection.email.casefold() and account_allowed(user))
 
 
-def enqueue(user_id, source, source_id, kind, snapshot=None, key=''):
+def enqueue(user_id, source, source_id, kind, snapshot=None, key='', dedupe_key=''):
     if not transport.enabled() or kind not in ('assignment', 'pending', 'result') or not user_id:
         return
     connection = TeamsConnection.objects.select_related('user').filter(user_id=user_id).first()
     if not connection or not eligible(connection) or not getattr(connection, kind):
         return
-    return TeamsDelivery.objects.get_or_create(dedupe_key=f'{source}:{source_id}:{key}:{kind}:{user_id}', defaults={
+    return TeamsDelivery.objects.get_or_create(dedupe_key=dedupe_key or f'{source}:{source_id}:{key}:{kind}:{user_id}', defaults={
         'user_id': user_id, 'connection_generation': connection.generation,
         'source': source, 'source_id': source_id, 'kind': kind, 'snapshot': snapshot or {}})[0]
 
@@ -63,7 +63,8 @@ def task_event(event):
         step = task.approval_steps.exclude(decision='approved').first()
         if step:
             for user_id in task.approval_steps.filter(stage=step.stage).exclude(decision='approved').values_list('approver_id', flat=True):
-                enqueue(user_id, 'task_event', event.pk, 'pending', {'round': task.report_round})
+                enqueue(user_id, 'task_event', event.pk, 'pending', {'round': task.report_round},
+                        dedupe_key=f'task-turn:{task.pk}:{task.report_round}:{step.stage}:{user_id}')
     if task.status == 'done' or event.kind == 'returned' or (event.kind == 'override' and event.snapshot.get('decision') == 'return'):
         assignee_user = task.assignee.user_id if task.assignee_id else None
         users = set(task.participants.values_list('user_id', flat=True)) | {assignee_user, task.creator_id}
