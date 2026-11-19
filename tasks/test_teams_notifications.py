@@ -32,9 +32,12 @@ SERVICE = 'https://smba.trafficmanager.net/apac/'
     WORKHUB_BASE_URL='https://workhub.example.test')
 class TeamsTests(TestCase):
     def test_profile_settings_and_guide_use_own_connection_only(self):
-        response = self.client.get(reverse('my_information'))
-        self.assertContains(response, 'Teams 연결 · 알림 설정')
-        self.assertContains(response, 'Teams 미팅 연결')
+        profile_response = self.client.get(reverse('my_information'))
+        self.assertNotContains(profile_response, 'id="teams-settings"')
+        response = self.client.get(reverse('account_connections'))
+        self.assertContains(response, '계정 연결 · 알림 설정')
+        self.assertContains(response, 'Teams 온라인 미팅')
+        self.assertNotContains(response, '디지털 사원카드')
         self.assertEqual(response.context['teams_settings']['connection'].user_id, self.user.pk)
         self.assertTrue(response.context['teams_settings']['linked'])
         self.assertNotIn('/work/teams/', [entry['href'] for group in response.context['nav_groups'] for entry in group['items']])
@@ -55,7 +58,7 @@ class TeamsTests(TestCase):
 
     def test_settings_return_to_profile_and_guide_has_plain_text_copy(self):
         response = self.client.post(reverse('teams_preferences'), {'action': 'save', 'enabled': 'on', 'assignment': 'on'})
-        self.assertRedirects(response, reverse('my_information') + '?teams=saved#teams-settings', fetch_redirect_response=False)
+        self.assertRedirects(response, reverse('account_connections') + '?teams=saved#teams-settings', fetch_redirect_response=False)
         response = self.client.post(reverse('teams_preferences'), {'action': 'link'})
         self.assertContains(response, '연결 문구 복사')
         self.assertContains(response, '나와의 채팅')

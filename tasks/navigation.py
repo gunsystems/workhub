@@ -67,7 +67,8 @@ def navigation(request):
             for entry in group['items']:
                 if entry['href']=='/work/':entry['active']=False
     current=next((i['label'] for group in groups for i in group['items'] if i['active']),'업무 공간')
-    if path=='/work/teams/': current='내 정보 · Teams 연결'
+    if path=='/work/teams/': current='계정 연결 · Teams 안내'
+    elif path=='/accounts/connections/': current='계정 연결 · 알림 설정'
     elif path=='/accounts/me/': current='내 정보'
     elif path=='/work/register/': current='업무 등록'
     elif path=='/work/calendar/subscription/': current='하이웍스 일정 연결'

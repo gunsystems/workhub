@@ -1,10 +1,10 @@
 {% extends 'tasks/base.html' %}{% load static %}{% block content %}
 <script src="{% static 'tasks/teams_connection.js' %}" defer></script>
 <section class="heading"><div><h1>Teams 알림 연결 안내</h1><p>처음 한 번만 연결하면 업무 배정과 결재 알림을 회사 Teams에서 받을 수 있습니다.</p></div></section>
-<p><a class="button" href="{% url 'my_information' %}#teams-settings">← 내 정보 · 알림 설정</a></p>
-<section class="detail" data-teams-guide data-status-url="{% url 'teams_connection_status' %}" data-profile-url="{% url 'my_information' %}#teams-settings">
+<p><a class="button" href="{% url 'account_connections' %}#teams-settings">← 계정 연결 · 알림 설정</a></p>
+<section class="detail" data-teams-guide data-status-url="{% url 'teams_connection_status' %}" data-profile-url="{% url 'account_connections' %}#teams-settings">
 {% if error %}<p role="alert">{{ error }}</p>{% endif %}
-{% if linked and not code %}<h2>✓ 내 Teams 계정 연결됨</h2><p>내 정보에서 알림을 켜거나 받을 알림 종류를 변경하세요.</p><a class="button primary" href="{% url 'my_information' %}#teams-settings">내 정보에서 알림 설정</a>
+{% if linked and not code %}<h2>✓ 내 Teams 계정 연결됨</h2><p>연결 설정에서 알림을 켜거나 받을 알림 종류를 변경하세요.</p><a class="button primary" href="{% url 'account_connections' %}#teams-settings">연결 설정에서 알림 설정</a>
 <details><summary>다른 회사 Teams 계정으로 다시 연결</summary><p>현재 계정을 변경해야 할 때만 새 연결 문구를 발급하세요.</p><form method="post">{% csrf_token %}<input type="hidden" name="action" value="link"><button class="button">연결 문구 다시 받기</button></form></details>
 {% elif ready %}
 <h2>1. 회사 Teams에서 Workhub 알림을 여세요</h2><p>개인 Microsoft 계정이 아닌 <strong>회사 또는 학교 계정</strong>을 선택하세요.</p>

@@ -1,21 +1,13 @@
-<section id="teams-settings" class="detail" aria-labelledby="teams-settings-title">
-<h2 id="teams-settings-title">Teams 연결 · 알림 설정</h2>
-{% if request.GET.teams == 'saved' %}<p role="status">Teams 설정을 저장했습니다.</p>{% endif %}
-<p>업무 배정, 내 결재 차례와 처리 결과를 회사 Teams에서 받아보세요.</p>
-<p><strong>{% if teams_settings.linked %}✓ 알림 연결됨{% else %}알림 연결 전{% endif %}</strong></p>
-<p><a class="button" href="{% url 'teams_preferences' %}">{% if teams_settings.linked %}연결 안내 · 다시 연결{% else %}Teams 알림 연결하기{% endif %}</a></p>
-{% if not teams_settings.linked %}<p>연결하기를 누르면 회사 Teams 앱 추가부터 연결 완료까지 순서대로 안내합니다.</p>{% endif %}
-{% if teams_settings.ready %}<form method="post" action="{% url 'teams_preferences' %}">{% csrf_token %}<input type="hidden" name="action" value="save">
-<p><label><input type="checkbox" name="enabled" {% if teams_settings.connection.enabled %}checked{% endif %}> Teams 알림 받기</label></p>
-<details><summary>받을 알림 종류</summary>
-<p><label><input type="checkbox" name="assignment" {% if teams_settings.connection.assignment %}checked{% endif %}> 업무 배정</label></p>
-<p><label><input type="checkbox" name="pending" {% if teams_settings.connection.pending %}checked{% endif %}> 결재·서류 처리 대기</label></p>
-<p><label><input type="checkbox" name="result" {% if teams_settings.connection.result %}checked{% endif %}> 처리 결과</label></p></details>
-<p><button class="button primary">알림 설정 저장</button></p></form>
-<p>연결과 수신 설정을 마친 뒤 새로 발생하는 알림부터 받습니다. 기존 업무 알림과 메일도 계속 이용할 수 있습니다.</p>
-{% else %}<p>Teams 알림은 준비 중입니다. 이용 가능해지면 회사에서 안내해 드립니다.</p>{% endif %}
-<details><summary>미팅 연결 · 알림 연결 해제</summary>
-<p>온라인 미팅 링크 자동 생성은 알림과 별도로 연결합니다. 미팅을 주최하는 경우에만 설정하세요.</p>
-<p><a class="button" href="{% url 'microsoft_settings' %}">Teams 미팅 연결</a></p>
-{% if teams_settings.linked %}<form method="post" action="{% url 'teams_preferences' %}">{% csrf_token %}<input type="hidden" name="action" value="disconnect"><button class="button">Teams 알림 연결 해제</button></form>{% endif %}
-</details></section>
+<section id="teams-settings" class="notification-panel" aria-labelledby="teams-settings-title">
+<header class="notification-panel-header"><h2 id="teams-settings-title">받을 알림</h2><p>Teams로 받을 업무 알림을 선택하세요. 연결 안내는 위의 Teams 업무 알림 카드에서 확인할 수 있습니다.</p></header>
+{% if request.GET.teams == 'saved' %}<p class="notification-notice" role="status">알림 설정을 저장했습니다.</p>{% endif %}
+{% if teams_settings.ready %}<form class="notification-form" method="post" action="{% url 'teams_preferences' %}">{% csrf_token %}<input type="hidden" name="action" value="save">
+<label class="notification-toggle"><span><strong>Teams 알림 받기</strong><small>{% if teams_settings.linked %}회사 Teams의 Workhub 알림 채팅으로 받습니다.{% else %}먼저 위의 Teams 업무 알림을 연결해 주세요.{% endif %}</small></span><input type="checkbox" name="enabled" {% if teams_settings.connection.enabled %}checked{% endif %}></label>
+<fieldset class="notification-choices"><legend>알림 종류</legend><div class="notification-choice-grid">
+<label><input type="checkbox" name="assignment" {% if teams_settings.connection.assignment %}checked{% endif %}> 업무 배정</label>
+<label><input type="checkbox" name="pending" {% if teams_settings.connection.pending %}checked{% endif %}> 결재·서류 처리 대기</label>
+<label><input type="checkbox" name="result" {% if teams_settings.connection.result %}checked{% endif %}> 처리 결과</label></div></fieldset>
+<div class="notification-actions"><p>연결과 수신 설정을 마친 뒤 새로 발생하는 알림부터 받습니다.<br>기존 업무 알림과 메일도 계속 이용할 수 있습니다.</p><button class="button primary">알림 설정 저장</button></div></form>
+{% else %}<p class="notification-notice">Teams 알림은 준비 중입니다. 이용 가능해지면 회사에서 안내해 드립니다.</p>{% endif %}
+{% if teams_settings.linked %}<details class="notification-disconnect"><summary>Teams 알림 연결 해제</summary><p>연결을 해제하면 Teams 업무 알림 수신이 중지됩니다. 미팅이나 공동문서 연결은 유지됩니다.</p><form method="post" action="{% url 'teams_preferences' %}">{% csrf_token %}<input type="hidden" name="action" value="disconnect"><button class="button">Teams 알림 연결 해제</button></form></details>{% endif %}
+</section>
