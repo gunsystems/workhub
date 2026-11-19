@@ -31,6 +31,33 @@ SERVICE = 'https://smba.trafficmanager.net/apac/'
     TEAMS_NOTIFICATION_APP_ID=APP, TEAMS_NOTIFICATION_CLIENT_SECRET='test-only',
     WORKHUB_BASE_URL='https://workhub.example.test')
 class TeamsTests(TestCase):
+    def key_response(self, payload):
+        response = Mock(status_code=200)
+        response.iter_content.return_value = [payload[i:i+16384] for i in range(0, len(payload), 16384)]
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        return response
+
+    def test_large_microsoft_rotation_keyset_is_accepted_and_cached(self):
+        keys = [{'kid': str(i), 'endorsements': ['msteams'], 'x5c': ['x' * 3500]} for i in range(222)]
+        response = self.key_response(json.dumps({'keys': keys}).encode())
+        with patch('tasks.teams_transport.requests.get', return_value=response) as get:
+            self.assertEqual(transport._keys(), keys)
+            self.assertEqual(transport._keys(), keys)
+        get.assert_called_once_with(transport.KEYS_URL, timeout=5, allow_redirects=False, stream=True)
+
+    def test_keyset_download_remains_bounded_and_invalid_data_is_not_cached(self):
+        for payload in (b'x' * (transport.MAX_KEYS_BYTES + 1),
+                        json.dumps({'keys': [{}] * (transport.MAX_SIGNING_KEYS + 1)}).encode(),
+                        b'{"keys":[null]}', b'{"keys":[]}'):
+            with self.subTest(size=len(payload)):
+                cache.clear()
+                response = self.key_response(payload)
+                with patch('tasks.teams_transport.requests.get', return_value=response):
+                    with self.assertRaises(ValueError):
+                        transport._keys()
+                self.assertIsNone(cache.get('workhub:teams:signing-keys:v1'))
+
     @classmethod
     def setUpTestData(cls):
         cls.user = get_user_model().objects.create_user('teams_member', email='member@example.test')
