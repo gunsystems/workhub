@@ -49,6 +49,26 @@ def verified_user(user):
                 access.email.casefold() == user.email.casefold())
 
 
+def personal_settings(user):
+    if not verified_user(user):
+        return None
+    connection = TeamsConnection.objects.filter(user=user).first() or TeamsConnection(user=user)
+    cfg = transport.config()
+    linked = bool(cfg and connection.connected_at and connection.conversation and
+                  (connection.tenant, connection.app) == cfg[:2] and connection.email.casefold() == user.email.casefold())
+    return {'connection': connection, 'ready': transport.enabled(), 'linked': linked}
+
+
+@never_cache
+@login_required
+@require_http_methods(['GET'])
+def connection_status(request):
+    state = personal_settings(request.user)
+    if state is None:
+        raise PermissionDenied
+    return JsonResponse({'linked': state['linked'] and not state['connection'].code_hash})
+
+
 @never_cache
 @login_required
 @require_http_methods(['GET', 'POST'])
@@ -81,7 +101,7 @@ def preferences(request):
                 error = '연결 준비 상태를 확인한 후 다시 시도해 주세요.'
             connection.save()
         if not code and not error:
-            return redirect('teams_preferences')
+            return redirect(reverse('my_information') + '?teams=saved#teams-settings')
     cfg = transport.config()
     linked = bool(cfg and connection.connected_at and connection.conversation and
                   (connection.tenant, connection.app) == cfg[:2] and connection.email.casefold() == request.user.email.casefold())
@@ -205,4 +225,3 @@ def messages(request):
     except IntegrityError:
         return JsonResponse({})
     return JsonResponse({})
-

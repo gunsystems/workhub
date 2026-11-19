@@ -27,7 +27,6 @@ def navigation(request):
         {'label':'알림','items':[
             item('공지사항','/work/notices/','bell',path.startswith('/work/notices/')),
             item('업무 알림','/work/notifications/','bell',path.startswith('/work/notifications/')),
-            item('Teams 알림','/work/teams/','bell',path.startswith('/work/teams/')),
             item('조치 필요','/alerts/','flag',path=='/alerts/',key='alerts')]},
     ]
     if user.is_superuser:
@@ -68,7 +67,8 @@ def navigation(request):
             for entry in group['items']:
                 if entry['href']=='/work/':entry['active']=False
     current=next((i['label'] for group in groups for i in group['items'] if i['active']),'업무 공간')
-    if path=='/accounts/me/': current='내 정보'
+    if path=='/work/teams/': current='내 정보 · Teams 연결'
+    elif path=='/accounts/me/': current='내 정보'
     elif path=='/work/register/': current='업무 등록'
     elif path=='/work/calendar/subscription/': current='하이웍스 일정 연결'
     elif path=='/work/calendar/': current='Google Calendar 연결'
