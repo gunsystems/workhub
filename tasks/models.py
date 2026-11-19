@@ -746,3 +746,4 @@ from .shared_document_models import DocumentConnection, SharedDocument, SharedDo
 from .document_permission_models import DocumentPermissionConnection, DocumentPermissionLease, DocumentAccessGroup, PermissionReportSnapshot, PermissionReportName, DocumentStaffGroup
 
 from .certificate_models import CertificatePolicy, CertificateRequest, CertificateEvent, CertificateNotice
+from .teams_models import TeamsConnection, TeamsDelivery

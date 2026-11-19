@@ -23,9 +23,12 @@ def enqueue(event):
         recipients.append((item.employee.user,'result',message))
     for user,kind,message in recipients:
         if not user.is_active:continue
-        LeaveNotice.objects.get_or_create(event=event,user=user,kind=kind,defaults={'message':message,'snapshot':{
+        row,created=LeaveNotice.objects.get_or_create(event=event,user=user,kind=kind,defaults={'message':message,'snapshot':{
           'name':item.employee.name,'department':str(item.employee.department),'start':str(item.start),'end':str(item.end),
           'kind':item.get_kind_display(),'days':str(item.days),'revision':item.revision,'email':user.email.lower()}})
+        if created:
+            from .teams_notifications import notice
+            notice(row)
 
 
 def actionable(row):

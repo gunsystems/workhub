@@ -27,6 +27,7 @@ def navigation(request):
         {'label':'알림','items':[
             item('공지사항','/work/notices/','bell',path.startswith('/work/notices/')),
             item('업무 알림','/work/notifications/','bell',path.startswith('/work/notifications/')),
+            item('Teams 알림','/work/teams/','bell',path.startswith('/work/teams/')),
             item('조치 필요','/alerts/','flag',path=='/alerts/',key='alerts')]},
     ]
     if user.is_superuser:
@@ -48,6 +49,7 @@ def navigation(request):
     administration=[]
     if system_admin(user):
         administration.append(item('직원 관리','/accounts/employees/','users',path.startswith('/accounts/employees/') or path=='/accounts/departments/' or path.startswith('/admin/tasks/employee/') or path.startswith('/work/leave/') or path.startswith('/work/offboarding/')))
+        administration.append(item('Teams 알림 관리','/work/teams/manage/','bell',path=='/work/teams/manage/'))
     if user.is_staff or user.is_superuser:
         administration.append(item('일정 · 업무 휴지통','/work/trash/','folder',path.startswith('/work/trash/')))
     if user.is_superuser:
@@ -56,6 +58,11 @@ def navigation(request):
         administration.append(item('하이웍스 자동 연동','/work/hiworks/','users',path=='/work/hiworks/'))
         administration.append(item('업무자료 저장소','/work/documents/storage/','folder',path=='/work/documents/storage/'))
     if administration: groups.append({'label':'관리자 전용','items':administration,'collapsible':True,'open':any(i['active'] for i in administration)})
+    if path.startswith('/work/teams/'):
+        for group in groups:
+            for entry in group['items']:
+                if entry['href']=='/work/': entry['active']=False
+                if path=='/work/teams/manage/' and entry['href']=='/work/teams/': entry['active']=False
     if path=='/work/documents/storage/' or path.startswith('/work/shared-documents/'):
         for group in groups:
             for entry in group['items']:

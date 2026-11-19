@@ -59,10 +59,13 @@ def event(item, user, label, body='', notify=''):
         users = [item.employee.user]
     for recipient in users:
         if recipient.is_active:
-            CertificateNotice.objects.get_or_create(event=row, user=recipient, kind=notify,
+            notification,created=CertificateNotice.objects.get_or_create(event=row, user=recipient, kind=notify,
                 defaults={'email': recipient.email.lower(), 'message':
                     '증명서·서류 신청을 처리해 주세요.' if notify == 'pending' else
                     ('신청한 서류가 발급되었습니다.' if item.state == 'issued' else '서류 신청 처리 결과를 확인해 주세요.')})
+            if created:
+                from .teams_notifications import notice
+                notice(notification)
     return row
 
 

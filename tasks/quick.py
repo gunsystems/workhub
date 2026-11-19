@@ -74,6 +74,8 @@ def record(item,user,action,body=''):
             if enabled:QuickDelivery.objects.get_or_create(event=event,user=recipient,channel=channel,defaults={'email':access.email})
     from .audit import write
     write('quick_change','QuickRequest',item.pk,item.title,actor=user,after={'state':item.state,'action':action,'revision':item.revision})
+    from .teams_notifications import quick_event
+    quick_event(event)
     return event
 
 
