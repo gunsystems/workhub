@@ -62,13 +62,13 @@ def official_list(request):
 @login_required
 def notifications(request):
     items=WorkNotification.objects.filter(user=request.user,task__in=visible_tasks(request.user)).select_related('task')
-    personal=PersonalReminder.objects.filter(card__column__board__owner=request.user,delivered_at__isnull=False).select_related('card')
+    personal=PersonalReminder.objects.filter(card__column__board__owner=request.user,delivered_at__isnull=False).select_related('card').order_by('-delivered_at','-pk')
     from .models import RequestNotification
     from .permissions import visible_requests
-    notices=RequestNotification.objects.filter(user=request.user,request__in=visible_requests(request.user)).select_related('request','event').order_by('-event__created_at')
+    notices=RequestNotification.objects.filter(user=request.user,request__in=visible_requests(request.user)).select_related('request','event').order_by('-event__created_at','-pk')
     from .models import QuickDelivery
     from .quick import visible as visible_quick
-    quick_items=QuickDelivery.objects.filter(user=request.user,channel='app',event__request__in=visible_quick(request.user)).select_related('event__request').order_by('-event__created_at')
+    quick_items=QuickDelivery.objects.filter(user=request.user,channel='app',event__request__in=visible_quick(request.user)).select_related('event__request').order_by('-event__created_at','-pk')
     from .models import OffboardingNotice, OffboardingEvent
     from django.db.models import Exists, OuterRef
     from .offboarding import visible_items
@@ -88,7 +88,10 @@ def notifications(request):
     from .models import CertificateNotice
     from .certificates import visible as certificate_visible
     certificate_items=CertificateNotice.objects.filter(user=request.user,event__request__in=certificate_visible(request.user)).select_related('event__request')[:100]
-    return render(request,'tasks/notifications.html',{'certificate_notifications':certificate_items,'proposal_notifications':proposal_items,'leave_notifications':leave_items,'followup_notifications':followups,'quick_notifications':quick_items[:100],'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]})
+    from .notification_feed import build_feed
+    context={'certificate_notifications':certificate_items,'proposal_notifications':proposal_items,'leave_notifications':leave_items,'followup_notifications':followups,'quick_notifications':quick_items[:100],'notifications':items[:100],'personal_notifications':personal[:100],'request_notifications':notices[:100]}
+    context['notification_feed']=build_feed(work=context['notifications'],personal=context['personal_notifications'],requests=context['request_notifications'],quick=context['quick_notifications'],followups=followups,leave=leave_items,proposals=proposal_items,certificates=certificate_items)
+    return render(request,'tasks/notifications.html',context)
 
 
 @login_required
