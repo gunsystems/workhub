@@ -6,3 +6,4 @@ qrcode[pil]==8.2
 cryptography==50.0.2
 google-auth==2.62.0
 requests==2.34.2
+PyJWT[crypto]==2.12.0

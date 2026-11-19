@@ -13,7 +13,13 @@ from . import calendar_quick
 from . import meetings, microsoft_meetings
 from . import transfers
 from . import shared_documents, shared_files, document_permissions, group_permissions, shared_history, permission_report
+from . import teams_views
 urlpatterns=[
+    path('teams/', teams_views.preferences, name='teams_preferences'),
+    path('teams/manage/', teams_views.administration, name='teams_administration'),
+    path('teams/manifest/', teams_views.manifest, name='teams_manifest'),
+    path('teams/privacy/', teams_views.privacy, name='teams_privacy'),
+    path('teams/messages/', teams_views.messages, name='teams_messages'),
     path('shared-documents/permissions/report/',permission_report.overview,name='permission_report'),
     path('shared-documents/permissions/report/status/',permission_report.status,name='permission_report_status'),
     path('shared-documents/permissions/report/refresh/',permission_report.refresh,name='permission_report_refresh'),

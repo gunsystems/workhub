@@ -43,6 +43,8 @@ def deliver_comment(mail):
 
 
 def enqueue(task, actor, employee_ids=None):
+    from .teams_notifications import assignment
+    assignment(task, employee_ids)
     if not task.assignment_email or task.status in ['draft', 'cancelled', 'done']:
         return
     ids = set(employee_ids) if employee_ids is not None else set(task.participants.values_list('pk', flat=True)) | {task.assignee_id}

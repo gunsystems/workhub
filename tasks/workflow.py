@@ -27,6 +27,8 @@ def record(task, user, kind, body, extra=None):
             previous={'confirmed_at':str(intake.confirmed_at),'confirmation_note':intake.confirmation_note}
             intake.confirmed_at=None;intake.confirmation_note='';intake.revision+=1;intake.save(update_fields=['confirmed_at','confirmation_note','revision'])
             event(intake,user,'결과 확인 재요청','수행 업무가 다시 진행되어 기존 결과 확인을 해제했습니다.',previous)
+    from .teams_notifications import task_event
+    task_event(result)
     return result
 
 

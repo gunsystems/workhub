@@ -1,0 +1,18 @@
+{% extends 'tasks/base.html' %}{% block content %}
+<section class="heading"><div><h1>Teams 알림</h1><p>업무 배정, 내 결재 차례와 처리 결과를 Teams에서 받아보세요. 알림을 누르면 Workhub에서 확인하고 처리할 수 있습니다.</p></div></section>
+<section class="detail"><h2>{% if linked %}✓ 내 Teams 계정 연결됨{% else %}내 Teams 계정 연결{% endif %}</h2>
+{% if error %}<p role="alert">{{ error }}</p>{% endif %}
+{% if ready %}{% if not linked %}<ol><li>Teams에서 회사 계정으로 로그인한 뒤 <a href="https://teams.microsoft.com/l/app/{{ teams_app }}" target="_blank" rel="noopener noreferrer">Workhub 알림 앱</a>을 추가하세요.</li><li>아래에서 연결 코드를 발급받고, Teams의 Workhub 알림 채팅에 붙여 넣으세요.</li><li>이 페이지를 다시 열어 연결 완료를 확인한 뒤 받을 알림을 켜세요.</li></ol>
+<p>앱이 보이지 않으면 관리자에게 문의하세요. 연결 코드는 본인만 사용하고 다른 사람에게 전달하지 마세요.</p>{% endif %}
+<form method="post">{% csrf_token %}<input type="hidden" name="action" value="link"><button class="button">{% if linked %}연결 코드 다시 발급{% else %}연결 코드 받기{% endif %}</button></form>
+{% if code %}<p>10분 안에 아래 문구를 Teams의 Workhub 알림 채팅에 붙여 넣으세요.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;user-select:all">연결 {{ code }}</pre><a class="button" href="{% url 'teams_preferences' %}">연결 완료 확인</a>{% endif %}
+{% else %}<p>Teams 알림을 준비하고 있습니다. 이용 가능해지면 회사에서 안내해 드립니다.</p>{% endif %}
+</section>
+<section class="detail"><h2>받을 알림</h2><form method="post">{% csrf_token %}<input type="hidden" name="action" value="save">
+<p><label><input type="checkbox" name="enabled" {% if connection.enabled %}checked{% endif %}> Teams 알림 받기</label></p>
+<p><label><input type="checkbox" name="assignment" {% if connection.assignment %}checked{% endif %}> 업무 배정</label></p>
+<p><label><input type="checkbox" name="pending" {% if connection.pending %}checked{% endif %}> 결재·서류 처리 대기</label></p>
+<p><label><input type="checkbox" name="result" {% if connection.result %}checked{% endif %}> 처리 결과</label></p>
+<button class="button primary">알림 설정 저장</button></form><p>연결 후 새로 발생한 알림부터 받습니다. 기존 업무 알림과 메일 알림은 계속 이용할 수 있습니다.</p>
+{% if linked %}<form method="post">{% csrf_token %}<input type="hidden" name="action" value="disconnect"><button class="button">Teams 알림 연결 해제</button></form>{% endif %}
+{% if is_admin %}<p><a href="{% url 'teams_administration' %}">관리자 · Teams 알림 설정</a></p>{% endif %}</section>{% endblock %}

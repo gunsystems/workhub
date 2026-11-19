@@ -43,7 +43,11 @@ def event(item,user,action,body=''):
     if action in ['승인','반려','지급 기록'] and item.state!='pending' and item.employee.user_id:
         recipients.append((item.employee.user,'result','품의 '+('지급 처리가 기록되었습니다.' if action=='지급 기록' else '결재 결과를 확인해 주세요.')))
     for recipient,kind,message in recipients:
-        if recipient.is_active:ProposalNotice.objects.get_or_create(event=row,user=recipient,kind=kind,defaults={'email':recipient.email.lower(),'message':message})
+        if recipient.is_active:
+            notification,created=ProposalNotice.objects.get_or_create(event=row,user=recipient,kind=kind,defaults={'email':recipient.email.lower(),'message':message})
+            if created:
+                from .teams_notifications import notice
+                notice(notification)
     return row
 
 
