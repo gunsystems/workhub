@@ -16,6 +16,7 @@ from . import shared_documents, shared_files, document_permissions, group_permis
 from . import teams_views
 urlpatterns=[
     path('teams/', teams_views.preferences, name='teams_preferences'),
+    path('teams/status/', teams_views.connection_status, name='teams_connection_status'),
     path('teams/manage/', teams_views.administration, name='teams_administration'),
     path('teams/manifest/', teams_views.manifest, name='teams_manifest'),
     path('teams/privacy/', teams_views.privacy, name='teams_privacy'),
