@@ -284,6 +284,17 @@ class TeamsTests(TestCase):
         self.assertEqual(self.client.get(reverse('teams_messages')).status_code, 405)
         self.assertEqual(self.client.post(reverse('teams_messages'), '{}', content_type='application/json').status_code, 401)
 
+    def test_auth_diagnostics_never_include_credentials_or_activity(self):
+        from .teams_views import authentication_failure_reason
+        self.assertEqual(authentication_failure_reason(ValueError('scope')), 'scope')
+        self.assertEqual(authentication_failure_reason(ValueError('secret-token')), 'invalid')
+        self.assertEqual(authentication_failure_reason(jwt.InvalidAudienceError('secret-token')), 'InvalidAudienceError')
+        with patch('tasks.teams_views.transport.validate_activity', side_effect=ValueError('secret-token')):
+            with self.assertLogs('tasks.teams_views', level='WARNING') as logs:
+                response = self.client.post(reverse('teams_messages'), '{"text":"private-code"}', content_type='application/json')
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(logs.output, ['WARNING:tasks.teams_views:teams_auth_rejected reason=invalid'])
+
     def test_employee_cannot_access_administration_or_manifest(self):
         for route in ('teams_administration', 'teams_manifest'):
             self.assertEqual(self.client.get(reverse(route)).status_code, 403)
