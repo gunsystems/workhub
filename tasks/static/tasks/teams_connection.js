@@ -30,7 +30,7 @@
         }
         if (response.ok && (await response.json()).linked) {
           text.value = ''; text.hidden = true; if (copy) copy.hidden = true;
-          if (status) status.textContent = '연결됐습니다. 내 정보에서 받을 알림을 설정하세요.';
+          if (status) status.textContent = '연결됐습니다. 연결 설정에서 받을 알림을 설정하세요.';
           window.location.replace(guide.dataset.profileUrl);
           return;
         }

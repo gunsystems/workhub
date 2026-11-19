@@ -7,10 +7,12 @@ from .reset_views import restore
 from .administrator_views import administrators
 from . import idle
 from . import profile_views
+from tasks.teams_views import account_connections
 
 urlpatterns = [
     path('employees/<int:employee_id>/photo/', profile_views.card_photo, name='employee_card_photo'),
     path('me/', profile_views.my_information, name='my_information'),
+    path('connections/', account_connections, name='account_connections'),
     path('employees/<int:employee_id>/profile/', profile_views.my_information, name='employee_information'),
     path('session/activity/', idle.activity, name='session_activity'),
     path('session/status/', idle.status, name='session_status'),

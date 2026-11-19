@@ -71,6 +71,13 @@ def connection_status(request):
 
 @never_cache
 @login_required
+@require_http_methods(['GET'])
+def account_connections(request):
+    return render(request, 'tasks/account_connections.html', {'teams_settings': personal_settings(request.user)})
+
+
+@never_cache
+@login_required
 @require_http_methods(['GET', 'POST'])
 def preferences(request):
     if not verified_user(request.user):
@@ -101,7 +108,7 @@ def preferences(request):
                 error = '연결 준비 상태를 확인한 후 다시 시도해 주세요.'
             connection.save()
         if not code and not error:
-            return redirect(reverse('my_information') + '?teams=saved#teams-settings')
+            return redirect(reverse('account_connections') + '?teams=saved#teams-settings')
     cfg = transport.config()
     linked = bool(cfg and connection.connected_at and connection.conversation and
                   (connection.tenant, connection.app) == cfg[:2] and connection.email.casefold() == request.user.email.casefold())

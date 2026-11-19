@@ -121,13 +121,11 @@ def my_information(request,employee_id=None):
     employment=StaffEmployment.objects.filter(employee=employee).first() if employee else None
     photo=EmployeePhoto.objects.filter(employee=employee).order_by('-pk').first() if employee else None
     card=None
-    from tasks.teams_views import personal_settings
-    teams_settings = personal_settings(request.user) if employee_id is None and employee else None
     if employee:
         card={'name':employee.name,'department':employee.department.name,
               'job_title':employment.job_title if employment and employment.job_title else employee.get_position_display(),
               'staff_number':employment.staff_number if employment and employment.staff_number else '사번 등록 전'}
-    return render(request,'accounts/my_information.html',{'employee':employee,'employment':employment,'card':card,'admin_preview':employee_id is not None,'photo':photo,'photo_form':form,'photo_notice':notice,'address':address,'address_form':address_form,'address_notice':address_notice,'address_open':address_open,'tenure':tenure_text(employment),'teams_settings':teams_settings})
+    return render(request,'accounts/my_information.html',{'employee':employee,'employment':employment,'card':card,'admin_preview':employee_id is not None,'photo':photo,'photo_form':form,'photo_notice':notice,'address':address,'address_form':address_form,'address_notice':address_notice,'address_open':address_open,'tenure':tenure_text(employment)})
 
 @login_required
 @never_cache
