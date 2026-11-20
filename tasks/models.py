@@ -747,4 +747,4 @@ from .document_permission_models import DocumentPermissionConnection, DocumentPe
 
 from .certificate_models import CertificatePolicy, CertificateRequest, CertificateEvent, CertificateNotice
 from .teams_models import TeamsConnection, TeamsDelivery
-from .document_rollout_models import DocumentRollout
+from .document_rollout_models import DocumentRollout, DocumentVendor
