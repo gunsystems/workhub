@@ -17,6 +17,9 @@ from . import teams_views
 from . import document_structure_views
 urlpatterns=[
     path('shared-documents/structure/plan/', document_structure_views.planned_structure, name='document_structure_plan'),
+    path('shared-documents/structure/prepare/', document_structure_views.prepare_rollout, name='document_rollout_prepare'),
+    path('shared-documents/structure/runs/<int:pk>/', document_structure_views.rollout_detail, name='document_rollout_detail'),
+    path('shared-documents/structure/runs/<int:pk>/step/', document_structure_views.rollout_step, name='document_rollout_step'),
     path('teams/', teams_views.preferences, name='teams_preferences'),
     path('teams/status/', teams_views.connection_status, name='teams_connection_status'),
     path('teams/manage/', teams_views.administration, name='teams_administration'),

@@ -3,6 +3,10 @@ from django.core.exceptions import ValidationError
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_POST
+from django.http import JsonResponse, Http404
+from django.shortcuts import redirect
+from .models import DocumentRollout
 from .document_permissions import admin_only
 from .document_structure import (POLICY_VERSION, GROUPS, COMMON_ROOT_GRANTS,
     VENDORS, fixed_folders, inventory_paths, preview)
@@ -37,3 +41,64 @@ def planned_structure(request):
     except (SharePointProbeError, ValidationError, KeyError, TypeError, ValueError) as exc:
         context['error']=str(exc) if isinstance(exc,SharePointProbeError) else '현황 경로를 확인하지 못했습니다. 다시 동기화하세요.'
     return render(request,'tasks/document_structure_plan.html',context)
+
+
+def owned_run(user, pk):
+    key,site=scope(user)
+    run=DocumentRollout.objects.filter(pk=pk,owner=user,site_url=site,scope_key=key).first()
+    if not run: raise Http404
+    return run
+
+
+@admin_only
+@never_cache
+@require_POST
+def prepare_rollout(request):
+    from .document_rollout import prepare
+    from django.contrib import messages
+    try:
+        run=prepare(request.user)
+    except SharePointProbeError as exc:
+        messages.error(request,str(exc))
+        return redirect('document_structure_plan')
+    return redirect('document_rollout_detail',pk=run.pk)
+
+
+@admin_only
+@never_cache
+@require_GET
+def rollout_detail(request,pk):
+    from .permission_inventory import named_members
+    run=owned_run(request.user,pk)
+    groups=[]
+    for role,group in run.data['groups'].items():
+        groups.append({'role':GROUPS[role],'name':group['name'],
+            'members':named_members(group['members'],run.site_url)})
+    from .document_rollout import NEW_GROUPS
+    for role,name in NEW_GROUPS.items():
+        if role not in run.data['groups']:
+            groups.append({'role':GROUPS[role],'name':name,'new':True,
+                           'executive':role=='executives'})
+    return render(request,'tasks/document_rollout.html',{'run':run,'groups':groups,
+        'total':len(run.data['steps']),'results':run.data['results'][-12:],
+        'state_label':{'prepared':'적용 검토 대기','running':'적용 중','attention':'결과 확인 필요','done':'적용 완료'}.get(run.state,'확인 필요'),
+        'can_run':run.state in ('prepared','running') and not run.pending})
+
+
+@admin_only
+@never_cache
+@require_POST
+def rollout_step(request,pk):
+    from .document_rollout import advance
+    run=owned_run(request.user,pk)
+    if request.POST.get('confirmed')!='yes':
+        return JsonResponse({'error':'대상 그룹과 적용 범위를 먼저 확인하세요.'},status=409)
+    try:
+        revision=int(request.POST.get('revision',''))
+        run=advance(request.user,run.pk,revision)
+    except (ValueError,SharePointProbeError) as exc:
+        return JsonResponse({'error':str(exc) if isinstance(exc,SharePointProbeError) else '적용 단계를 다시 확인하세요.'},status=409)
+    except Exception:
+        return JsonResponse({'error':'현재 단계의 적용 결과를 확인해야 합니다. 중복 실행하지 않고 중단했습니다.'},status=409)
+    return JsonResponse({'state':run.state,'revision':run.revision,'cursor':run.cursor,
+        'total':len(run.data['steps']),'last':run.data['results'][-1]})
