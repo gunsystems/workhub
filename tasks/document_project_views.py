@@ -109,6 +109,9 @@ def detail(request,pk):
         'can_run':request.user.is_superuser and row.administrator_id==request.user.pk and row.state in ('prepared','running') and not row.pending,
         'total':len(row.data['steps']),'folder_url':folder_url,'can_request':can_request,
         'unfinished':row.project.tasks.exclude(status='done').count()}
+    if request.user.is_superuser and row.data.get('comparison'):
+        import json
+        context['comparison']=json.dumps(row.data['comparison'],ensure_ascii=False,indent=2)
     return render(request,'tasks/document_project_detail.html',context)
 
 

@@ -9,6 +9,7 @@
 {% if row.phase == 'close' %}<p>이 프로젝트만 문서 / 03_완료프로젝트 / {{ row.data.year }}로 이관합니다. 버전·자료를 검증하고 영업·기술별 열람 권한을 적용한 뒤 종료합니다. 처리 중에는 참여자 편집이 중지됩니다.</p>{% else %}<p>프로젝트 공동작업에 새 폴더 네 개와 프로젝트 참여자 그룹을 생성합니다. 참여자 편집 · 경영진 보기 · 관리자 관리 권한을 적용합니다.</p>{% endif %}
 <p data-project-status>{{ row.cursor }} / {{ total }} 단계 · {{ state_label }}</p><progress data-project-progress max="{{ total }}" value="{{ row.cursor }}" style="width:100%"></progress>
 {% if row.error %}<p role="alert">{{ row.error }} 자동 재실행하지 않습니다.</p><p>확인할 작업: {{ row.pending }}</p>{% endif %}
+{% if comparison %}<details><summary>관리자 · 이관 전후 비교</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">{{ comparison }}</pre></details>{% endif %}
 {% if row.state == 'attention' and row.pending == 'root_acl' %}<form method="post" action="{% url 'document_project_reconcile' row.pk %}">{% csrf_token %}<p>현재 권한을 조회해 검토한 내용과 정확히 일치할 때만 완료된 단계로 확인합니다. 권한을 다시 변경하지 않습니다.</p><button class="button">권한 적용 결과 다시 확인</button></form>{% endif %}
 {% if row.state == 'attention' and row.pending == 'poll' %}<form method="post" action="{% url 'document_project_reconcile' row.pk %}">{% csrf_token %}<p>접수된 Microsoft 작업의 진행 결과만 다시 조회합니다. 이관 요청을 새로 보내지 않습니다.</p><button class="button">이관 진행 결과 다시 조회</button></form>{% endif %}
 {% if row.state == 'attention' and row.pending == 'verify_move' %}<form method="post" action="{% url 'document_project_reconcile' row.pk %}">{% csrf_token %}<p>이관된 자료와 전체 버전·수정자·시간·파일 지문을 다시 대조합니다. 이관이나 파일 수정을 다시 실행하지 않습니다.</p><button class="button">자료·버전 다시 검증</button></form>{% endif %}

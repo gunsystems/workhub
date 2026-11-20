@@ -288,7 +288,11 @@ def perform(api,row,step,guard):
         if len(matches)!=1:raise SharePointProbeError('이관 대상 폴더를 명확히 확인하지 못했습니다.')
         records['root']={'drive':target['drive'],'item':matches[0]['id'],'name':row.name,'parent':target['item']}
         tree=manifest(api,records['root'])
-        if not archive_matches(data['before'],tree):raise SharePointProbeError('자료·버전 이력이 이관 전과 다릅니다.')
+        if not archive_matches(data['before'],tree):
+            data['comparison']=[{'path':p,'before':{k:v for k,v in old.items() if k in ('size','hashes','versions')},
+                'after':{k:v for k,v in tree.get(p,{}).items() if k in ('size','hashes','versions')}}
+                for p,old in data['before'].items() if not old['folder']]
+            raise SharePointProbeError('자료·버전 이력이 이관 전과 다릅니다. 관리자 비교 정보를 확인하세요.')
         for child in PROJECT_CHILDREN:
             item=tree[child];records[child]={'drive':target['drive'],'item':item['item'],'name':child,'parent':item['parent']}
         data['after']=tree
@@ -383,7 +387,10 @@ def reconcile_acl(user,pk,api=None):
         if not api.move_done(row.data['move_job']):raise SharePointProbeError('Microsoft에서 처리 중입니다. 잠시 후 진행 결과만 다시 조회하세요.')
     elif row.pending=='verify_move':
         def no_write():raise SharePointProbeError('재검증에서 외부 변경은 허용하지 않습니다.')
-        perform(api,row,'verify_move',no_write)
+        try:perform(api,row,'verify_move',no_write)
+        except SharePointProbeError:
+            DocumentProject.objects.filter(pk=pk,state='attention',revision=row.revision).update(data=row.data)
+            raise
     else:
         verify_groups(api,row.data)
         check_acl(api,row.data,row.data['records']['root'],project_folders(row.name)[0].grants)
