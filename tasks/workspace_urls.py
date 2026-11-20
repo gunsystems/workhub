@@ -21,6 +21,7 @@ urlpatterns=[
     path('shared-documents/projects/new/', document_project_views.create, name='document_project_create'),
     path('shared-documents/projects/<int:pk>/', document_project_views.detail, name='document_project_detail'),
     path('shared-documents/projects/<int:pk>/step/', document_project_views.step, name='document_project_step'),
+    path('shared-documents/projects/<int:pk>/reconcile/', document_project_views.reconcile, name='document_project_reconcile'),
     path('shared-documents/projects/<int:pk>/close/', document_project_views.close, name='document_project_close'),
     path('shared-documents/structure/plan/', document_structure_views.planned_structure, name='document_structure_plan'),
     path('shared-documents/structure/prepare/', document_structure_views.prepare_rollout, name='document_rollout_prepare'),

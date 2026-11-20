@@ -12,7 +12,7 @@ from .models import DocumentProject, Project, Employee, DocumentRollout
 from .document_permissions import admin_only
 from .document_structure import PROJECT_TYPES
 from .document_vendors import active_names
-from .document_projects import prepare, prepare_close, advance, plan_labels
+from .document_projects import prepare, prepare_close, advance, plan_labels, reconcile_acl
 from .permission_inventory import scope
 from .sharepoint_probe import ProbeConfig, SharePointProbeError
 from .audit import write
@@ -144,4 +144,16 @@ def close(request,pk):
             close_requested_at=timezone.now(),close_requested_by=request.user)
         if changed:write('update','DocumentProject',pk,'프로젝트 종료·보관 요청',after={'폴더':row.name},actor=request.user)
         messages.success(request,'관리자에게 종료·보관 처리를 요청했습니다.')
+    return redirect('document_project_detail',pk=pk)
+
+
+@admin_only
+@never_cache
+@require_POST
+def reconcile(request,pk):
+    try:
+        reconcile_acl(request.user,pk)
+        messages.success(request,'현재 권한이 검토한 내용과 일치함을 확인했습니다. 외부 권한을 다시 변경하지 않았습니다.')
+    except (SharePointProbeError,DocumentProject.DoesNotExist) as exc:
+        messages.error(request,str(exc) if isinstance(exc,SharePointProbeError) else '현재 처리 기록을 확인하세요.')
     return redirect('document_project_detail',pk=pk)
