@@ -194,3 +194,10 @@ class ProjectTests(TestCase):
         row=reconcile_acl(self.user,row.pk,self.api)
         self.assertEqual(row.cursor,4);self.assertEqual(row.state,'prepared')
         self.assertEqual(len(self.api.writes),before)
+
+    def test_project_detail_displays_existing_document_folder(self):
+        row=self.finish(self.prepare())
+        self.client.force_login(self.user)
+        response=self.client.get(f'/projects/{self.project.pk}/')
+        self.assertContains(response,f'/work/shared-documents/projects/{row.pk}/')
+        self.assertNotContains(response,'프로젝트 폴더 만들기')
