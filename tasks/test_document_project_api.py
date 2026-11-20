@@ -23,6 +23,10 @@ class ProjectTransportTests(SimpleTestCase):
         with patch.object(self.api,'site_call',return_value={'JobState':0,'Logs':[]}) as call:
             self.assertTrue(self.api.move_done(encrypted))
         self.assertEqual(call.call_args.args[0],'GetCopyJobProgress')
+        with patch.object(self.api,'site_call',return_value={'JobState':0,'Logs':['{"Event":"JobEnd","ErrorCode":"0"}']}):
+            self.assertTrue(self.api.move_done(encrypted))
+        with patch.object(self.api,'site_call',return_value={'JobState':0,'Logs':['{"Event":"JobError","ErrorCode":-123}']}):
+            with self.assertRaisesRegex(SharePointProbeError,'-123'):self.api.move_done(encrypted)
 
     def test_cross_site_and_unknown_jobs_are_rejected(self):
         with patch.object(self.api,'site_call') as call:

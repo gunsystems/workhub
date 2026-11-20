@@ -59,6 +59,10 @@ class ProjectAPI(GroupPermissionClient):
         if isinstance(logs,dict):logs=logs.get('results',[])
         for value in logs:
             log=json.loads(value) if isinstance(value,str) else value
-            if not isinstance(log,dict) or log.get('Event') in ('JobError','JobFatalError') or log.get('ErrorCode'):
-                raise SharePointProbeError('Microsoft 이관 오류가 있어 결과 확인을 중단했습니다.')
+            if not isinstance(log,dict):raise SharePointProbeError('이관 로그 형식을 확인해야 합니다.')
+            code=log.get('ErrorCode')
+            if log.get('Event') in ('JobError','JobFatalError') or code not in (None,0,'0',''):
+                import re
+                safe_code=re.sub(r'[^A-Za-z0-9_.-]','',str(code or log.get('Event','unknown')))[:80]
+                raise SharePointProbeError('Microsoft 이관 오류 ('+safe_code+'). 현재 원본과 보관 위치를 확인해야 합니다.')
         return result.get('JobState')==0
