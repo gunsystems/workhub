@@ -165,6 +165,38 @@ def content_signature(tree):
     return {p:{k:v for k,v in r.items() if k in ('folder','size','versions','hashes')} for p,r in tree.items()}
 
 
+def archive_matches(before,after):
+    """Compare retained content/history, not provider-local identity decoration."""
+    from django.utils.dateparse import parse_datetime
+    from datetime import timezone as utc
+    def version_signature(value):
+        stamp=value.get('modified')
+        if stamp:
+            parsed=parse_datetime(stamp)
+            if parsed and parsed.tzinfo:stamp=parsed.astimezone(utc.utc).isoformat()
+        actor=value.get('actor') or {}
+        # IdentitySet IDs are provider-local decorations; names/times in the
+        # actual version history are preserved and never used for authorization.
+        names=tuple((kind,str((actor.get(kind) or {}).get('displayName','')).strip().casefold())
+                    for kind in ('user','application') if (actor.get(kind) or {}).get('displayName'))
+        return (str(value['id']),value['size'],stamp,names)
+    if set(before)!=set(after):return False
+    for path,old in before.items():
+        new=after[path]
+        if old['folder']!=new['folder']:return False
+        if old['folder']:continue
+        if old['size']!=new['size']:return False
+        required={version_signature(v) for v in old['versions']}
+        actual={version_signature(v) for v in new['versions']}
+        if not required.issubset(actual):return False
+        known={k:v for k,v in old.get('hashes',{}).items() if v}
+        current={k:v for k,v in new.get('hashes',{}).items() if v}
+        shared=set(known)&set(current)
+        if known and not shared:return False
+        if any(known[k]!=current[k] for k in shared):return False
+    return True
+
+
 def prepare_close(user,pk,api=None):
     require_admin(user);key,site=scope(user);api=api or ProjectAPI(user)
     row=DocumentProject.objects.get(pk=pk,site_url=site,administrator=user,scope_key=key,state='active')
@@ -256,7 +288,7 @@ def perform(api,row,step,guard):
         if len(matches)!=1:raise SharePointProbeError('이관 대상 폴더를 명확히 확인하지 못했습니다.')
         records['root']={'drive':target['drive'],'item':matches[0]['id'],'name':row.name,'parent':target['item']}
         tree=manifest(api,records['root'])
-        if content_signature(tree)!=content_signature(data['before']):raise SharePointProbeError('자료·버전 이력이 이관 전과 다릅니다.')
+        if not archive_matches(data['before'],tree):raise SharePointProbeError('자료·버전 이력이 이관 전과 다릅니다.')
         for child in PROJECT_CHILDREN:
             item=tree[child];records[child]={'drive':target['drive'],'item':item['item'],'name':child,'parent':item['parent']}
         data['after']=tree
@@ -267,7 +299,7 @@ def perform(api,row,step,guard):
         acl(api,data,record,spec.grants)
     elif step=='finish_close':
         verify_groups(api,data);tree=manifest(api,records['root'],archived=True)
-        if content_signature(tree)!=content_signature(data['before']):raise SharePointProbeError('최종 자료 검증에 실패했습니다.')
+        if not archive_matches(data['before'],tree):raise SharePointProbeError('최종 자료 검증에 실패했습니다.')
         specs=project_folders(row.name,completed=True,year=data['year'])
         for index in (0,1,2):
             check_acl(api,data,records['root' if index==0 else PROJECT_CHILDREN[index-1]],specs[index].grants)
@@ -346,14 +378,17 @@ def advance(user,pk,revision,api=None):
 def reconcile_acl(user,pk,api=None):
     """Read-back only: acknowledge a completed ACL/job, never submit it again."""
     require_admin(user);key,site=scope(user);api=api or ProjectAPI(user)
-    row=DocumentProject.objects.get(pk=pk,administrator=user,site_url=site,scope_key=key,state='attention',pending__in=('root_acl','poll'))
+    row=DocumentProject.objects.get(pk=pk,administrator=user,site_url=site,scope_key=key,state='attention',pending__in=('root_acl','poll','verify_move'))
     if row.pending=='poll':
         if not api.move_done(row.data['move_job']):raise SharePointProbeError('Microsoft에서 처리 중입니다. 잠시 후 진행 결과만 다시 조회하세요.')
+    elif row.pending=='verify_move':
+        def no_write():raise SharePointProbeError('재검증에서 외부 변경은 허용하지 않습니다.')
+        perform(api,row,'verify_move',no_write)
     else:
         verify_groups(api,row.data)
         check_acl(api,row.data,row.data['records']['root'],project_folders(row.name)[0].grants)
     changed=DocumentProject.objects.filter(pk=pk,state='attention',pending=row.pending,revision=row.revision).update(
-        state='prepared',pending='',error='',cursor=row.cursor+1,revision=row.revision+1)
+        state='prepared',pending='',error='',cursor=row.cursor+1,revision=row.revision+1,data=row.data)
     if changed!=1:raise SharePointProbeError('처리 기록이 변경되었습니다.')
     write('update','DocumentProject',pk,'프로젝트 처리 결과 조회 확인',after={'외부 변경':'없음','확인 단계':row.pending},actor=user)
     row.refresh_from_db();return row

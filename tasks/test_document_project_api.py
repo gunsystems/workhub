@@ -34,3 +34,17 @@ class ProjectTransportTests(SimpleTestCase):
             call.assert_not_called()
         with patch.object(self.api,'site_call',return_value={'value':[]}):
             with self.assertRaises(SharePointProbeError):self.api.start_move(self.api.config.site_url+'/x',self.api.config.site_url+'/y','e')
+
+    def test_archive_history_normalizes_metadata_but_rejects_data_loss(self):
+        from copy import deepcopy
+        from .document_projects import archive_matches
+        old={'file':{'folder':False,'size':3,'hashes':{'quickXorHash':'hash','sha1Hash':''},
+            'versions':[{'id':'1.0','size':3,'modified':'2026-11-20T00:00:00.000Z',
+                         'actor':{'user':{'id':'source-id','displayName':'Person'}}}]}}
+        new=deepcopy(old)
+        new['file']['hashes'].pop('sha1Hash')
+        new['file']['versions'][0].update(modified='2026-11-20T00:00:00Z',actor={'user':{'id':'destination-id','displayName':'Person'}})
+        self.assertTrue(archive_matches(old,new))
+        for field,value in [('size',4),('versions',[]),('hashes',{'quickXorHash':'wrong'})]:
+            bad=deepcopy(new);bad['file'][field]=value
+            self.assertFalse(archive_matches(old,bad))
