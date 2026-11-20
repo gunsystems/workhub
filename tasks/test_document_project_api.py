@@ -45,6 +45,11 @@ class ProjectTransportTests(SimpleTestCase):
         new['file']['hashes'].pop('sha1Hash')
         new['file']['versions'][0].update(modified='2026-11-20T00:00:00Z',actor={'user':{'id':'destination-id','displayName':'Person'}})
         self.assertTrue(archive_matches(old,new))
+        old['file']['versions'][0]['actor']['application']={'displayName':'Upload App'}
+        self.assertTrue(archive_matches(old,new))
+        changed_actor=deepcopy(new)
+        changed_actor['file']['versions'][0]['actor']['user']['displayName']='Different Person'
+        self.assertFalse(archive_matches(old,changed_actor))
         for field,value in [('size',4),('versions',[]),('hashes',{'quickXorHash':'wrong'})]:
             bad=deepcopy(new);bad['file'][field]=value
             self.assertFalse(archive_matches(old,bad))

@@ -177,8 +177,12 @@ def archive_matches(before,after):
         actor=value.get('actor') or {}
         # IdentitySet IDs are provider-local decorations; names/times in the
         # actual version history are preserved and never used for authorization.
-        names=tuple((kind,str((actor.get(kind) or {}).get('displayName','')).strip().casefold())
-                    for kind in ('user','application') if (actor.get(kind) or {}).get('displayName'))
+        # A version modified by a person may additionally report the upload app
+        # before a move. SharePoint retains the person while omitting that app.
+        kind='user' if actor.get('user') else 'application'
+        person=actor.get(kind) or {}
+        names=(kind,str(person.get('email','')).strip().casefold(),
+               str(person.get('displayName','')).strip().casefold()) if person else ()
         return (str(value['id']),value['size'],stamp,names)
     if set(before)!=set(after):return False
     for path,old in before.items():
@@ -296,6 +300,7 @@ def perform(api,row,step,guard):
         for child in PROJECT_CHILDREN:
             item=tree[child];records[child]={'drive':target['drive'],'item':item['item'],'name':child,'parent':item['parent']}
         data['after']=tree
+        data.pop('comparison',None)
     elif step in ('sales_acl','technical_acl','archive_acl'):
         index={'archive_acl':0,'sales_acl':1,'technical_acl':2}[step]
         spec=project_folders(row.name,completed=True,year=data['year'])[index]
