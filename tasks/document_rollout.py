@@ -10,7 +10,7 @@ from django.db import transaction, IntegrityError
 from django.utils import timezone
 from .audit import write
 from .document_permission_api import digest
-from .document_structure import POLICY_VERSION, COMMON_ROOT_GRANTS, fixed_folders
+from .document_structure import POLICY_VERSION, COMMON_ROOT_GRANTS, fixed_folders, VENDORS
 from .group_permission_api import GroupPermissionClient, entries
 from .models import DocumentRollout, DocumentAccessGroup, Employee, DocumentPermissionLease
 from .permission_inventory import scope, invalidate
@@ -98,7 +98,7 @@ def prepare(user, api=None):
     data={'groups':bindings,'libraries':{'documents':drive},'owned':{},'results':[],
           'role_ids':role_ids,'role_baseline':roles,'no_delete':no_delete_permissions(base),
           'actor_email':api.connection.email,'steps':[list(s) for s in steps()],
-          'document_acl':acl_signature(root_state),'site_acl':site_acl}
+          'document_acl':acl_signature(root_state),'site_acl':site_acl,'vendors':list(VENDORS),'phase':'initial'}
     run=DocumentRollout.objects.create(site_url=site,owner=user,scope_key=key,policy=POLICY_VERSION,data=data)
     write('create','DocumentRollout',run.pk,'표준 문서함 적용 검토 준비',after={'정책':POLICY_VERSION,'단계':len(steps())},actor=user)
     return run
@@ -197,7 +197,7 @@ def perform(api,run,operation,guard=lambda:None):
         data['libraries']['common']=drive
         data['owned']['common/']={'drive':drive,'item':'root','name':'전사공통','parent':''}
     elif action=='folder':
-        spec=next(f for f in fixed_folders() if f.display==key)
+        spec=next(f for f in fixed_folders(data.get('vendors',VENDORS)) if f.display==key)
         drive=data['libraries'][spec.library]
         parent_key=spec.library+'/'+'/'.join(spec.path[:-1])
         parent=data['owned'].get(parent_key)
@@ -261,7 +261,13 @@ def advance(user,run_id,revision,api=None):
               '표준 문서함 단계 적용',after={'작업':operation[0],'대상':operation[1]},actor=user)
         run.cursor+=1;run.revision+=1;run.pending='';run.error=''
         run.state='done' if run.cursor==len(run.data['steps']) else 'running'
-        run.lease_until=timezone.now();run.lease_token='';run.save()
+        with transaction.atomic():
+            if run.state=='done' and run.data.get('phase_vendor'):
+                from .models import DocumentVendor
+                updated=DocumentVendor.objects.filter(site_url=site,name=run.data['phase_vendor']).update(ready=True)
+                if updated!=1:
+                    raise SharePointProbeError('벤더 목록의 완료 상태를 확인해야 합니다.')
+            run.lease_until=timezone.now();run.lease_token='';run.save()
         invalidate(site)
         return run
     except Exception as exc:

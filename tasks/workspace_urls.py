@@ -18,6 +18,8 @@ from . import document_structure_views
 urlpatterns=[
     path('shared-documents/structure/plan/', document_structure_views.planned_structure, name='document_structure_plan'),
     path('shared-documents/structure/prepare/', document_structure_views.prepare_rollout, name='document_rollout_prepare'),
+    path('shared-documents/structure/vendors/', document_structure_views.vendor_settings, name='document_vendor_settings'),
+    path('shared-documents/structure/vendors/change/', document_structure_views.vendor_change, name='document_vendor_change'),
     path('shared-documents/structure/runs/<int:pk>/', document_structure_views.rollout_detail, name='document_rollout_detail'),
     path('shared-documents/structure/runs/<int:pk>/step/', document_structure_views.rollout_step, name='document_rollout_step'),
     path('teams/', teams_views.preferences, name='teams_preferences'),

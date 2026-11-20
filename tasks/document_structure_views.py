@@ -1,4 +1,4 @@
-"""Read-only administrator rollout preview. No Microsoft write endpoint."""
+"""Administrator structure preview, vendor settings and guarded rollout."""
 from django.core.exceptions import ValidationError
 from django.shortcuts import render
 from django.views.decorators.cache import never_cache
@@ -82,6 +82,7 @@ def rollout_detail(request,pk):
     return render(request,'tasks/document_rollout.html',{'run':run,'groups':groups,
         'total':len(run.data['steps']),'results':run.data['results'][-12:],
         'state_label':{'prepared':'적용 검토 대기','running':'적용 중','attention':'결과 확인 필요','done':'적용 완료'}.get(run.state,'확인 필요'),
+        'vendor_phase':run.data.get('phase')=='vendor',
         'can_run':run.state in ('prepared','running') and not run.pending})
 
 
@@ -102,3 +103,36 @@ def rollout_step(request,pk):
         return JsonResponse({'error':'현재 단계의 적용 결과를 확인해야 합니다. 중복 실행하지 않고 중단했습니다.'},status=409)
     return JsonResponse({'state':run.state,'revision':run.revision,'cursor':run.cursor,
         'total':len(run.data['steps']),'last':run.data['results'][-1]})
+
+
+@admin_only
+@never_cache
+@require_GET
+def vendor_settings(request):
+    from .document_vendors import catalog
+    key,site=scope(request.user)
+    run=DocumentRollout.objects.filter(site_url=site,owner=request.user,scope_key=key).first()
+    return render(request,'tasks/document_vendors.html',{'vendors':catalog(site),'run':run,
+        'can_add':bool(run and run.state=='done')})
+
+
+@admin_only
+@never_cache
+@require_POST
+def vendor_change(request):
+    from .document_vendors import queue_vendor,toggle
+    from django.contrib import messages
+    try:
+        if request.POST.get('action')=='add':
+            run=queue_vendor(request.user,request.POST.get('name',''))
+            return redirect('document_rollout_detail',pk=run.pk)
+        if request.POST.get('action')=='active':
+            if request.POST.get('active') not in ('yes','no'):
+                raise ValidationError('변경할 상태를 다시 선택하세요.')
+            toggle(request.user,request.POST.get('name',''),request.POST.get('active')=='yes')
+            messages.success(request,'벤더 선택 목록을 변경했습니다. 기존 폴더와 자료는 유지됩니다.')
+        else:raise ValidationError('변경할 항목을 확인하세요.')
+    except (ValidationError,SharePointProbeError,DocumentRollout.DoesNotExist) as exc:
+        messages.error(request,' '.join(exc.messages) if isinstance(exc,ValidationError) else
+            str(exc) if isinstance(exc,SharePointProbeError) else '초기 적용과 관리자 연결을 확인하세요.')
+    return redirect('document_vendor_settings')
