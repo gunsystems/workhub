@@ -164,3 +164,12 @@ class ProjectTests(TestCase):
         Employee.objects.create(user=outsider,name='다른직원',department=self.owner.department)
         self.client.force_login(outsider)
         self.assertEqual(self.client.get(f'/work/shared-documents/projects/{row.pk}/').status_code,404)
+
+    def test_creation_http_form_internal_and_customer(self):
+        self.client.force_login(self.user)
+        with patch('tasks.document_project_views.scope',return_value=('scope',baseline.SITE)), \
+                patch('tasks.document_projects.ProjectAPI',return_value=self.api):
+            response=self.client.post('/work/shared-documents/projects/new/',{'project':self.project.pk,'year':2026,
+                'mode':'internal','internal':'검증','participants':[self.owner.pk]})
+        self.assertEqual(response.status_code,302)
+        self.assertTrue(DocumentProject.objects.filter(project=self.project,name='2026_내부_검증').exists())

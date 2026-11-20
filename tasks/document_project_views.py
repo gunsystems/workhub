@@ -88,6 +88,12 @@ def create(request):
         except (ValidationError,SharePointProbeError,DocumentRollout.DoesNotExist) as exc:
             form.add_error(None,' '.join(exc.messages) if isinstance(exc,ValidationError) else
                 str(exc) if isinstance(exc,SharePointProbeError) else '초기 적용과 관리자 연결을 먼저 확인하세요.')
+        except Exception as exc:
+            import logging,traceback
+            frame=traceback.extract_tb(exc.__traceback__)[-1]
+            logging.getLogger(__name__).error('project_prepare_failed kind=%s location=%s:%s',
+                type(exc).__name__,frame.name,frame.lineno)
+            form.add_error(None,'생성 검토 중 문제가 발생했습니다. 적용 기록을 확인한 뒤 다시 안내하겠습니다.')
     return render(request,'tasks/document_project_form.html',{'form':form})
 
 
