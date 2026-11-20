@@ -173,3 +173,24 @@ class ProjectTests(TestCase):
                 'mode':'internal','internal':'검증','participants':[self.owner.pk]})
         self.assertEqual(response.status_code,302)
         self.assertTrue(DocumentProject.objects.filter(project=self.project,name='2026_내부_검증').exists())
+
+    def test_external_io_is_outside_additional_sql_transaction(self):
+        from django.db import connection
+        from . import document_projects
+        row=self.prepare();depth=len(connection.savepoint_ids);original=document_projects.perform
+        def check(*args):
+            self.assertEqual(len(connection.savepoint_ids),depth)
+            return original(*args)
+        with patch('tasks.document_projects.perform',side_effect=check):
+            advance(self.user,row.pk,row.revision,self.api)
+
+    def test_acl_reconciliation_only_reads_completed_result(self):
+        from .document_projects import reconcile_acl
+        row=self.prepare()
+        for _ in range(4):row,_=advance(self.user,row.pk,row.revision,self.api)
+        # Simulate lost local acknowledgement after the fourth provider step.
+        row.state='attention';row.pending='root_acl';row.cursor=3;row.save()
+        before=len(self.api.writes)
+        row=reconcile_acl(self.user,row.pk,self.api)
+        self.assertEqual(row.cursor,4);self.assertEqual(row.state,'prepared')
+        self.assertEqual(len(self.api.writes),before)

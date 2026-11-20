@@ -58,11 +58,10 @@ def admin_parent(api,data,drive,item):
     return state
 
 
-@transaction.atomic
 def prepare(user,project,values,participants,api=None):
     require_admin(user);key,site=scope(user);api=api or ProjectAPI(user)
     # Lock policy binding against another vendor/initial job preparation.
-    initial=DocumentRollout.objects.select_for_update().get(site_url=site,owner=user,scope_key=key,state='done')
+    initial=DocumentRollout.objects.get(site_url=site,owner=user,scope_key=key,state='done')
     if initial.pending or initial.lease_token:raise ValidationError('문서함 적용 작업을 먼저 완료하세요.')
     vendors=active_names(site)
     name=project_name(values['year'],customer=values.get('customer',''),vendor=values.get('vendor',''),
@@ -86,10 +85,13 @@ def prepare(user,project,values,participants,api=None):
     if any(g['name']==data['group_name'] for g in api.groups()):
         raise ValidationError('같은 이름의 프로젝트 그룹이 있습니다.')
     metadata={**values,'participants':[{'id':p.pk,'name':p.name,'email':p.user.email} for p in people]}
-    row=DocumentProject.objects.create(project=project,site_url=site,name=name,normalized_name=name.casefold(),
-        creator=user,administrator=user,scope_key=key,metadata=metadata,data=data)
-    row.participants.set(people)
-    write('create','DocumentProject',row.pk,'프로젝트 폴더 생성 검토',after={'폴더':name,'참여자':[p.name for p in people]},actor=user)
+    # No provider IO inside a SQLite read transaction: a background sync can
+    # otherwise invalidate the snapshot before the first local write.
+    with transaction.atomic():
+        row=DocumentProject.objects.create(project=project,site_url=site,name=name,normalized_name=name.casefold(),
+            creator=user,administrator=user,scope_key=key,metadata=metadata,data=data)
+        row.participants.set(people)
+        write('create','DocumentProject',row.pk,'프로젝트 폴더 생성 검토',after={'폴더':name,'참여자':[p.name for p in people]},actor=user)
     return row
 
 
@@ -163,10 +165,9 @@ def content_signature(tree):
     return {p:{k:v for k,v in r.items() if k in ('folder','size','versions','hashes')} for p,r in tree.items()}
 
 
-@transaction.atomic
 def prepare_close(user,pk,api=None):
     require_admin(user);key,site=scope(user);api=api or ProjectAPI(user)
-    row=DocumentProject.objects.select_for_update().get(pk=pk,site_url=site,administrator=user,scope_key=key,state='active')
+    row=DocumentProject.objects.get(pk=pk,site_url=site,administrator=user,scope_key=key,state='active')
     data=row.data;fresh_groups(api,data)
     root=bind(api,data['records']['root'])
     # Only the exact project group and known policy roles may be changed.
@@ -188,7 +189,10 @@ def prepare_close(user,pk,api=None):
             raise SharePointProbeError('같은 이름의 보관 폴더가 있어 이관하지 않습니다.')
         data['year_record']=owned_year
     data.update(archive_parent=archive,year=year,steps=CLOSE_STEPS,source_root=data['records']['root'])
-    row.phase='close';row.state='prepared';row.cursor=0;row.revision+=1;row.save()
+    changed=DocumentProject.objects.filter(pk=pk,state='active',revision=row.revision,scope_key=key).update(
+        data=data,phase='close',state='prepared',cursor=0,revision=row.revision+1)
+    if changed!=1:raise SharePointProbeError('종료 검토 중 프로젝트 상태가 변경되었습니다.')
+    row.refresh_from_db()
     write('update','DocumentProject',row.pk,'프로젝트 종료·보관 검토',after={'폴더':row.name,'보관 연도':year},actor=user)
     return row
 
@@ -223,7 +227,6 @@ def perform(api,row,step,guard):
         verify_groups(api,data);check_acl(api,data,records['root'],project_folders(row.name)[0].grants)
         tree=manifest(api,records['root'])
         if set(tree)!={'',*PROJECT_CHILDREN}:raise SharePointProbeError('새 프로젝트 구조가 예상과 다릅니다.')
-        row.project.document_status='active';row.project.save(update_fields=['document_status'])
         row.state='active'
     elif step=='freeze':
         root=bind(api,records['root'])
@@ -270,14 +273,7 @@ def perform(api,row,step,guard):
             check_acl(api,data,records['root' if index==0 else PROJECT_CHILDREN[index-1]],specs[index].grants)
         # Cross-library item IDs may change. Update identities in one local transaction,
         # leaving every work-link FK intact. Unrelated references are never changed.
-        for path,before in data['before'].items():
-            old=SharedDocument.objects.filter(site_url=row.site_url,drive_id=drive,item_id=before['item']).first()
-            if not old:continue
-            new_id=tree[path]['item'];new_drive=records['root']['drive']
-            if SharedDocument.objects.exclude(pk=old.pk).filter(site_url=row.site_url,drive_id=new_drive,item_id=new_id).exists():
-                raise SharePointProbeError('업무 문서 연결이 중복되어 별도 확인이 필요합니다.')
-            old.drive_id=new_drive;old.item_id=new_id;old.save(update_fields=['drive_id','item_id'])
-        row.project.document_status='closed';row.project.save(update_fields=['document_status'])
+        data['verified_tree']=tree
         row.state='closed';row.closed_at=timezone.now()
         data.pop('move_job',None)
     else:raise SharePointProbeError('허용되지 않은 프로젝트 단계입니다.')
@@ -312,8 +308,20 @@ def advance(user,pk,revision,api=None):
             if method!='GET':guard()
             return original(suffix,method,data)
         api.call=guarded;guard()
+        finished=perform(api,row,step,guard)
         with transaction.atomic():
-            finished=perform(api,row,step,guard)
+            # All external reads/writes are finished before this short commit.
+            if step=='finish_close':
+                for path,before in row.data['before'].items():
+                    old=SharedDocument.objects.filter(site_url=site,drive_id=row.data['project_drive'],item_id=before['item']).first()
+                    if not old:continue
+                    new_id=row.data['verified_tree'][path]['item'];new_drive=row.data['records']['root']['drive']
+                    if SharedDocument.objects.exclude(pk=old.pk).filter(site_url=site,drive_id=new_drive,item_id=new_id).exists():
+                        raise SharePointProbeError('업무 문서 연결이 중복되어 별도 확인이 필요합니다.')
+                    old.drive_id=new_drive;old.item_id=new_id;old.save(update_fields=['drive_id','item_id'])
+                row.project.document_status='closed';row.project.save(update_fields=['document_status'])
+            elif step=='finish_create':
+                row.project.document_status='active';row.project.save(update_fields=['document_status'])
             if finished:
                 row.cursor+=1
                 row.data['results'].append({'step':LABELS.get(step,step),'at':timezone.now().isoformat()})
@@ -321,6 +329,10 @@ def advance(user,pk,revision,api=None):
             row.revision+=1;row.pending='';row.lease_token='';row.lease_until=timezone.now();row.save()
         invalidate(site);return row,not finished
     except Exception as exc:
+        import logging,traceback
+        frame=traceback.extract_tb(exc.__traceback__)[-1]
+        logging.getLogger(__name__).error('project_step_failed step=%s kind=%s location=%s:%s',
+            step,type(exc).__name__,frame.name,frame.lineno)
         DocumentProject.objects.filter(pk=pk,lease_token=token).update(state='attention',data=row.data,
             error=str(exc)[:190] if isinstance(exc,SharePointProbeError) else '현재 단계의 처리 결과를 확인해야 합니다.',
             lease_token='',lease_until=timezone.now())
@@ -329,3 +341,16 @@ def advance(user,pk,revision,api=None):
     finally:
         if original is not None:api.call=original
         DocumentPermissionLease.objects.filter(pk=lease.pk).delete()
+
+
+def reconcile_acl(user,pk,api=None):
+    """Read-back only: acknowledge an exact completed ACL, never retry it."""
+    require_admin(user);key,site=scope(user);api=api or ProjectAPI(user)
+    row=DocumentProject.objects.get(pk=pk,administrator=user,site_url=site,scope_key=key,state='attention',pending='root_acl')
+    verify_groups(api,row.data)
+    check_acl(api,row.data,row.data['records']['root'],project_folders(row.name)[0].grants)
+    changed=DocumentProject.objects.filter(pk=pk,state='attention',pending='root_acl',revision=row.revision).update(
+        state='prepared',pending='',error='',cursor=row.cursor+1,revision=row.revision+1)
+    if changed!=1:raise SharePointProbeError('처리 기록이 변경되었습니다.')
+    write('update','DocumentProject',pk,'프로젝트 권한 적용 결과 조회 확인',after={'외부 변경':'없음'},actor=user)
+    row.refresh_from_db();return row
