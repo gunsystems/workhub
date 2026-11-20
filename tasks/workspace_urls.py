@@ -14,7 +14,9 @@ from . import meetings, microsoft_meetings
 from . import transfers
 from . import shared_documents, shared_files, document_permissions, group_permissions, shared_history, permission_report
 from . import teams_views
+from . import document_structure_views
 urlpatterns=[
+    path('shared-documents/structure/plan/', document_structure_views.planned_structure, name='document_structure_plan'),
     path('teams/', teams_views.preferences, name='teams_preferences'),
     path('teams/status/', teams_views.connection_status, name='teams_connection_status'),
     path('teams/manage/', teams_views.administration, name='teams_administration'),
