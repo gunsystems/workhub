@@ -344,13 +344,16 @@ def advance(user,pk,revision,api=None):
 
 
 def reconcile_acl(user,pk,api=None):
-    """Read-back only: acknowledge an exact completed ACL, never retry it."""
+    """Read-back only: acknowledge a completed ACL/job, never submit it again."""
     require_admin(user);key,site=scope(user);api=api or ProjectAPI(user)
-    row=DocumentProject.objects.get(pk=pk,administrator=user,site_url=site,scope_key=key,state='attention',pending='root_acl')
-    verify_groups(api,row.data)
-    check_acl(api,row.data,row.data['records']['root'],project_folders(row.name)[0].grants)
-    changed=DocumentProject.objects.filter(pk=pk,state='attention',pending='root_acl',revision=row.revision).update(
+    row=DocumentProject.objects.get(pk=pk,administrator=user,site_url=site,scope_key=key,state='attention',pending__in=('root_acl','poll'))
+    if row.pending=='poll':
+        if not api.move_done(row.data['move_job']):raise SharePointProbeError('Microsoft에서 처리 중입니다. 잠시 후 진행 결과만 다시 조회하세요.')
+    else:
+        verify_groups(api,row.data)
+        check_acl(api,row.data,row.data['records']['root'],project_folders(row.name)[0].grants)
+    changed=DocumentProject.objects.filter(pk=pk,state='attention',pending=row.pending,revision=row.revision).update(
         state='prepared',pending='',error='',cursor=row.cursor+1,revision=row.revision+1)
     if changed!=1:raise SharePointProbeError('처리 기록이 변경되었습니다.')
-    write('update','DocumentProject',pk,'프로젝트 권한 적용 결과 조회 확인',after={'외부 변경':'없음'},actor=user)
+    write('update','DocumentProject',pk,'프로젝트 처리 결과 조회 확인',after={'외부 변경':'없음','확인 단계':row.pending},actor=user)
     row.refresh_from_db();return row

@@ -153,7 +153,7 @@ def close(request,pk):
 def reconcile(request,pk):
     try:
         reconcile_acl(request.user,pk)
-        messages.success(request,'현재 권한이 검토한 내용과 일치함을 확인했습니다. 외부 권한을 다시 변경하지 않았습니다.')
+        messages.success(request,'이미 실행한 단계의 완료 결과를 확인했습니다. 외부 작업을 다시 실행하지 않았습니다.')
     except (SharePointProbeError,DocumentProject.DoesNotExist) as exc:
         messages.error(request,str(exc) if isinstance(exc,SharePointProbeError) else '현재 처리 기록을 확인하세요.')
     return redirect('document_project_detail',pk=pk)
