@@ -15,7 +15,13 @@ from . import transfers
 from . import shared_documents, shared_files, document_permissions, group_permissions, shared_history, permission_report
 from . import teams_views
 from . import document_structure_views
+from . import document_project_views
 urlpatterns=[
+    path('shared-documents/projects/', document_project_views.listing, name='document_project_list'),
+    path('shared-documents/projects/new/', document_project_views.create, name='document_project_create'),
+    path('shared-documents/projects/<int:pk>/', document_project_views.detail, name='document_project_detail'),
+    path('shared-documents/projects/<int:pk>/step/', document_project_views.step, name='document_project_step'),
+    path('shared-documents/projects/<int:pk>/close/', document_project_views.close, name='document_project_close'),
     path('shared-documents/structure/plan/', document_structure_views.planned_structure, name='document_structure_plan'),
     path('shared-documents/structure/prepare/', document_structure_views.prepare_rollout, name='document_rollout_prepare'),
     path('shared-documents/structure/vendors/', document_structure_views.vendor_settings, name='document_vendor_settings'),

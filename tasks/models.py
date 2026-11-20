@@ -77,6 +77,7 @@ class Employee(models.Model):
             seen.add(node.pk); node=node.supervisor
 
 class Project(models.Model):
+    document_status = models.CharField('프로젝트 문서 상태',max_length=12,blank=True,default='',choices=[('active','진행 중'),('closed','종료')])
     name = models.CharField('프로젝트명', max_length=160)
     department = models.ForeignKey(Department, on_delete=models.PROTECT, verbose_name='담당 부서')
     owner = models.ForeignKey(Employee, on_delete=models.PROTECT, verbose_name='총괄 담당자')
@@ -748,3 +749,4 @@ from .document_permission_models import DocumentPermissionConnection, DocumentPe
 from .certificate_models import CertificatePolicy, CertificateRequest, CertificateEvent, CertificateNotice
 from .teams_models import TeamsConnection, TeamsDelivery
 from .document_rollout_models import DocumentRollout, DocumentVendor
+from .document_project_models import DocumentProject
